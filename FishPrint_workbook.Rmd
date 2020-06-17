@@ -1,0 +1,87 @@
+---
+title: "FishPrint_workbook"
+author: "Jessica Gephart"
+date: "6/15/2020"
+output: pdf_document
+---
+
+## To do
+
+1. Fill in feed ingredient FP and protein content values
+2. Factors to multiply protein content by to get N and P
+3. Whole fish N and P content by species
+4. Replace placeholder diesel, petrol and natural gas CO2 eq/L values with data in function
+5. How to handle Energy_demand column in non-feed ghg function?
+6. Factors for multiplying protein content by to get N and P in feeds
+7. The biggest gap is pond area and yield, which is needed to get a per unit land FP, as well as a surface area for evaporative losses
+
+## Code improvements
+
+1. Update feed associated FP function to handle fed and non-fed species
+
+```{r setup}
+knitr::opts_chunk$set(echo = FALSE)
+
+# Load packages
+library(tidyverse)
+library(countrycode)
+library(ggplot2)
+
+source("Functions.R")
+
+# Load lca data
+lca <- read.csv("Data/LCA_compiled.csv", stringsAsFactors = FALSE)
+# Clean lca data
+lca$Feed_soy_percent <- as.numeric(lca$Feed_soy_percent)
+lca$Electricity_kwh <- as.numeric(lca$Electricity_kwh)
+lca$Diesel_L <- as.numeric(lca$Diesel_L)
+lca$Petrol_L <- as.numeric(lca$Petrol_L)
+lca$NaturalGas_L <- as.numeric(lca$NaturalGas_L)
+lca$iso3c <- countrycode(lca$Country, origin = "country.name", destination = "iso3c")
+# Add random fish protein content as placeholder
+lca$fish_protein_content <- runif(nrow(lca), min = 1, max = 100)
+
+# Load feed FP data
+feed_fp <- read.csv("Data/Feed_FP_fake.csv", stringsAsFactors = FALSE)
+# Tidy FP data
+feed_fp <- feed_fp %>%
+  pivot_longer(GHG:protein_content, names_to = "FP_name", values_to = "FP_val")
+
+# Load energy data
+energy_gwp <- read.csv("Data/electricity_GWP.csv")
+# Clean eneergy data
+energy_gwp$iso3c <- countrycode(energy_gwp$Country, origin = "country.name", destination = "iso3c")
+```
+
+## Calculate Feed Footprint
+
+The feed footprint estimate inputs are:
+
+*FCR
+*Percent soy, other crops, FMFO and animal
+*The GHG, water, N, P, and land footprint per unit of feed ingredient
+
+We then calculate the feed-associated footprint ($FP_{feed}$) as:
+$$FP_{feed} = FCR_{dry} \sum_{i=1}^4 FP_{i} p_i$$
+where $FCR_{dry}$ is the dry weight feed conversion ratio, $i$ indexes the feed ingredient, $FP_i$ represents the footprint of the feed ingredient, and $p_i$ represents the proportion of the feed comprised of component $i$. 
+
+```{r}
+lca$feed.ghg <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP = "GHG")
+lca$feed.water <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP = "water")
+lca$feed.N <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP = "N")
+lca$feed.P <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP = "P")
+lca$feed.land <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP = "land")
+```
+
+For species without LCA data, we will need to estimate FCR and the percent soy, other crops, FMFO and animal products in feeds. 
+
+## Calculate Non-Feed Footprint
+
+```{r}
+lca$nonfeed.N <- estimate.nonfeed.NP(LCA_data = lca, Feed_data = feed_fp, FP = "N")
+lca$nonfeed.P <- estimate.nonfeed.NP(LCA_data = lca, Feed_data = feed_fp, FP = "P")
+
+lca$nonfeed.ghg <- estimate.nonfeed.GHG(LCA_data = lca, energy_data = energy_gwp)
+
+```
+
