@@ -13,7 +13,8 @@ output: pdf_document
 4. Replace placeholder diesel, petrol and natural gas CO2 eq/L values with data in function
 5. How to handle Energy_demand column in non-feed ghg function?
 6. Factors for multiplying protein content by to get N and P in feeds
-7. The biggest gap is pond area and yield, which is needed to get a per unit land FP, as well as a surface area for evaporative losses
+7. The biggest gap is harvest and yield, which is needed to get a per unit land FP, as well as a surface area for evaporative losses. Need to talk through land FP since the time dimension doesn't seem clear. 
+8. Need to work through units throughout - what units do we want the FP estimates in?
 
 ## Code improvements
 
@@ -37,9 +38,14 @@ lca$Electricity_kwh <- as.numeric(lca$Electricity_kwh)
 lca$Diesel_L <- as.numeric(lca$Diesel_L)
 lca$Petrol_L <- as.numeric(lca$Petrol_L)
 lca$NaturalGas_L <- as.numeric(lca$NaturalGas_L)
+lca$Yield_per_HA <- as.numeric(lca$Yield_per_HA)
 lca$iso3c <- countrycode(lca$Country, origin = "country.name", destination = "iso3c")
+
 # Add random fish protein content as placeholder
 lca$fish_protein_content <- runif(nrow(lca), min = 1, max = 100)
+
+# Add random pond area as placeholder
+lca$harvest <- runif(nrow(lca), min = 10, max = 500)
 
 # Load feed FP data
 feed_fp <- read.csv("Data/Feed_FP_fake.csv", stringsAsFactors = FALSE)
@@ -82,6 +88,8 @@ lca$nonfeed.N <- estimate.nonfeed.NP(LCA_data = lca, Feed_data = feed_fp, FP = "
 lca$nonfeed.P <- estimate.nonfeed.NP(LCA_data = lca, Feed_data = feed_fp, FP = "P")
 
 lca$nonfeed.ghg <- estimate.nonfeed.GHG(LCA_data = lca, energy_data = energy_gwp)
+lca$nonfeed.land <- estimate.nonfeed.land(LCA_data = lca)
+
 
 ```
 

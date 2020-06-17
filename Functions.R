@@ -46,13 +46,6 @@ estimate.nonfeed.GHG <- function(LCA_data, energy_data){
 }
 
 #_____________________________________________________________________________________________________#
-# Estimate non-feed water footprint
-#_____________________________________________________________________________________________________#
-estimate.nonfeed.water <- function(){
-
-}
-
-#_____________________________________________________________________________________________________#
 # Estimate non-feed N and P footprint
 #_____________________________________________________________________________________________________#
 estimate.nonfeed.NP <- function(LCA_data, Feed_data, FP){
@@ -88,6 +81,15 @@ estimate.nonfeed.NP <- function(LCA_data, Feed_data, FP){
 #_____________________________________________________________________________________________________#
 # Estimate non-feed land footprint
 #_____________________________________________________________________________________________________#
-estimate.nonfeed.land <- function(){
-  # Pond area
+estimate.nonfeed.land <- function(LCA_data){
+  estimate_FP <- LCA_data$Yield_per_HA/LCA_data$harvest
+  
+  return(estimate_FP)
+}
+
+#_____________________________________________________________________________________________________#
+# Estimate non-feed water footprint
+#_____________________________________________________________________________________________________#
+estimate.nonfeed.water <- function(LCA_data, evap_data){
+  
 }
