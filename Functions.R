@@ -1,7 +1,7 @@
 # Functions
 
 #_____________________________________________________________________________________________________#
-# Estimate feed-associated footprint
+# Estimate off farm feed-associated footprint
 #_____________________________________________________________________________________________________#
 estimate.feedFP <- function(LCA_data, Feed_data, FP){
   # FP options are "GHG", "water", "N", "P", "land" 
@@ -27,9 +27,9 @@ estimate.feedFP <- function(LCA_data, Feed_data, FP){
 }
 
 #_____________________________________________________________________________________________________#
-# Estimate non-feed GHG footprint
+# Estimate on farm GHG footprint
 #_____________________________________________________________________________________________________#
-estimate.nonfeed.GHG <- function(LCA_data, energy_data){
+estimate.onfarm.GHG <- function(LCA_data, energy_data){
   diesel_perL_CO2eq <- 1 # Placeholder
   petrol_perL_CO2eq <- 1 # Placeholder
   naturalgas_perL_CO2eq <- 1 # Placeholder
@@ -46,9 +46,9 @@ estimate.nonfeed.GHG <- function(LCA_data, energy_data){
 }
 
 #_____________________________________________________________________________________________________#
-# Estimate non-feed N and P footprint
+# Estimate on farm N and P footprint
 #_____________________________________________________________________________________________________#
-estimate.nonfeed.NP <- function(LCA_data, Feed_data, FP){
+estimate.onfarm.NP <- function(LCA_data, Feed_data, FP){
   # FP set to N or P
   if(FP == "N"){
     protein_factor <- 2.5 # Placeholder
@@ -73,23 +73,38 @@ estimate.nonfeed.NP <- function(LCA_data, Feed_data, FP){
                                    othercrops*(LCA_data$Feed_othercrops_percent/100) + 
                                    FMFO * (LCA_data$Feed_FMFO_percent/100) + 
                                    animal * (LCA_data$Feed_animal_percent/100)) -
-                LCA_data$fish_protein_content
+    protein_factor* LCA_data$fish_protein_content
+  
   return(estimate_FP)
 }
 
 
 #_____________________________________________________________________________________________________#
-# Estimate non-feed land footprint
+# Estimate on farm land footprint
 #_____________________________________________________________________________________________________#
-estimate.nonfeed.land <- function(LCA_data){
+estimate.onfarm.land <- function(LCA_data){
   estimate_FP <- LCA_data$Yield_per_HA/LCA_data$harvest
   
   return(estimate_FP)
 }
 
 #_____________________________________________________________________________________________________#
-# Estimate non-feed water footprint
+# Estimate on farm water footprint
 #_____________________________________________________________________________________________________#
-estimate.nonfeed.water <- function(LCA_data, evap_data){
+estimate.onfarm.water <- function(LCA_data, evap_data, aerated = FALSE){
+  # Requires calculating land footprint first, saved in a column "onfarm.land"
   
+  if(aerated == TRUE){
+    aeration.factor <- 1.25 # Placeholder of 25% increase in evaporation rate
+  } else{
+    aeration.factor <- 1
+  }
+  # Join lca and evap data by country
+  LCA_data <- LCA_data %>%
+    left_join(evap_data, by = "iso3c")
+  
+  # Need land FP in HA, evap rate in volume/HA/day and grow out period in days
+  estimate_FP <- LCA_data$onfarm.land * aeration.factor*LCA_data$evap_rate *  LCA_data$Grow_out_period_days
+  
+  return(estimate_FP)
 }

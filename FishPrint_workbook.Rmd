@@ -13,14 +13,20 @@ output: pdf_document
 4. Replace placeholder diesel, petrol and natural gas CO2 eq/L values with data in function
 5. How to handle Energy_demand column in non-feed ghg function?
 6. Factors for multiplying protein content by to get N and P in feeds
-7. The biggest gap is harvest and yield, which is needed to get a per unit land FP, as well as a surface area for evaporative losses. Need to talk through land FP since the time dimension doesn't seem clear. 
+7. The biggest gap is harvest and yield, which is needed to get a per unit land FP, as well as a surface area for evaporative losses. Need to talk through land FP since the time dimension doesn't seem clear to me. 
 8. Need to work through units throughout - what units do we want the FP estimates in?
+9. Need help/suggestions for evap rate by country - looks like it is available through this, but it is not straightforward to extract: <http://www.fao.org/aquastat/en/climate-info-tool/>. We will also need to determine how best to average over time and space. 
+10. Need factor for increasing evaporation losses for aerated ponds
+11. It looks like the categories we need to add/standardize are: system type, fed/unfed, aerated/non-aearated, intensity level
+
 
 ## Code improvements
 
-1. Update feed associated FP function to handle fed and non-fed species
+1. Update feed associated FP function to handle fed and non-fed species (or just make all feed ingredient proportions zero for non-fed)
+2. Incorporate differences based on system type in each function
+3. Check that feed proportions sum to 1
 
-```{r setup}
+```{r setup, echo=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
 # Load packages
@@ -39,10 +45,11 @@ lca$Diesel_L <- as.numeric(lca$Diesel_L)
 lca$Petrol_L <- as.numeric(lca$Petrol_L)
 lca$NaturalGas_L <- as.numeric(lca$NaturalGas_L)
 lca$Yield_per_HA <- as.numeric(lca$Yield_per_HA)
+lca$Grow_out_period_days <- as.numeric(lca$Grow_out_period_days)
 lca$iso3c <- countrycode(lca$Country, origin = "country.name", destination = "iso3c")
 
 # Add random fish protein content as placeholder
-lca$fish_protein_content <- runif(nrow(lca), min = 1, max = 100)
+lca$fish_protein_content <- runif(nrow(lca), min = .1, max = 2)
 
 # Add random pond area as placeholder
 lca$harvest <- runif(nrow(lca), min = 10, max = 500)
@@ -57,15 +64,19 @@ feed_fp <- feed_fp %>%
 energy_gwp <- read.csv("Data/electricity_GWP.csv")
 # Clean eneergy data
 energy_gwp$iso3c <- countrycode(energy_gwp$Country, origin = "country.name", destination = "iso3c")
+
+# Create fake evaporation data as a placeholder
+evap <- data.frame(iso3c = unique(lca$iso3c), evap_rate = runif(length(unique(lca$iso3c)), 1, 10))
+evap$iso3c <- as.character(evap$iso3c)
 ```
 
 ## Calculate Feed Footprint
 
 The feed footprint estimate inputs are:
 
-*FCR
-*Percent soy, other crops, FMFO and animal
-*The GHG, water, N, P, and land footprint per unit of feed ingredient
+* FCR
+* Percent soy, other crops, FMFO and animal
+* The GHG, water, N, P, and land footprint per unit of feed ingredient
 
 We then calculate the feed-associated footprint ($FP_{feed}$) as:
 $$FP_{feed} = FCR_{dry} \sum_{i=1}^4 FP_{i} p_i$$
@@ -81,15 +92,76 @@ lca$feed.land <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP = "land
 
 For species without LCA data, we will need to estimate FCR and the percent soy, other crops, FMFO and animal products in feeds. 
 
-## Calculate Non-Feed Footprint
+## Calculate on farm footprints
+
+The inputs are: 
+
+* N and P content of protein [treated as constants]
+* Protein content of each feed ingredient [treated as constants]
+* Protein content of fish [treated as constants]
+* Country-specific GHGs with electricity use [treated as constants]
+* Diesel, petrol, and natural gas GHG values [treated as constants]
+* Yield
+* Total harvest
+* Production system type
+* Aerated or not
+* Electricity, diesel, petrol, and natural gas use
+* Grow-out period
+
+
+### Nitrogen and Phosphorus
+
+The non-feed (which here we mean as the virtual footprint associated with the feed) nitrogen and phosphorus are calculated as by estimating the difference between the N and P in the feeds and the N and P in the final fish, following:
+$$FP_{nonfeedN} = FCR_{dry} N_{Pr} \sum_{i=1}^4 (Pr_{i} p_i) - N_{Pr}Pr_{fish}$$
+where $N_{Pr}$ represents the average nitrogen content of protein, $Pr_i$ represents the protein content of each feed component, and $Pr_{fish}$ represents the protein content of a unit of fish or shellfish. Similarly, 
+
+$$FP_{nonfeedP} = FCR_{dry} P_{Pr} \sum_{i=1}^4 (P_{i} p_i) - P_{Pr}Pr_{fish}$$
+where $P_{Pr}$ represents the average phosphorus content of protein.
+
+### Greenhouse gases
+
+The non-feed associated greenhouse gas emissions are calculated as the electricity use times the country-specific GHG footprint, plus the diesel, petrol, and natural gas use times each of their GHG footprint factors. 
+
+### Land
+
+The non-feed associated land use refers to the pond area allocated to the growth of a unit of output. This is calculated as: 
+$$FP_{nonfeedland} = Yeild/Harvest$$
+
+### Water 
+
+To calculate the on farm water use, we estimate the evaporative losses over the surface area allocated to the unit of production as:
+$$FP_{nonfeedwater} = C_{aeratoin}Evap_{rate}FP_{nonfeedland}GrowOut$$
+where $C_{aeration}$ is the constant factor for aerated ponds. 
+
+[Sorry I got lazy with equation notation -- will eventually improve!]
 
 ```{r}
-lca$nonfeed.N <- estimate.nonfeed.NP(LCA_data = lca, Feed_data = feed_fp, FP = "N")
-lca$nonfeed.P <- estimate.nonfeed.NP(LCA_data = lca, Feed_data = feed_fp, FP = "P")
+lca$onfarm.N <- estimate.onfarm.NP(LCA_data = lca, Feed_data = feed_fp, FP = "N")
+lca$onfarm.P <- estimate.onfarm.NP(LCA_data = lca, Feed_data = feed_fp, FP = "P")
 
-lca$nonfeed.ghg <- estimate.nonfeed.GHG(LCA_data = lca, energy_data = energy_gwp)
-lca$nonfeed.land <- estimate.nonfeed.land(LCA_data = lca)
-
+lca$onfarm.ghg <- estimate.onfarm.GHG(LCA_data = lca, energy_data = energy_gwp)
+lca$onfarm.land <- estimate.onfarm.land(LCA_data = lca)
+lca$onfarm.water <- estimate.onfarm.water(LCA_data = lca, evap_data = evap)
 
 ```
+
+
+## Plots
+
+This is largely fake data, so probably shouldn't think about it too much.
+
+```{r}
+fp_summary <- lca %>%
+  select(Species.common.name, Species.scientific.name, starts_with("feed."), starts_with("onfarm.")) %>%
+  pivot_longer(feed.ghg:onfarm.water, names_to = "FP.component", values_to = "FP.value") %>%
+  separate(FP.component, into = c("FP.component", "FP")) %>%
+  filter(FP.value > 0)
+
+
+ggplot(fp_summary, aes(x = Species.common.name, y = FP.value, fill = FP.component)) +
+  geom_col() +
+  coord_flip() +
+  facet_wrap(~FP)
+```
+
 
