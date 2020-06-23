@@ -8,16 +8,30 @@ output: pdf_document
 ## To do
 
 1. Fill in feed ingredient FP and protein content values
+ - Alon will use the terrestrial feed data to extract the N and P content directly. Will need to do sensitivity checks around the weighting of the feed ingredients into the feed component categories
+ 
 2. Factors to multiply protein content by to get N and P
+ - Patrik can get factors with reference
+ 
 3. Whole fish N and P content by species
+ - Alon will talk to Zach about this; also talk to Christina about the modelled values
+ 
 4. Replace placeholder diesel, petrol and natural gas CO2 eq/L values with data in function
+ - Rob
+ 
 5. How to handle Energy_demand column in non-feed ghg function?
-6. Factors for multiplying protein content by to get N and P in feeds
-7. The biggest gap is harvest and yield, which is needed to get a per unit land FP, as well as a surface area for evaporative losses. Need to talk through land FP since the time dimension doesn't seem clear to me. 
-8. Need to work through units throughout - what units do we want the FP estimates in?
-9. Need help/suggestions for evap rate by country - looks like it is available through this, but it is not straightforward to extract: <http://www.fao.org/aquastat/en/climate-info-tool/>. We will also need to determine how best to average over time and space. 
+ - Rob - can you take a look at this column? It is mostly blank, but there are some weird entries
+ 
+6. The biggest gap is harvest and yield, which is needed to get a per unit land FP, as well as a surface area for evaporative losses. Need to talk through land FP since the time dimension doesn't seem clear to me.  - Patrik look into after holiday
+
+7. What units do we want the FP estimates in?
+ - Input from anyone (we just need to pick something at some point to make sure everything is consistent)
+
+8. Need help/suggestions for evap rate by country - looks like it is available through this, but it is not straightforward to extract: <http://www.fao.org/aquastat/en/climate-info-tool/>. We will also need to determine how best to average over time and space. 
+ - There are a lot of options here, but we might consider biasing values within some buffer zone for brackish production. Inland is harder because we probably don't expect too much production in arid areas/times or maybe cold areas/times. We don't want to go too far down the road of modelling where aquaculture occurs though, as this becomes very complicated very fast. One approach here is to model it with no geographical or temporal preference in the evaporative loss factor, but with a parameter that would allow us to shift the factor toward higher or lower evaporative losses. 
+
 10. Need factor for increasing evaporation losses for aerated ponds
-11. It looks like the categories we need to add/standardize are: system type, fed/unfed, aerated/non-aearated, intensity level
+ - Any suggestions for refs for this? 
 
 
 ## Code improvements
@@ -25,6 +39,8 @@ output: pdf_document
 1. Update feed associated FP function to handle fed and non-fed species (or just make all feed ingredient proportions zero for non-fed)
 2. Incorporate differences based on system type in each function
 3. Check that feed proportions sum to 1
+4. Standardize units throughout
+5. Add categories we need to add/standardize are: system type, fed/unfed, aerated/non-aearated, intensity level
 
 ```{r setup, echo=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
