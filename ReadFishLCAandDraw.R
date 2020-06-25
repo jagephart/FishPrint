@@ -137,14 +137,15 @@ summary(linearModFCR)
 #-----------------
 
 fig1 <- ggplot(df, aes(USD.per.tonne,FCR,color = HighLevelISSCAAP,label = Species.scientific.name)) +
-  geom_point()+ylim(0, 3)+
 geom_text(
-  check_overlap = FALSE,
+  check_overlap = TRUE,
   color = "black",
-  nudge_y = 2,
+  nudge_y = 0.05,
   size = 2.5,
   alpha = 0.5
-) 
+) +
+geom_point(size = 2.0, aes(shape = Diet)) +
+  ylim(0, 3)
 fig1
 ggsave("FCRbyPrice.jpg")
 
@@ -165,7 +166,6 @@ fig2 <-
     size = 2.5,
     alpha = 0.5
   ) +
-  #geom_jitter(size = 2,width=0.3,aes(shape=Diet))+
   geom_point(size = 2.0, aes(shape = Diet)) +
   xlim(0, 3) +
   ylab("ISSCAAP")
