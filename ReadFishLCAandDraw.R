@@ -140,7 +140,8 @@ fig1 <- ggplot(df, aes(USD.per.tonne,FCR,color = HighLevelISSCAAP,label = Specie
 geom_text(
   check_overlap = TRUE,
   color = "black",
-  nudge_y = 0.05,
+  nudge_y = 0.1,
+  nudge_x = 700,
   size = 2.5,
   alpha = 0.5
 ) +
@@ -156,7 +157,7 @@ ggsave("FCRbyPrice.jpg")
 fig2 <-
   ggplot(
     Fishmerge,
-    aes(FCR, ISSCAAP_Group, color = HighLevelISSCAAP, label = Species.common.name)
+    aes(FCR, ISSCAAP_Group, color = HighLevelISSCAAP, label = Species.scientific.name)
   ) +
   geom_boxplot(outlier.shape = 3) +
   geom_text(
@@ -169,11 +170,6 @@ fig2 <-
   geom_point(size = 2.0, aes(shape = Diet)) +
   xlim(0, 3) +
   ylab("ISSCAAP")
-#annotate(geom="text",x=0.2, y=10, label="freshwater",color="black")+
-#annotate(geom="text",x=0.2, y=20, label="diadromous",color="black")+
-#annotate(geom="text",x=0.2, y=30, label="marine",color="black")+
-#annotate(geom="text",x=0.2, y=40, label="Crustacean",color="black")+
-#annotate(geom="text",x=0.2, y=50, label="Mollusca",color="black")
 fig2
 ggsave("FCRbyISSCAAP.jpg")
 
@@ -187,8 +183,16 @@ summary(linearMod)
 # Extract coefficients
 beta = coef(linearMod)
 
-fig3<-ggplot(Fishmerge,aes(Feed_FMFO_percent,FoodTroph,color=HighLevelISSCAAP))+
-geom_point()+
+fig3<-ggplot(Fishmerge,aes(Feed_FMFO_percent,FoodTroph,color=HighLevelISSCAAP,label=
+                             Species.scientific.name))+
+geom_point(aes(shape = Diet))+
+  geom_text(
+    check_overlap = TRUE,
+    color = "black",
+    nudge_y = 0.1,
+    size = 2.5,
+    alpha = 0.5
+  )+
   geom_abline(intercept=beta[1],slope=beta[2])
 fig3
 ggsave("TrophicLevelbyFMFO.jpg")
