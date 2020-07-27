@@ -36,12 +36,13 @@ R<-fishNutrition1[which(fishNutrition1$Scientific.Name=="Salmo salar"),]
 
 
 #N and P content of feed in % of DM (read from feed composition tables, USDA 1982)
-feedNutrition <-
-  data.table(read.csv("United-States-Canadian-Tables-of-Feed-1982-pages-68-921-2b.csv", stringsAsFactors = FALSE))
-feedNutrition <-read.xlsx("United-States-Canadian-Tables-of-Feed-1982-pages-68-921-2b.xlsx",startRow = 2)
-feedNutrition$`Phosphorus.(%)`=as.numeric(feedNutrition$`Phosphorus.(%)`)
-feedNutrition<-feedNutrition %>% mutate(N=`Crude.Protein.(%)`/6.25)
-feedNutrition$N=as.numeric(feedNutrition$N)
+
+feedNutrition <-read.xlsx("United-States-Canadian-Tables-of-Feed-1982-pages-68-921-with_CrudeProtein.xlsx",startRow = 2)
+feedNutrition$`Phosphorus.(%)`<-as.numeric(feedNutrition$`Phosphorus.(%)`)
+feedNutrition<-feedNutrition %>% mutate( N = `Crude.protein.(%)`/ 6.25)
+feedNutrition$N=as.numeric(feedNutrition$N)   #N in % of DM
+
+
 
 soy_N=mean(feedNutrition$N[1023])
 Soy_P=mean(feedNutrition$`Phosphorus.(%)`[1023])
