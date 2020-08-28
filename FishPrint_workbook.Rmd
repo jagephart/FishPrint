@@ -5,37 +5,41 @@ date: "6/15/2020"
 output: pdf_document
 ---
 
+## Agenda
+- Discuss BFA
+- Discuss MacLeod et al. paper
+- Walk through To do list
+
 ## To do
 
-1. Fill in feed ingredient FP and protein content values
- - Alon will use the terrestrial feed data to extract the N and P content directly. Will need to do sensitivity checks around the weighting of the feed ingredients into the feed component categories
- - Agrifootprint database (Rob has used in the past) --> not free and there are some issues; Agribalize; Nathan Peltier's not all salmon are created equal. Rob will look back studies in his database for sources
+1. The biggest gap is harvest and yield, which is needed to get a per unit land FP, as well as a surface area for evaporative losses. 
+- Patrik look into after holiday
+- Harvest and yield time dimensions will need to be standardized
+
+2. Fill in feed ingredient FP and protein content values
+ - Alon pulled the terrestrial feed data N and P content. Discuss how to calculate the average and distribution based on the 
+ - Feed FP data from Rob are now available in Google Sheet tab "Impact factors"
  
-2. Factors to multiply protein content by to get N and P
+3. Factors to multiply protein content by to get N and P
  - Patrik can get factors with reference
  
-3. Whole fish N and P content by species
+4. Whole fish N and P content by species (or use protein content and N and P factors)
  - Alon will talk to Zach about this; also talk to Christina about the modelled values
  
-4. Replace placeholder diesel, petrol and natural gas CO2 eq/L values with data in function
+5. Replace placeholder diesel, petrol and natural gas CO2 eq/L values with data in function
  - Rob
  
-5. How to handle Energy_demand column in non-feed ghg function?
+6. How to handle Energy_demand column in non-feed ghg function?
  - Patrik - is wood use for the two observations representative of large scale production? i.e., is it acceptable to ignore?
- 
- 
-6. The biggest gap is harvest and yield, which is needed to get a per unit land FP, as well as a surface area for evaporative losses. Need to talk through land FP since the time dimension doesn't seem clear to me.  - Patrik look into after holiday
 
 7. What units do we want the FP estimates in?
  - Input from anyone (we just need to pick something at some point to make sure everything is consistent)
  - L, ha, t CO2eq, /fish at farm gate
 
-8. Need help/suggestions for evap rate by country - looks like it is available through this, but it is not straightforward to extract: <http://www.fao.org/aquastat/en/climate-info-tool/>. We will also need to determine how best to average over time and space. 
- - There are a lot of options here, but we might consider biasing values within some buffer zone for brackish production. Inland is harder because we probably don't expect too much production in arid areas/times or maybe cold areas/times. We don't want to go too far down the road of modelling where aquaculture occurs though, as this becomes very complicated very fast. One approach here is to model it with no geographical or temporal preference in the evaporative loss factor, but with a parameter that would allow us to shift the factor toward higher or lower evaporative losses. 
- - Kelvin is pulling these
-
-9. Need factor for increasing evaporation losses for aerated ponds
- - Any suggestions for refs for this? 
+8. Evaporation
+ - We have average evaporative loss by country. 
+ - We may want to consider a multiplication factor for losses from aerated ponds
+ - We need to decide how to construct the distribution (currently just the arithmatic mean, but we could add a weighting)
 
 ## Code improvements
 
@@ -43,7 +47,7 @@ output: pdf_document
 2. Incorporate differences based on system type in each function
 3. Check that feed proportions sum to 1
 4. Standardize units throughout
-5. Add categories we need to add/standardize are: system type, fed/unfed, aerated/non-aearated, intensity level
+5. Add categorical variables we need to add/standardize are: system type, fed/unfed, aerated/non-aearated, intensity level
 
 ```{r setup, echo=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
@@ -73,7 +77,7 @@ lca$fish_protein_content <- runif(nrow(lca), min = .1, max = 2)
 # Add random pond area as placeholder
 lca$harvest <- runif(nrow(lca), min = 10, max = 500)
 
-# Load feed FP data
+# Load feed FP data FIX IT: Replace with Rob's data
 feed_fp <- read.csv("Data/Feed_FP_fake.csv", stringsAsFactors = FALSE)
 # Tidy FP data
 feed_fp <- feed_fp %>%
@@ -84,9 +88,13 @@ energy_gwp <- read.csv("Data/electricity_GWP.csv")
 # Clean eneergy data
 energy_gwp$iso3c <- countrycode(energy_gwp$Country, origin = "country.name", destination = "iso3c")
 
-# Create fake evaporation data as a placeholder
-evap <- data.frame(iso3c = unique(lca$iso3c), evap_rate = runif(length(unique(lca$iso3c)), 1, 10))
-evap$iso3c <- as.character(evap$iso3c)
+# Load and clean evaporation data (need to check units and add variability)
+evap <- read.csv("Data/clim_summarise_by_country.csv")
+evap$iso3c <- countrycode(evap$admin, origin = "country.name", destination = "iso3c")
+evap <- evap %>%
+  rename(evap_rate = country_level_mean) %>%
+  select(iso3c, evap_rate) %>%
+  filter(!is.na(iso3c))
 ```
 
 ## Calculate Feed Footprint
