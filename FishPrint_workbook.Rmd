@@ -5,20 +5,17 @@ date: "6/15/2020"
 output: pdf_document
 ---
 
-## Agenda
-- Discuss BFA
-- Discuss MacLeod et al. paper
-- Walk through To do list
-
 ## To do
 
 1. The biggest gap is harvest and yield, which is needed to get a per unit land FP, as well as a surface area for evaporative losses. 
-- Patrik look into after holiday
 - Harvest and yield time dimensions will need to be standardized
+- Can use data from the Blue Frontiers report
+- For places that have multiple uses, we will need to apply an allocation method (consistent with the feeds)
 
 2. Fill in feed ingredient FP and protein content values
- - Alon pulled the terrestrial feed data N and P content. Discuss how to calculate the average and distribution based on the 
- - Feed FP data from Rob are now available in Google Sheet tab "Impact factors"
+  - Top 10 most representative crops (excluding soy b/c that is included separately), check for presence in EcoVent and crop N/P, if not present in both, move to 11th most representative [Patrik will take a stab at this]
+ - Alon pulled the terrestrial feed data N and P content
+ - Feed FP data from Rob are now available in Google Sheet tab "Impact factors" 
  
 3. Factors to multiply protein content by to get N and P
  - Patrik can get factors with reference
@@ -27,20 +24,30 @@ output: pdf_document
  - Alon will talk to Zach about this; also talk to Christina about the modelled values
  
 5. Replace placeholder diesel, petrol and natural gas CO2 eq/L values with data in function
- - Rob
+ - Rob - diesel already in, others coming
  
 6. How to handle Energy_demand column in non-feed ghg function?
  - Patrik - is wood use for the two observations representative of large scale production? i.e., is it acceptable to ignore?
+ - Acceptable to ignore 
 
 7. What units do we want the FP estimates in?
  - Input from anyone (we just need to pick something at some point to make sure everything is consistent)
  - L, ha, t CO2eq, /fish at farm gate
 
 8. Evaporation
- - We have average evaporative loss by country. 
- - We may want to consider a multiplication factor for losses from aerated ponds
+ - We have average evaporative loss by country 
+ - We may want to consider a multiplication factor for losses from aerated ponds [maybe only include in discussion; would also influence methane emissions from ponds]
  - We need to decide how to construct the distribution (currently just the arithmatic mean, but we could add a weighting)
+ - Only apply to freshwater ponds [include exploration of evaporative loss from brackish ponds in SI -- also discuss the dilution water] 
 
+9. Edible portion and per gram protein
+  - Present results in terms of LW, but also add in edible portion and per g protein
+  - Still need to compile this data
+  
+10. Add in fish in-fish out metric
+ - We can get to this through the same FMFO data that we are using 
+ - Return to discussion of broader biodiversity issues [likely just a discussion point -- justification: none of our other categories go all the way to impact]
+  
 ## Code improvements
 
 1. Update feed associated FP function to handle fed and non-fed species (or just make all feed ingredient proportions zero for non-fed)
