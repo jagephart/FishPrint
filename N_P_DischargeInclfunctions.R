@@ -18,6 +18,7 @@ library("openxlsx")
 #calculate C,N,P content of fish (based on energy and fat content ) and compute discharge based on Czamanski et al 2011, Marine Biology,
 #Carbon, nitrogen and phosphorus elemental stoichiometry in aquacultured and wild-caught fish and consequences
 #for pelagic nutrient dynamics
+#And also a simplified NPZ method approach
 
 #N and P content of fish in % of DM
 fishNutrition <-
@@ -53,7 +54,7 @@ othercrop_P=
   
 #Compute emission of N and P to the environment based on feed and fish N and P rations (example)
 FCR=1.3   #should be in DM
-fish_N=10 # in % DM
+fish_N=5 # in % DM
 fish_P=2 # in % DM
 feed_N=8 # in % DM
 feed_P=2 # in % DM
@@ -64,11 +65,11 @@ RT<-N_P_discharge_model(fish_N,fish_P,feed_N,feed_P,FCR)  #fish_N,fish_P,feed_N,
 lost_to_environment_percentage_N=(RT[1]+RT[2])/(feed_N/100*FCR)*100
 lost_to_environment_percentage_P=(RT[3]+RT[4])/(feed_P/100*FCR)*100
 
-RT<-N_P_discharge_simple_model(fish_N,fish_P,feed_N,feed_P,FCR)  #fish_N,fish_P,feed_N,feed_P,FCR = N and P in % of dry matter, FCR in kg feed/1 kg
+RT_simp<-N_P_discharge_simple_model(fish_N,fish_P,feed_N,feed_P,FCR)  #fish_N,fish_P,feed_N,feed_P,FCR = N and P in % of dry matter, FCR in kg feed/1 kg
 #RT=output (N_discharge,P discharge) results in kg (in accordance to FCR kg to kg) 
 
-lost_to_environment_percentage_N=(RT[1])/(feed_N/100*FCR)*100   #percentage from feed input (numarator in FCR)
-lost_to_environment_percentage_P=(RT[2])/(feed_P/100*FCR)*100   # "
+lost_to_environment_percentage_N_simp=(RT_simp[1])/(feed_N/100*FCR)*100   #percentage from feed input (numarator in FCR)
+lost_to_environment_percentage_P_simp=(RT_simp[2])/(feed_P/100*FCR)*100   # "
 
 #------------------------------------------------------------------------------------
 #------------------------------------------functions---------------------------------
@@ -174,7 +175,7 @@ N_P_discharge_model <- function(fish_N_percent,fish_P_percent,feed_N_percent,fee
 }
   
   
-N_P_discharge_model <- function(fish_N_percent,fish_P_percent,feed_N_percent,feed_P_percent,FCR){
+N_P_discharge_simple_model <- function(fish_N_percent,fish_P_percent,feed_N_percent,feed_P_percent,FCR){
   #simplified model of discharge, similar to many NPZ models 
   discharge_N<-(feed_N_percent/100*(FCR)-fish_N_percent/100*1); #conservation of nutrient: feed-fish_content=discharge to enviroment. units: weights as FCR
   discharge_P<-(feed_P_percent/100*(FCR)-fish_P_percent/100*1); #conservation of nutrient: feed-fish_content=discharge to enviromen.  weights as FCR 
