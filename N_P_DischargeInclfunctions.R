@@ -48,8 +48,7 @@ s=seq(601,620)
 a=c(seq(385,392),seq(479,481))
 
 #other crops: cassava 141-142, peanut extr. 461-464, linseed extr. 345-348 , 
-#corn gluten meal 223-228, pea (not protein conentrate) 455-456, rape 493-496, 
-#sunflower oil and meal 633-636, 
+#corn gluten meal 223-228, pea (not protein conentrate) 455-456, rape 493-496, sunflower oil and meal 633-636, 
 #wheat byproduct 683-688, Sorghum grain 573-580, triticale 667-668, Navy beans (instead of faba) 57-58,
 cr=c(141,142,seq(461,464),seq(345,348),seq(223,228),seq(455,456),seq(493,496),seq(633,636),seq(683,688),seq(573,580),seq(667,668),seq(57,58))
 
