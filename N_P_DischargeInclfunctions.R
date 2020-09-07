@@ -72,7 +72,7 @@ FMFO_P=mean(feedNutrition$`Phosphorus.(%)`[which(feedNutrition$Entry.Number %in%
   
   
 #Compute emission of N and P to the environment based on feed and fish N and P rations (dummy example)
-#check a specific example
+
 R<-fishNutrition1[which(fishNutrition1$Scientific.Name=="Salmo salar"),]
 
 FCR=1.3   #should be in DM
@@ -89,11 +89,11 @@ RT<-N_P_discharge_model(fish_N,fish_P,feed_N,feed_P,FCR)  #fish_N,fish_P,feed_N,
 lost_to_environment_percentage_N=(RT[1]+RT[2])/(feed_N/100*FCR)*100
 lost_to_environment_percentage_P=(RT[3]+RT[4])/(feed_P/100*FCR)*100
 
-#simplified NZP discharge model
+#simplified NPZ discharge model
 RT_simp<-N_P_discharge_simple_model(fish_N,fish_P,feed_N,feed_P,FCR)  #fish_N,fish_P,feed_N,feed_P,FCR = N and P in % of dry matter, FCR in kg feed/1 kg
 #RT=output (N_discharge,P discharge) results in kg (in accordance to FCR kg to kg) 
 
-lost_to_environment_percentage_N_simp=(RT_simp[1])/(feed_N/100*FCR)*100   #percentage from feed input (numarator in FCR)
+lost_to_environment_percentage_N_simp=(RT_simp[1])/(feed_N/100*FCR)*100   #percentage from feed input 
 lost_to_environment_percentage_P_simp=(RT_simp[2])/(feed_P/100*FCR)*100   # "
 
 #------------------------------------------------------------------------------------
@@ -186,7 +186,7 @@ N_P_discharge_simple_model <- function(fish_N_percent,fish_P_percent,feed_N_perc
   #simplified model of discharge, similar to many NPZ models 
   discharge_N<-(feed_N_percent/100*(FCR)-fish_N_percent/100*1); #conservation of nutrient: feed-fish_content=discharge to enviroment. units: weights as FCR
   discharge_P<-(feed_P_percent/100*(FCR)-fish_P_percent/100*1); #conservation of nutrient: feed-fish_content=discharge to enviromen.  weights as FCR 
-  if(discharge_N<=0){discharge_N=0}else{discharge_N=discharge_N}
+  if(discharge_N<=0){discharge_N=0}else{discharge_N=discharge_N} #to avoid negative emissions
 if(discharge_P<=0){discharge_P=0}else{discharge_P=discharge_P}
-RT=c(discharge_N,discharge_P)
+RT=c(discharge_N,discharge_P)  #in units of FCR e.g. kg N and P for 1 kg of live weight fish
  return(RT) }
