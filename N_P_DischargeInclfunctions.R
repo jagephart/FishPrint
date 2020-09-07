@@ -21,6 +21,7 @@ library("openxlsx")
 #And also a simplified NPZ method approach
 
 #N and P content of fish in % of DM
+#read ZAch's data and make calculations using built functions
 fishNutrition <-
   data.table(read.csv("FishGenus.csv", stringsAsFactors = FALSE))
 fishNutrition <-fishNutrition %>%filter(Preparation=='raw')   #filter out all non raw observations (e.g. dried, cooked)
@@ -32,39 +33,63 @@ fishNutrition1<-fishNutrition %>% mutate(N=fishN(coeff_edible_mean,Water,Edible.
                                         ,N_built_in=Nitrogen.total,P_built_in=Phosphorus/100) #conversion to units of percentages. Nitrogen.total is in units of g/100 edible gram; Phosphorous in the dataset is in mg/100 edible gram
 
 
-#check a specific example
-R<-fishNutrition1[which(fishNutrition1$Scientific.Name=="Salmo salar"),]
-
-
 #N and P content of feed in % of DM (read from feed composition tables, USDA 1982)
 
 feedNutrition <-read.xlsx("United-States-Canadian-Tables-of-Feed-1982-pages-68-921-with_CrudeProtein.xlsx",startRow = 2)
 feedNutrition$`Phosphorus.(%)`<-as.numeric(feedNutrition$`Phosphorus.(%)`)
-feedNutrition<-feedNutrition %>% mutate( N = `Crude.protein.(%)`/ 6.25)
-feedNutrition$N=as.numeric(feedNutrition$N)   #N in % of DM
+feedNutrition<-feedNutrition %>% mutate( Nitrogen = `Crude.protein.(%)`/ 6.25)
+feedNutrition$Nitrogen=as.numeric(feedNutrition$Nitrogen)   #N in % of DM
 
+#define categorial feeds: soy, other products, animal and FM&O
+#soy: Entry numbers: 601-620
+s=seq(601,620)
 
+#animal by products, Entry number: meat byproducts 385-392, poultry 479-481
+a=c(seq(385,392),seq(479,481))
 
-soy_N=mean(feedNutrition$N[1023])
-Soy_P=mean(feedNutrition$`Phosphorus.(%)`[1023])
-othercrop_N=
-othercrop_P=
+#other crops: cassava 141-142, peanut extr. 461-464, linseed extr. 345-348 , 
+#corn gluten meal 223-228, pea (not protein conentrate) 455-456, rape 493-496, 
+#sunflower oil and meal 633-636, 
+#wheat byproduct 683-688, Sorghum grain 573-580, triticale 667-668, Navy beans (instead of faba) 57-58,
+cr=c(141,142,seq(461,464),seq(345,348),seq(223,228),seq(455,456),seq(493,496),seq(633,636),seq(683,688),seq(573,580),seq(667,668),seq(57,58))
+
+#fishmeal and oil
+# fish alewife meal 305-306,anchovy meal 307-308, catfish meal 313-314, herring meal 317-318, 
+# mackerel meal 322, manhaden meal 323-324, redfish meal 325-326, salmon meal 329-330, sardine meal 333-334
+#tuna meal 337-338, white fish 341-342
+f=c(305,306,307,308,313,314,317,318,322,323,324,325,326,329,330,333,334,337,338,341,342)
+
 # calculate weighted average N and P content of feed
-  
-  
-#Compute emission of N and P to the environment based on feed and fish N and P rations (example)
-FCR=1.3   #should be in DM
-fish_N=5 # in % DM
-fish_P=2 # in % DM
-feed_N=8 # in % DM
-feed_P=2 # in % DM
+soy_N=mean(feedNutrition$Nitrogen[which(feedNutrition$Entry.Number %in% s)],na.rm=TRUE)   
+soy_P=mean(feedNutrition$`Phosphorus.(%)`[which(feedNutrition$Entry.Number %in% s)],na.rm=TRUE) 
+animalbyproduct_N=mean(feedNutrition$Nitrogen[which(feedNutrition$Entry.Number %in% a)],na.rm=TRUE)
+animalbyproduct_P=mean(feedNutrition$`Phosphorus.(%)`[which(feedNutrition$Entry.Number %in% a)],na.rm=TRUE)
+othercrop_N=mean(feedNutrition$Nitrogen[which(feedNutrition$Entry.Number %in% cr)],na.rm=TRUE)
+othercrop_P=mean(feedNutrition$`Phosphorus.(%)`[which(feedNutrition$Entry.Number %in% cr)],na.rm=TRUE)
+FMFO_N=mean(feedNutrition$Nitrogen[which(feedNutrition$Entry.Number %in% f)],na.rm=TRUE)
+FMFO_P=mean(feedNutrition$`Phosphorus.(%)`[which(feedNutrition$Entry.Number %in% f)],na.rm=TRUE)
 
+  
+  
+#Compute emission of N and P to the environment based on feed and fish N and P rations (dummy example)
+#check a specific example
+R<-fishNutrition1[which(fishNutrition1$Scientific.Name=="Salmo salar"),]
+
+FCR=1.3   #should be in DM
+fish_N=mean(R$N,na.rm=TRUE)
+fish_P=mean(R$P,na.rm=TRUE)
+
+feed_N=0.3*soy_N+0.3*FMFO_N+0.2*othercrop_N+animalbyproduct_N*0.2# in % DM
+feed_P=0.3*soy_P+0.3*FMFO_P+0.2*othercrop_P+animalbyproduct_P*0.2# in % DM
+
+#N, P discharge based on Czamanski et al 2011, Marine Biology
 RT<-N_P_discharge_model(fish_N,fish_P,feed_N,feed_P,FCR)  #fish_N,fish_P,feed_N,feed_P,FCR = N and P in % of dry matter, FCR in kg feed/1 kg
 #RT=output (E_N,F_N,E_P,F_P) results in kg compared to FCR
 #E are discharge to the enviroment and F are feces based on the above reference that implements the Sterner 1990 model
 lost_to_environment_percentage_N=(RT[1]+RT[2])/(feed_N/100*FCR)*100
 lost_to_environment_percentage_P=(RT[3]+RT[4])/(feed_P/100*FCR)*100
 
+#simplified NZP discharge model
 RT_simp<-N_P_discharge_simple_model(fish_N,fish_P,feed_N,feed_P,FCR)  #fish_N,fish_P,feed_N,feed_P,FCR = N and P in % of dry matter, FCR in kg feed/1 kg
 #RT=output (N_discharge,P discharge) results in kg (in accordance to FCR kg to kg) 
 
@@ -179,5 +204,7 @@ N_P_discharge_simple_model <- function(fish_N_percent,fish_P_percent,feed_N_perc
   #simplified model of discharge, similar to many NPZ models 
   discharge_N<-(feed_N_percent/100*(FCR)-fish_N_percent/100*1); #conservation of nutrient: feed-fish_content=discharge to enviroment. units: weights as FCR
   discharge_P<-(feed_P_percent/100*(FCR)-fish_P_percent/100*1); #conservation of nutrient: feed-fish_content=discharge to enviromen.  weights as FCR 
+  if(discharge_N<=0){discharge_N=0}else{discharge_N=discharge_N}
+if(discharge_P<=0){discharge_P=0}else{discharge_P=discharge_P}
 RT=c(discharge_N,discharge_P)
  return(RT) }
