@@ -21,15 +21,15 @@ library("openxlsx")
 #And also a simplified NPZ method approach
 
 #N and P content of fish in % of DM
-#read ZAch's data and make calculations using built functions
+#read Zach's data and make calculations using built functions
 fishNutrition <-
   data.table(read.csv("FishGenus.csv", stringsAsFactors = FALSE))
 fishNutrition <-fishNutrition %>%filter(Preparation=='raw')   #filter out all non raw observations (e.g. dried, cooked)
-coeff_edible_mean = mean(fishNutrition$Edible.portion.coefficient, na.rm = TRUE)
-fishNutrition1<-fishNutrition %>% mutate(N=fishN(coeff_edible_mean,Water,Edible.portion.coefficient,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
-                                         ,P=fishP(coeff_edible_mean,Water,Edible.portion.coefficient,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
-                                        ,N_fat=fishN_viaFat(coeff_edible_mean,Water,Edible.portion.coefficient,Fat.total)
-                                        ,P_fat=fishP_viaFat(coeff_edible_mean,Water,Edible.portion.coefficient,Fat.total)
+
+fishNutrition1<-fishNutrition %>% mutate(N=fishN(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
+                                         ,P=fishP(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
+                                        ,N_fat=fishN_viaFat(Water,Fat.total)
+                                        ,P_fat=fishP_viaFat(Water,Fat.total)
                                         ,N_built_in=Nitrogen.total,P_built_in=Phosphorus/100) #conversion to units of percentages. Nitrogen.total is in units of g/100 edible gram; Phosphorous in the dataset is in mg/100 edible gram
 
 
@@ -102,13 +102,9 @@ lost_to_environment_percentage_P_simp=(RT_simp[2])/(feed_P/100*FCR)*100   # "
 
 #first method: estimate from C content, Fig 1 of the above reference, linear regression values. Assuming metabolizable energy density is equal throughout whole fish
 
-fishN <- function(coeff_edible_mean,Water,Edible.portion.coefficient,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal){
+fishN <- function(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal){
   DM = (100 - Water) / 100     #convert to dry matter fraction
-if (is.na(Edible.portion.coefficient)) {
-  coeff_edible = coeff_edible_mean
-} else{
-  coeff_edible = Edible.portion.coefficient
-}
+
 #In aquacultured fish, whole-body C content was estimated from energy content using a converting factor of 1 g C = 11.4 kcal
 fish_C_percent <- 1/DM*Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal/11.4
 N_slope <- -0.175   #from fig 1
@@ -116,15 +112,10 @@ N_intercept <- 18.506  #intercept (personal communication with authors)
 fish_N <- fish_C_percent * N_slope + N_intercept #in % of DM
 return(fish_N)}
 
-fishP <- function(coeff_edible_mean,Water,Edible.portion.coefficient,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal){
+fishP <- function(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal){
   
 DM = (100 - Water) / 100     #convert to dry matter fraction
-if (is.na(Edible.portion.coefficient)) {
-  coeff_edible = coeff_edible_mean
-} else{
-  coeff_edible = Edible.portion.coefficient
-}
-  
+
   #In aquacultured fish, whole-body C content was estimated from energy content using a converting factor of 1 g C = 11.4 kcal
   fish_C_percent <- 1/DM*Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal/11.4
   P_slope <- -0.083  #from fig 1
@@ -134,13 +125,8 @@ if (is.na(Edible.portion.coefficient)) {
 
 #second method: estimate from total lipids, figure 2, assuming lipid density is equal throughout whole body
 
-fishN_viaFat <- function(coeff_edible_mean,Water,Edible.portion.coefficient,Fat.total){
+fishN_viaFat <- function(Water,Fat.total){
   DM = (100 - Water) / 100     #Dry Matter percentage
-  if (is.na(Edible.portion.coefficient)) {
-    coeff_edible = coeff_edible_mean
-  } else{
-    coeff_edible = Edible.portion.coefficient
-  }
 #Fat.total in units of g to 100 g
 fat = Fat.total * 1  /        #conversion to DM
   1 / DM
@@ -149,13 +135,9 @@ fish_C_via_fat = fat * 0.31 + 38  #linear regression from fig 2
 fish_N_via_fat = fat * -0.08 + 12 #linear regression from fig 2
 return(fish_N_via_fat)}
 
-fishP_viaFat <- function(coeff_edible_mean,Water,Edible.portion.coefficient,Fat.total){
+fishP_viaFat <- function(Water,Fat.total){
   DM = (100 - Water) / 100     #Dry Matter percentage
-  if (is.na(Edible.portion.coefficient)) {
-    coeff_edible = coeff_edible_mean
-  } else{
-    coeff_edible = Edible.portion.coefficient
-  }
+
   #Fat.total in units of g to 100 g
   fat = Fat.total * 1  /      #conversion to DM
     1 / DM
