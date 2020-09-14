@@ -22,6 +22,7 @@ output: pdf_document
  
 4. Whole fish N and P content by species (or use protein content and N and P factors)
  - Alon will talk to Zach about this; also talk to Christina about the modelled values
+ - NPZ model instead
  
 5. Replace placeholder diesel, petrol and natural gas CO2 eq/L values with data in function
  - Rob - diesel already in, others coming
