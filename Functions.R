@@ -105,7 +105,7 @@ estimate.onfarm.GHG <- function(LCA_data, energy_data){
 # Estimate on farm land footprint
 #_____________________________________________________________________________________________________#
 estimate.onfarm.land <- function(LCA_data){
-  estimate_FP <- LCA_data$Yield_per_HA/LCA_data$harvest
+  estimate_FP <- LCA_data$Yield_t_per_HA/LCA_data$harvest
   
   return(estimate_FP)
 }
@@ -141,7 +141,7 @@ estimate.feed.NP <- function(LCA_data, Feed_data, FP){
       filter(element == "N")
   }else if(FP == "P"){
     Feed_data <- Feed_data %>%
-      filter(element == "N")
+      filter(element == "P")
   }else print("error: FP must equal N or P")
   
   soy <- Feed_data %>% filter(ingredient == "Soy") 
@@ -173,7 +173,6 @@ clean_feedNutrition <- function(feedNutrition_data){
   feedNutrition_data$Nitrogen <- as.numeric(feedNutrition_data$Nitrogen)   #N in % of DM
   
   #define categorial feeds: soy, other products, animal and FM&O 
-  # FIX IT - Alon, these don't look correct, please check (e.g., I see hay in the soy range)
   #soy: Entry numbers: 601-620
   s=seq(601,620)
   
@@ -242,7 +241,6 @@ clean_feedNutrition <- function(feedNutrition_data){
 
 # Method 1: estimate from C content, Fig 1 of the above reference, linear regression values. 
 # Assuming metabolizable energy density is equal throughout whole fish
-# FIX IT: Alon - which reference and please write up a narrative description of the methods
 fishN <- function(Water,
            Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal) {
   # Convert to dry matter fraction
@@ -251,7 +249,7 @@ fishN <- function(Water,
     #In aquacultured fish, whole-body C content was estimated from energy content using a converting factor of 1 g C = 11.4 kcal
     fish_C_percent <-
       1 / DM * Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal / 11.4
-    N_slope <- -0.175   #from fig 1 # FIX IT: Alon add ref here
+    N_slope <- -0.175   # from Czamanski et al 2011 Fig 1
     N_intercept <- 18.506  #intercept (personal communication with authors)
     
     fish_N <- fish_C_percent * N_slope + N_intercept #in % of DM
@@ -268,7 +266,7 @@ fishP <- function(Water,
     fish_C_percent <-
       1 / DM * Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal / 11.4
     
-    P_slope <- -0.083  #from fig 1
+    P_slope <- -0.083  # from Czamanski et al 2011 Fig 1
     P_intercept <- 6.311  #intercept (personal communication with authors)
     
     fish_P <- fish_C_percent * P_slope + P_intercept #in % of DM
@@ -287,8 +285,8 @@ fishN_viaFat <- function(Water, Fat.total) {
     
   
   # Fat percentage in whole body in % of DM.
-  fish_C_via_fat = fat * 0.31 + 38  #linear regression from fig 2
-  fish_N_via_fat = fat * -0.08 + 12 #linear regression from fig 2
+  fish_C_via_fat = fat * 0.31 + 38  # linear regression from Czamanski et al 2011 Fig 2
+  fish_N_via_fat = fat * -0.08 + 12 # linear regression from Czamanski et al 2011 Fig 2
   
   return(fish_N_via_fat)
 }
@@ -308,48 +306,22 @@ fishP_viaFat <- function(Water, Fat.total) {
   return(fish_P_via_fat)
 }
 
-# N and P discharge models
-N_P_discharge_model <- function(fish_N_percent,fish_P_percent,feed_N_percent,feed_P_percent,FCR){
-  #G=I-[E+F]   from the above reference "Methods", where G is growth, I ingestion, E emission to enviroment (resupply) and F is feces
-  #FCR = I/G  FCR assumes I=1 unit weight -->E+F=FCR-1
-  #in terms of nutrient conservation: E_N+F_N=feed_N*(FCR-1)-fish_N*1; E_P+F_P=feed_P(FCR-1)-fish_P*1
-  #convert N and P to molar weight 
-  Lm=0.75;
-  #browser()
-  fish_N=fish_N_percent/14;feed_N=feed_N_percent/14; #stoichometric molar ratio
-  fish_P=fish_P_percent/31;feed_P=feed_P_percent/31;
-  beta_N<-0.91
-  R_fish<-fish_N/fish_P;
-  R_feed<-feed_N/feed_P;
-  beta_P<- -0.19*R_fish/R_feed+0.8   #from fig 4 of reference
-  if (R_feed*beta_N/beta_P<R_fish){
-    alpha_N<-Lm;
-    alpha_P<-Lm*R_feed*beta_N/beta_P/R_fish}
-  else if (R_feed*beta_N/beta_P>R_fish){
-    alpha_P<-Lm;
-    alpha_N<-Lm*(R_fish)/(R_feed*beta_N/beta_P)}
+# N and P discharge model
+estimate.onfarm.NP <- function(LCA_data){
+  # From Alon's branch N_P_discharge_simple_model
+  # Simplified model of discharge, similar to many NPZ models 
   
-  R_resupply<-((1-alpha_N)*beta_N)/((1-alpha_P)*beta_P)*R_feed #equation 7 from reference # FIX IT: Alon - add reference
-  R_feces<-R_feed*(1-beta_N)/(1-beta_P)
-  constant_N<-(feed_N_percent/100*(FCR)-fish_N_percent/100*1)/0.014; #conservation of nutrient: feed-fish_content=feces+resupply: units of molar weight: 0.014 kg/mole
-  constant_P<-(feed_P_percent/100*(FCR)-fish_P_percent/100*1)/0.031; #conservation of nutrient: feed-fish_content=feces+resupply: units of molar weight: 0.031 kg/mole
-  E_P<-(constant_N-R_feces*constant_P)/(R_resupply-R_feces);
-  E_N<-R_resupply*E_P
-  F_N<-constant_N-E_N;
-  F_P<-constant_P-E_P;
-  output<-c(E_N*0.014,F_N*0.014,E_P*0.031,F_P*0.031)
-  return(output)
-}
-
-
-N_P_discharge_simple_model <- function(fish_N_percent,fish_P_percent,feed_N_percent,feed_P_percent,FCR){
-  #simplified model of discharge, similar to many NPZ models 
-  discharge_N<-(feed_N_percent/100*(FCR)-fish_N_percent/100*1); #conservation of nutrient: feed-fish_content=discharge to enviroment. units: weights as FCR
-  discharge_P<-(feed_P_percent/100*(FCR)-fish_P_percent/100*1); #conservation of nutrient: feed-fish_content=discharge to enviromen.  weights as FCR 
-  if(discharge_N<=0){discharge_N=0}else{discharge_N=discharge_N} #to avoid negative emissions
-  if(discharge_P<=0){discharge_P=0}else{discharge_P=discharge_P}
-  RT=c(discharge_N,discharge_P)  #in units of FCR e.g. kg N and P for 1 kg of live weight fish
+  LCA_data <- LCA_data %>%
+    #conservation of nutrient: feed-fish_content=discharge to enviroment. units: weights as FCR
+    mutate(onfarm.N = (feed.N.percent/100*(FCR)-feed.N.percent/100*1),
+           onfarm.P = (feed.P.percent/100*(FCR)-feed.P.percent/100*1))
   
-  return(RT) 
+    # To avoid negative emissions
+  LCA_data$onfarm.N[LCA_data$onfarm.N < 0] <- 0
+  LCA_data$onfarm.P[LCA_data$onfarm.P < 0] <- 0
+
+  #in units of FCR e.g. kg N and P for 1 kg of live weight fish
+  
+  return(LCA_data) 
 }
 

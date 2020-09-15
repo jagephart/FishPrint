@@ -13,25 +13,24 @@ output: pdf_document
 - For places that have multiple uses, we will need to apply an allocation method (consistent with the feeds)
 
 2. Fill in feed ingredient FP and protein content values
- - Alon pulled the terrestrial feed data N and P content
+ - Alon pulled the terrestrial feed data N and P content --> currently using a straight mean for these
  _ Question for Rob: use of P-eq vs PO4-eq in feed FP data --> check that P-eq would be P release (same for N-eq)
  _ Question for Rob: energy category in feed FP data
  - Question for all: how to weight the footprints of the feed ingredients within a category
  - Top 10 most representative crops (excluding soy b/c that is included separately), check for presence in EcoVent and crop N/P, if not present in both, move to 11th most representative [Patrik will take a stab at this]
  
 3. Factors to multiply protein content by to get N and P
- - Patrik can get factors with reference
+ - Patrik can get factors with reference --> done, but may need to add reference
  
 4. Whole fish N and P content by species (or use protein content and N and P factors)
- - Alon will talk to Zach about this; also talk to Christina about the modelled values
- - NPZ model instead
+ - Alon will talk to Zach about this; also talk to Christina about the modelled values --> done
  
 5. Replace placeholder diesel, petrol and natural gas CO2 eq/L values with data in function
  - Rob - diesel already in, others coming
 
 6. What units do we want the FP estimates in?
  - Input from anyone (we just need to pick something at some point to make sure everything is consistent)
- - L, ha, t CO2eq, /fish at farm gate
+ - L, ha, t CO2eq, /kg fish at farm gate
 
 7. Evaporation
  - We have average evaporative loss by country 
@@ -49,10 +48,13 @@ output: pdf_document
   
 ## Code improvements
 
-1. Update feed associated FP function to handle fed and non-fed species (or just make all feed ingredient proportions zero for non-fed)
-2. Incorporate differences based on system type in each function
-4. Standardize units throughout
-5. Add categorical variables we need to add/standardize are: system type, fed/unfed, aerated/non-aearated, intensity level
+1. Standardize units throughout
+2. Update feed associated FP function to handle fed and non-fed species (or just make all feed ingredient proportions zero for non-fed)
+3. Incorporate differences based on system type in each function
+4. Add categorical variables we need to add/standardize are: system type, fed/unfed, aerated/non-aearated, intensity level
+5. Alon is updating feed ingredient N and P calc indicies
+6. Alon checking built in N difference for live weight versus dry weight
+7. Alon checking equation for via fat N and P method
 
 ```{r setup, echo=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
@@ -80,9 +82,6 @@ feed_fp <- clean.feedFP(feed_fp)
 #_______________________________________________________________________________________________________________________#
 # Load data for on-farm N and P emissions calcs
 #_______________________________________________________________________________________________________________________#
-# Add random fish protein content as placeholder
-#lca$fish_protein_content <- runif(nrow(lca), min = .1, max = 2)
-
 # Calculate C,N,P content of fish (based on energy and fat content) and compute discharge based on Czamanski et al 2011, Marine Biology,
 #Carbon, nitrogen and phosphorus elemental stoichiometry in aquacultured and wild-caught fish and consequences for pelagic nutrient dynamics and also a simplified NPZ method approach
 
@@ -100,14 +99,15 @@ fishNutrition <- fishNutrition %>%
   group_by(Scientific.Name) %>%
   summarise(N = mean(N, na.rm = TRUE), P = mean(P, na.rm = TRUE), 
             N_fat = mean(N_fat, na.rm = TRUE), P_fat = mean(P_fat, na.rm = TRUE), 
-            N_built_in = mean(N_built_in, na.rm = TRUE), .groups = "drop") # FIX IT: Alon - is it correct to take the mean here? 
+            N_built_in = mean(N_built_in, na.rm = TRUE), .groups = "drop") 
 
 lca <- lca %>%
   right_join(fishNutrition, by = "Scientific.Name")
 
 #N and P content of feed in % of DM (read from feed composition tables, USDA 1982)
 feedNutrition <-clean_feedNutrition(feedNutrition_data = 
-                                      read.csv("Data/United-States-Canadian-Tables-of-Feed-1982-pages-68-921-with_CrudeProtein.csv"))
+                                      read.csv("Data/United-States-Canadian-Tables-of-Feed-1982-pages-68-921-with_CrudeProtein.csv",
+                                               stringsAsFactors = FALSE))
 
 #_______________________________________________________________________________________________________________________#
 # Load pond area and yield data
@@ -203,14 +203,20 @@ where $C_{aeration}$ is the constant factor for aerated ponds.
 
 ```{r}
 # Estimate N and P content of feed
-lca$feed.N <- estimate.feed.NP(LCA_data = lca, Feed_data = feedNutrition, FP = "N")
-lca$feed.P <- estimate.feed.NP(LCA_data = lca, Feed_data = feedNutrition, FP = "P")
+lca$feed.N.percent <- estimate.feed.NP(LCA_data = lca, Feed_data = feedNutrition, FP = "N")
+lca$feed.P.percent <- estimate.feed.NP(LCA_data = lca, Feed_data = feedNutrition, FP = "P")
 
 # Apply model to estimate N and P lost to the environment
-# FIX IT: Start here with Alon on call
+# N and P release in kg 
+lca <- estimate.onfarm.NP(LCA_data = lca)
 
+# Estimate on farm GHG
 lca$onfarm.ghg <- estimate.onfarm.GHG(LCA_data = lca, energy_data = energy_gwp)
+
+# Estimate on farm land
 lca$onfarm.land <- estimate.onfarm.land(LCA_data = lca)
+
+# Estimate on farm water
 lca$onfarm.water <- estimate.onfarm.water(LCA_data = lca, evap_data = evap)
 
 ```
@@ -222,16 +228,16 @@ This is largely fake data, so probably shouldn't think about it too much.
 
 ```{r}
 fp_summary <- lca %>%
-  select(Species.common.name, Species.scientific.name, starts_with("feed."), starts_with("onfarm.")) %>%
+  select(Scientific.Name, starts_with("feed."), starts_with("onfarm.")) %>%
   pivot_longer(feed.ghg:onfarm.water, names_to = "FP.component", values_to = "FP.value") %>%
   separate(FP.component, into = c("FP.component", "FP")) %>%
   filter(FP.value > 0)
 
 
-ggplot(fp_summary, aes(x = Species.common.name, y = FP.value, fill = FP.component)) +
+ggplot(fp_summary, aes(x = Scientific.Name, y = FP.value, fill = FP.component)) +
   geom_col() +
   coord_flip() +
-  facet_wrap(~FP)
+  facet_wrap(~FP, scales = "free_x")
 ```
 
 
