@@ -30,7 +30,7 @@ fishNutrition1<-fishNutrition %>% mutate(N=fishN(Water,Energy.total.metabolizabl
                                          ,P=fishP(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
                                         ,N_fat=fishN_viaFat(Water,Fat.total)
                                         ,P_fat=fishP_viaFat(Water,Fat.total)
-                                        ,N_built_in=Nitrogen.total,P_built_in=Phosphorus/100) #conversion to units of percentages. Nitrogen.total is in units of g/100 edible gram; Phosphorous in the dataset is in mg/100 edible gram
+                                        ,N_built_in=Nitrogen.total*100/(100-Water),P_built_in=Phosphorus/1000*100/(100-Water)) #conversion to units of percentages in DM. Nitrogen.total is in units of g/100 edible gram; Phosphorous in the dataset is in mg/100 edible gram
 
 
 #N and P content of feed in % of DM (read from feed composition tables, USDA 1982)
@@ -127,8 +127,8 @@ DM = (100 - Water) / 100     #convert to dry matter fraction
 fishN_viaFat <- function(Water,Fat.total){
   DM = (100 - Water) / 100     #Dry Matter percentage
 #Fat.total in units of g to 100 g
-fat = Fat.total * 1  /        #conversion to DM
-  1 / DM
+fat = Fat.total * 1  / DM       #conversion to DM
+  
 #fat percentage in whole body in % of DM. 
 fish_C_via_fat = fat * 0.31 + 38  #linear regression from fig 2
 fish_N_via_fat = fat * -0.08 + 12 #linear regression from fig 2
@@ -138,8 +138,8 @@ fishP_viaFat <- function(Water,Fat.total){
   DM = (100 - Water) / 100     #Dry Matter percentage
 
   #Fat.total in units of g to 100 g
-  fat = Fat.total * 1  /      #conversion to DM
-    1 / DM
+  fat = Fat.total * 1  / DM      #conversion to DM
+  
   #fat percentage in whole body in % of DM. Assuming Fat is contained only (mostly) in the edible portion.
   fish_C_via_fat = fat * 0.31 + 38  #linear regression from fig 2
   fish_P_via_fat = fat * -0.04 + 3.2 #linear regression from fig 2
