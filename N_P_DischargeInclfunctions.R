@@ -38,25 +38,25 @@ fishNutrition1<-fishNutrition %>% mutate(N=fishN(Water,Energy.total.metabolizabl
 feedNutrition <-read.xlsx("United-States-Canadian-Tables-of-Feed-1982-pages-68-921-with_CrudeProtein.xlsx",startRow = 2)
 feedNutrition$`Phosphorus.(%)`<-as.numeric(feedNutrition$`Phosphorus.(%)`)
 feedNutrition<-feedNutrition %>% mutate( Nitrogen = `Crude.protein.(%)`/ 6.25)
-feedNutrition$Nitrogen=as.numeric(feedNutrition$Nitrogen)   #N in % of DM
+feedNutrition$Nitrogen=as.numeric(feedNutrition$Nitrogen)   
 
-#define categorial feeds: soy, other products, animal and FM&O
+#define categorial feeds: soy, other products, animal and FM&O (take only 100% DM)
 #soy: Entry numbers: 601-620
-s=seq(601,620)
+s=c(602,604,608,610,612,614,616,618,620)
 
-#animal by products, Entry number: meat byproducts 385-392, poultry 479-481
-a=c(seq(385,392),seq(479,481))
+#animal by products, Entry number: meat byproducts 385-392, poultry 479-481 (take only 100% DM)
+a=c(386,388,390,392,480,482,484)
 
 #other crops: cassava 141-142, peanut extr. 461-464, linseed extr. 345-348 , 
-#corn gluten meal 223-228, pea (not protein conentrate) 455-456, rape 493-496, sunflower oil and meal 633-636, 
+#corn gluten meal 223-228, pea (not protein concentrate) 455-456, rape 493-496, sunflower oil and meal 633-636, 
 #wheat byproduct 683-688, Sorghum grain 573-580, triticale 667-668, Navy beans (instead of faba) 57-58,
-cr=c(141,142,seq(461,464),seq(345,348),seq(223,228),seq(455,456),seq(493,496),seq(633,636),seq(683,688),seq(573,580),seq(667,668),seq(57,58))
+cr=c(142,462,464,346,348,224,226,228,456,494,496,634,636,684,686,688,578,580,668,58)
 
 #fishmeal and oil
-# fish alewife meal 305-306,anchovy meal 307-308, catfish meal 313-314, herring meal 317-318, 
+# fish 301-304, fish alewife meal 305-306,anchovy meal 307-308, catfish meal 313-314, herring meal 317-318, 
 # mackerel meal 322, manhaden meal 323-324, redfish meal 325-326, salmon meal 329-330, sardine meal 333-334
 #tuna meal 337-338, white fish 341-342
-f=c(305,306,307,308,313,314,317,318,322,323,324,325,326,329,330,333,334,337,338,341,342)
+f=c(302,304,306,308,314,318,322,324,326,330,334,338,342)
 
 # calculate weighted average N and P content of feed
 soy_N=mean(feedNutrition$Nitrogen[which(feedNutrition$Entry.Number %in% s)],na.rm=TRUE)   
