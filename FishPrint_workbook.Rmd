@@ -13,9 +13,11 @@ output: pdf_document
 - For places that have multiple uses, we will need to apply an allocation method (consistent with the feeds)
 
 2. Fill in feed ingredient FP and protein content values
-  - Top 10 most representative crops (excluding soy b/c that is included separately), check for presence in EcoVent and crop N/P, if not present in both, move to 11th most representative [Patrik will take a stab at this]
  - Alon pulled the terrestrial feed data N and P content
- - Feed FP data from Rob are now available in Google Sheet tab "Impact factors" 
+ _ Question for Rob: use of P-eq vs PO4-eq in feed FP data --> check that P-eq would be P release (same for N-eq)
+ _ Question for Rob: energy category in feed FP data
+ - Question for all: how to weight the footprints of the feed ingredients within a category
+ - Top 10 most representative crops (excluding soy b/c that is included separately), check for presence in EcoVent and crop N/P, if not present in both, move to 11th most representative [Patrik will take a stab at this]
  
 3. Factors to multiply protein content by to get N and P
  - Patrik can get factors with reference
@@ -26,26 +28,22 @@ output: pdf_document
  
 5. Replace placeholder diesel, petrol and natural gas CO2 eq/L values with data in function
  - Rob - diesel already in, others coming
- 
-6. How to handle Energy_demand column in non-feed ghg function?
- - Patrik - is wood use for the two observations representative of large scale production? i.e., is it acceptable to ignore?
- - Acceptable to ignore 
 
-7. What units do we want the FP estimates in?
+6. What units do we want the FP estimates in?
  - Input from anyone (we just need to pick something at some point to make sure everything is consistent)
  - L, ha, t CO2eq, /fish at farm gate
 
-8. Evaporation
+7. Evaporation
  - We have average evaporative loss by country 
  - We may want to consider a multiplication factor for losses from aerated ponds [maybe only include in discussion; would also influence methane emissions from ponds]
  - We need to decide how to construct the distribution (currently just the arithmatic mean, but we could add a weighting)
  - Only apply to freshwater ponds [include exploration of evaporative loss from brackish ponds in SI -- also discuss the dilution water] 
 
-9. Edible portion and per gram protein
+8. Edible portion and per gram protein
   - Present results in terms of LW, but also add in edible portion and per g protein
   - Still need to compile this data
   
-10. Add in fish in-fish out metric
+9. Add in fish in-fish out metric
  - We can get to this through the same FMFO data that we are using 
  - Return to discussion of broader biodiversity issues [likely just a discussion point -- justification: none of our other categories go all the way to impact]
   
@@ -53,7 +51,6 @@ output: pdf_document
 
 1. Update feed associated FP function to handle fed and non-fed species (or just make all feed ingredient proportions zero for non-fed)
 2. Incorporate differences based on system type in each function
-3. Check that feed proportions sum to 1
 4. Standardize units throughout
 5. Add categorical variables we need to add/standardize are: system type, fed/unfed, aerated/non-aearated, intensity level
 
@@ -67,42 +64,74 @@ library(ggplot2)
 
 source("Functions.R")
 
+#_______________________________________________________________________________________________________________________#
 # Load lca data
-lca <- read.csv("Data/LCA_compiled.csv", stringsAsFactors = FALSE)
-# Clean lca data
-lca$Feed_soy_percent <- as.numeric(lca$Feed_soy_percent)
-lca$Electricity_kwh <- as.numeric(lca$Electricity_kwh)
-lca$Diesel_L <- as.numeric(lca$Diesel_L)
-lca$Petrol_L <- as.numeric(lca$Petrol_L)
-lca$NaturalGas_L <- as.numeric(lca$NaturalGas_L)
-lca$Yield_per_HA <- as.numeric(lca$Yield_per_HA)
-lca$Grow_out_period_days <- as.numeric(lca$Grow_out_period_days)
-lca$iso3c <- countrycode(lca$Country, origin = "country.name", destination = "iso3c")
+#_______________________________________________________________________________________________________________________#
+lca <- clean.lca(LCA_data = read.csv("Data/LCA_compiled.csv", stringsAsFactors = FALSE))
 
+#_______________________________________________________________________________________________________________________#
+# Load feed FP data 
+#_______________________________________________________________________________________________________________________#
+# Units of footprint are per 1 kg (apart from energy, which has per L) FIX IT: Rob, is this correct?
+feed_fp <- read.csv("Data/Feed_FP_raw.csv", stringsAsFactors = FALSE)
+# Tidy FP data
+feed_fp <- clean.feedFP(feed_fp)
+
+#_______________________________________________________________________________________________________________________#
+# Load data for on-farm N and P emissions calcs
+#_______________________________________________________________________________________________________________________#
 # Add random fish protein content as placeholder
-lca$fish_protein_content <- runif(nrow(lca), min = .1, max = 2)
+#lca$fish_protein_content <- runif(nrow(lca), min = .1, max = 2)
 
+# Calculate C,N,P content of fish (based on energy and fat content) and compute discharge based on Czamanski et al 2011, Marine Biology,
+#Carbon, nitrogen and phosphorus elemental stoichiometry in aquacultured and wild-caught fish and consequences for pelagic nutrient dynamics and also a simplified NPZ method approach
+
+# N and P content of fish in % of DM
+fishNutrition <- read.csv("Data/FishGenus.csv", stringsAsFactors = FALSE)
+fishNutrition <-fishNutrition %>%filter(Preparation=='raw')   #filter out all non raw observations (e.g. dried, cooked)
+
+fishNutrition <- fishNutrition %>%
+  mutate(
+    N = fishN(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal),
+    P = fishP(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal),
+    N_fat=fishN_viaFat(Water,Fat.total),
+    P_fat=fishP_viaFat(Water,Fat.total),
+    N_built_in=Nitrogen.total,P_built_in=Phosphorus/100) %>% #conversion to units of percentages. Nitrogen.total is in units of g/100 edible gram; Phosphorous in the dataset is in mg/100 edible gram
+  group_by(Scientific.Name) %>%
+  summarise(N = mean(N, na.rm = TRUE), P = mean(P, na.rm = TRUE), 
+            N_fat = mean(N_fat, na.rm = TRUE), P_fat = mean(P_fat, na.rm = TRUE), 
+            N_built_in = mean(N_built_in, na.rm = TRUE), .groups = "drop") # FIX IT: Alon - is it correct to take the mean here? 
+
+lca <- lca %>%
+  right_join(fishNutrition, by = "Scientific.Name")
+
+#N and P content of feed in % of DM (read from feed composition tables, USDA 1982)
+feedNutrition <-clean_feedNutrition(feedNutrition_data = 
+                                      read.csv("Data/United-States-Canadian-Tables-of-Feed-1982-pages-68-921-with_CrudeProtein.csv"))
+
+#_______________________________________________________________________________________________________________________#
+# Load pond area and yield data
+#_______________________________________________________________________________________________________________________#
 # Add random pond area as placeholder
 lca$harvest <- runif(nrow(lca), min = 10, max = 500)
 
-# Load feed FP data FIX IT: Replace with Rob's data
-feed_fp <- read.csv("Data/Feed_FP_fake.csv", stringsAsFactors = FALSE)
-# Tidy FP data
-feed_fp <- feed_fp %>%
-  pivot_longer(GHG:protein_content, names_to = "FP_name", values_to = "FP_val")
-
-# Load energy data
+#_______________________________________________________________________________________________________________________#
+# Load on-farm energy data
+#_______________________________________________________________________________________________________________________#
 energy_gwp <- read.csv("Data/electricity_GWP.csv")
 # Clean eneergy data
 energy_gwp$iso3c <- countrycode(energy_gwp$Country, origin = "country.name", destination = "iso3c")
 
+#_______________________________________________________________________________________________________________________#
 # Load and clean evaporation data (need to check units and add variability)
+#_______________________________________________________________________________________________________________________#
 evap <- read.csv("Data/clim_summarise_by_country.csv")
 evap$iso3c <- countrycode(evap$admin, origin = "country.name", destination = "iso3c")
 evap <- evap %>%
   rename(evap_rate = country_level_mean) %>%
   select(iso3c, evap_rate) %>%
   filter(!is.na(iso3c))
+
 ```
 
 ## Calculate Feed Footprint
@@ -118,11 +147,11 @@ $$FP_{feed} = FCR_{dry} \sum_{i=1}^4 FP_{i} p_i$$
 where $FCR_{dry}$ is the dry weight feed conversion ratio, $i$ indexes the feed ingredient, $FP_i$ represents the footprint of the feed ingredient, and $p_i$ represents the proportion of the feed comprised of component $i$. 
 
 ```{r}
-lca$feed.ghg <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP = "GHG")
-lca$feed.water <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP = "water")
-lca$feed.N <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP = "N")
-lca$feed.P <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP = "P")
-lca$feed.land <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP = "land")
+lca$feed.ghg <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Carbon")
+lca$feed.water <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Water")
+lca$feed.N <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Nitrogen")
+lca$feed.P <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Phosphorus")
+lca$feed.land <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Land")
 ```
 
 For species without LCA data, we will need to estimate FCR and the percent soy, other crops, FMFO and animal products in feeds. 
@@ -145,6 +174,8 @@ The inputs are:
 
 
 ### Nitrogen and Phosphorus
+
+Alon - update this section to describe the methods from your calcs (in a narrative style) so we have them for the methods section of the paper
 
 The non-feed (which here we mean as the virtual footprint associated with the feed) nitrogen and phosphorus are calculated as by estimating the difference between the N and P in the feeds and the N and P in the final fish, following:
 $$FP_{nonfeedN} = FCR_{dry} N_{Pr} \sum_{i=1}^4 (Pr_{i} p_i) - N_{Pr}Pr_{fish}$$
@@ -171,8 +202,12 @@ where $C_{aeration}$ is the constant factor for aerated ponds.
 [Sorry I got lazy with equation notation -- will eventually improve!]
 
 ```{r}
-lca$onfarm.N <- estimate.onfarm.NP(LCA_data = lca, Feed_data = feed_fp, FP = "N")
-lca$onfarm.P <- estimate.onfarm.NP(LCA_data = lca, Feed_data = feed_fp, FP = "P")
+# Estimate N and P content of feed
+lca$feed.N <- estimate.feed.NP(LCA_data = lca, Feed_data = feedNutrition, FP = "N")
+lca$feed.P <- estimate.feed.NP(LCA_data = lca, Feed_data = feedNutrition, FP = "P")
+
+# Apply model to estimate N and P lost to the environment
+# FIX IT: Start here with Alon on call
 
 lca$onfarm.ghg <- estimate.onfarm.GHG(LCA_data = lca, energy_data = energy_gwp)
 lca$onfarm.land <- estimate.onfarm.land(LCA_data = lca)
