@@ -56,6 +56,13 @@ output: pdf_document
 6. Alon checking built in N difference for live weight versus dry weight
 7. Alon checking equation for via fat N and P method
 
+From Alon:
+I made the following minor changes to the code and committed them to github
+1) changing the indices of feed N/P from Canadian feed file --> re-downloaded the data file and copied over the new indices
+2) "cleaning" the DM /1 thing --> added this into the N and P by fat functions
+3) and converting built_N and P to DM...so all the N and P in the nutrition columns for the three different methods should have similar values. From a quick glance this is currently more true for N now than P. --> I am not sure I know what this one means
+
+
 ```{r setup, echo=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
