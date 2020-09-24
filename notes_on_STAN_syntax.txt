@@ -1,0 +1,23 @@
+Notes on STAN syntax: https://www.weirdfishes.blog/blog/fitting-bayesian-models-with-stan-and-r/
+
+int N; integer object called N
+
+vector[N] Y; 
+// a vector of real numbers called Y of length N
+// technically, STAN treats vectors as matrices so Y is a matrix of size [N,1]
+
+
+// vector vs array have completely different syntax
+// only vectors (not arrays) allow vector/matrix algebra 
+int index[n]; array called 'index' of n, 1 dimensional objects, each storing integers 
+// can use this to store indices showing which columns correspond to different subgroups
+
+vector<lower = 0>[n] x; 
+// vector with a lower bound of 0 of length n, called 'x'
+
+vector<lower = 0, upper = 100>[n] x;
+
+// specifying the model:
+some_thing ~ some_distribution(distribution_parameters)
+
+
