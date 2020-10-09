@@ -6,26 +6,15 @@ library(rstan)
 library(taxize)
 library(data.table)
 
-datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
-lca_dat <- read.csv(file.path(datadir, "LCA_compiled.csv"))
+# Mac
+#datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+#outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+# Windows
+datadir <- "K:/BFA Environment 2/Data"
+outdir <- "K:BFA Environment 2/Outputs"
+lca_dat_clean <- read.csv(file.path(datadir, "lca_clean_with_ranks.csv"))
 
-# FIX IT - blanks for scientific names; add a taxanomic name that can be recognized by taxize
 # FIX IT - remove bivalves from FCR analysis
-# Clean lca_dat:
-# Clean species names
-# Remove unnecessary columns
-lca_dat_clean <- lca_dat %>% 
-  mutate(clean_sci_name = case_when(str_detect(Species.scientific.name, "spp") ~ str_replace(Species.scientific.name, pattern = " spp\\.| spp", replacement = ""),
-                                    Species.scientific.name == "Morone chrysops x M. saxatilis" ~ "Morone",
-                                    TRUE ~ Species.scientific.name)) %>%
-  filter(Species.scientific.name != "") %>%
-  mutate(FCR = case_when(str_detect(Species.scientific.name, "Thunnus") ~ FCR/5,
-                         TRUE ~ FCR)) %>%
-  select(-c(Date_entered, Description, Note_on_system, Notes, Person_entering, Product, Production_system, Sample_size, SeaWEED.ID, Source, Specific_location, Strain))
-
-# SESYNC Bayesian course: https://cchecastaldo.github.io/BayesianShortCourse/Syllabus.html
-# START OVER WITH THIS TUTORIAL: https://cran.r-project.org/web/packages/bridgesampling/vignettes/bridgesampling_example_stan.html
 
 # Model 1: Remove NA's, and estimate group-level feed conversion ratio for Nile tilapia, Oreochromis niloticus (species with the most FCR data)
 lca_dat_simple <- lca_dat_clean %>%
@@ -185,8 +174,17 @@ lca_dat_clean %>%
   filter(is.na(FCR) & n_farms == 1) %>%
   select(clean_sci_name)
 
-# STOP HERE: There are no single-entry missing FCR data at a species-level that we need to estimate using grouped hierarchies
-# At some point, may need to build in hierarchies for this model so that we are able to output final foot print estimates for different levels (e.g., family, genus, etc), but wait until we have a discussion about this
+# LEFT OFF HERE - are there any single-entry missing FCR data that need to be estimated at a higher classification level using a multi-level analysis?
+
+
+# If so, Create species level and other higher group levels based on examining NAs...
+lca_dat_groups_full <- lca_with_ranks %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_studies = n()) %>%
+  ungroup() %>%
+  filter((is.na(FCR) & n_studies != 1)==FALSE) %>%
+  mutate(Species.scientific.name = as.factor(Species.scientific.name),
+         sp = as.numeric(Species.scientific.name, na.rm = TRUE)) 
 
 
 
