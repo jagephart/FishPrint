@@ -14,8 +14,8 @@ outdir <- "K:BFA Environment 2/Outputs"
 lca_dat <- read.csv(file.path(datadir, "LCA_compiled.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
 
 # Clean lca_dat:
-# Clean species names
 # Manually fill in blank scientific names
+# Clean species names: e.g., Change osteichthyes (technically includes all terapods) to actinopterygii (bony fishes)
 # Remove unnecessary columns
 lca_fix_names <- lca_dat %>%
   mutate(Species.scientific.name = case_when(Species.common.name == "Freshwater prawn" ~ "Dendrobranchiata",
@@ -26,6 +26,7 @@ lca_fix_names <- lca_dat %>%
                                              TRUE ~ Species.scientific.name)) %>%
   mutate(clean_sci_name = case_when(str_detect(Species.scientific.name, "spp") ~ str_replace(Species.scientific.name, pattern = " spp\\.| spp", replacement = ""),
                                     Species.scientific.name == "Morone chrysops x M. saxatilis" ~ "Morone",
+                                    Species.scientific.name == "Osteichthyes" ~ "Actinopterygii",
                                     TRUE ~ Species.scientific.name)) %>%
   #filter(Species.scientific.name != "") %>% # blank scientific names manually filled in above
   mutate(FCR = case_when(str_detect(Species.scientific.name, "Thunnus") ~ FCR/5,
@@ -75,10 +76,11 @@ format_ranks <- function(taxa_ranks) {
   # get the last column name
   last_col_name <- names(higher_ranks)[ncol(higher_ranks)]
   
-  # record the rank of the taxa in a new column sci_name_rank and rename the taxa column as clean_sci_name (this is what will be used to join bank with lca_dat)
+  # record the rank of the taxa in a new column sci_name_rank, duplicate the taxa column so that it's retained after left_join, and rename the taxa column as clean_sci_name (this is what will be used to join bank with lca_dat)
   higher_ranks <- higher_ranks %>%
     mutate(sci_name_rank = colnames(.)[ncol(.)]) %>%
-    rename(clean_sci_name := !!last_col_name)
+    rename(clean_sci_name := !!last_col_name) %>%
+    mutate(!!last_col_name := clean_sci_name)
   
   return(higher_ranks)
 }
@@ -101,5 +103,5 @@ lca_dat_clean <- lca_fix_names %>%
 
 
 # Output lca_with_ranks to use for Bayesian analyses
-write.csv(lca_dat_clean, file.path(datadir, "lca_clean_with_ranks.csv"))
+write.csv(lca_dat_clean, file.path(datadir, "lca_clean_with_ranks.csv"), row.names = FALSE)
   

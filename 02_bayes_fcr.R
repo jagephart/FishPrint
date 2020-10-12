@@ -1,4 +1,4 @@
-# Bayesian estimation of Fish Foot Prints:
+# Bayesian estimation of FCR:
 
 rm(list=ls())
 library(tidyverse)
@@ -166,25 +166,86 @@ stan_trace(fit_grouped) # prints first 10 parameters
 ################################################################################################################
 # Model 2a: Include NA's while estimating group-level means
 
-# First, examine entries that are NA's and have no other con-specifics: how to group these?
-lca_dat_clean %>%
+# First, get the sci_name of rows that have missing FCR data
+missing_dat <- lca_dat_clean %>%
   group_by(clean_sci_name) %>%
-  mutate(n_farms = n()) %>%
+  mutate(n_study = n()) %>%
   ungroup() %>%
-  filter(is.na(FCR) & n_farms == 1) %>%
-  select(clean_sci_name)
+  filter(is.na(FCR) & n_study == 1) %>%
+  select(clean_sci_name, sci_name_rank)
 
-# LEFT OFF HERE - are there any single-entry missing FCR data that need to be estimated at a higher classification level using a multi-level analysis?
+# A tibble: 3 x 1
+# clean_sci_name
+# <chr>         
+# 1 Actinopterygii 
+# 2 Macrobrachium 
+# 3 Brachyura     
+
+# LEFT OFF HERE
+# Now which of these sci_names have no other studies of the same taxa
+for (i in 1:nrow(missing_dat)){
+  rank_search <- missing_dat[i,]$sci_name_rank
+  lca_dat_clean %>%
+    group_by(!!rank_search) #%>%
+    mutate(n_study = n()) %>%
+    ungroup() %>%
+    select(kingdom:n_study) %>%
+    unique()
+}
 
 
-# If so, Create species level and other higher group levels based on examining NAs...
-lca_dat_groups_full <- lca_with_ranks %>%
+# Try just Brachyura for now - Brachyura is infraorder so estimate one level up? Suborder
+
+# Create species level and other higher group levels based on examining NAs...
+lca_dat_groups_full <- lca_dat_clean %>%
   group_by(clean_sci_name) %>%
   mutate(n_studies = n()) %>%
   ungroup() %>%
   filter((is.na(FCR) & n_studies != 1)==FALSE) %>%
-  mutate(Species.scientific.name = as.factor(Species.scientific.name),
-         sp = as.numeric(Species.scientific.name, na.rm = TRUE)) 
+  mutate(across(where(is.character), as.factor),
+         sp = as.numeric(species),
+         gen = as.numeric(genus),
+         fam = as.numeric(family),
+         ord = as.numeric(order),
+         sbord = as.numeric(suborder),
+         class = as.numeric(superclass))
 
+ggplot(data = lca_dat_groups, aes(x = clean_sci_name, y = FCR)) +
+  geom_boxplot() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 16)) + 
+  labs(title = "Boxplots of species-level FCR")
+#ggsave(file.path(outdir, "plot_boxplot_FCR-by-species.png"), height = 8, width = 11.5)
+
+
+x <- lca_dat_groups$FCR
+n <- nrow(lca_dat_groups)
+j <- length(unique(lca_dat_groups$sp))
+sp <- lca_dat_groups$sp
+
+
+stan_grouped <- 'data {
+  int<lower=0> n;  // number of observations
+  vector[n] x; // data
+  int j; // number of species
+  int sp[n]; // species indicators
+}
+parameters {
+  real<lower=0> mu;
+  real<lower=0> sp_sigma;
+  vector[j] sp_mu;
+  real<lower=0> sigma;
+}
+
+model {
+  // priors
+  // sigma ~ cauchy(0, 5);
+  // note: because priors are optional, not sure whether I should bother giving sigma a cauchy distribution
+
+  // likelihood
+  sp_mu ~ normal(mu, sigma);
+  x ~ normal(sp_mu[sp], sp_sigma);
+
+}'
 
 
