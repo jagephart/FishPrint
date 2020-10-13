@@ -7,11 +7,11 @@ library(taxize)
 library(data.table)
 
 # Mac
-#datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-#outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # Windows
-datadir <- "K:/BFA Environment 2/Data"
-outdir <- "K:BFA Environment 2/Outputs"
+# datadir <- "K:/BFA Environment 2/Data"
+# outdir <- "K:BFA Environment 2/Outputs"
 lca_dat_clean <- read.csv(file.path(datadir, "lca_clean_with_ranks.csv"))
 
 # FIX IT - remove bivalves from FCR analysis
@@ -56,9 +56,9 @@ print(fit_pooled)
 # https://www.jax.org/news-and-insights/jax-blog/2015/october/lp-in-stan-output#:~:text=Therefore%2C%20%E2%80%9Clp%E2%80%9D%20is%20actually,useful%20for%20model%20comparison%20purposes.
 
 # Diagnostics
-#stan_trace(fit_pooled)
-stan_trace(fit_pooled, pars = c('mu'))
-stan_trace(fit_pooled, pars = c('sigma'))
+stan_trace(fit_pooled)
+#stan_trace(fit_pooled, pars = c('mu'))
+#stan_trace(fit_pooled, pars = c('sigma'))
 
 ################################################################################################################
 # Model 1a: Calculate variance as a "transformed parameter"
@@ -116,14 +116,13 @@ ggplot(data = lca_dat_groups, aes(x = clean_sci_name, y = FCR)) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 16)) + 
   labs(title = "Boxplots of species-level FCR")
-#ggsave(file.path(outdir, "plot_boxplot_FCR-by-species.png"), height = 8, width = 11.5)
+ggsave(file.path(outdir, "plot_boxplot_FCR-by-species.png"), height = 8, width = 11.5)
 
 
 x <- lca_dat_groups$FCR
 n <- nrow(lca_dat_groups)
 j <- length(unique(lca_dat_groups$sp))
 sp <- lca_dat_groups$sp
-
 
 stan_grouped <- 'data {
   int<lower=0> n;  // number of observations
@@ -153,14 +152,49 @@ model {
 fit_grouped <- stan(model_code = stan_grouped, data = list(x = x,
                                                            n = n,
                                                            j = j,
-                                                           sp = sp))
+                                                           sp = sp),
+                    iter = 50000, warmup = 1000, chain = 3, cores = 3)
 
 print(fit_grouped)
+
+# How to interpret sp index numbers:
+# What are the sample sizes per group:
+sp_index_key <- lca_dat_groups %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_sci_name = n()) %>%
+  ungroup() %>%
+  select(sp, clean_sci_name, n_sci_name) %>%
+  arrange(sp) %>%
+  unique() %>%
+  mutate(param_name = paste("sp_mu[", clean_sci_name, "]", sep =""))
+write.csv(sp_index_key, file.path(outdir, "sp_info.csv"), row.names = FALSE)
+
+
+# Replace 
+names(fit_grouped)[grep(names(fit_grouped), pattern = "sp_mu")] <- sp_index_key$param_name
 
 # Diagnostics
 stan_trace(fit_grouped) # prints first 10 parameters
 #stan_trace(fit_pooled, pars = c('mu'))
 #stan_trace(fit_pooled, pars = c('sigma'))
+
+# Make example MCMC plots of mu and sigma
+posterior_grouped <- rstan::extract(fit_grouped, inc_warmup = TRUE, permuted = FALSE)
+color_scheme_set("mix-blue-pink")
+p <- mcmc_trace(posterior_grouped,  pars = c("mu", "sigma"), n_warmup = 1000,
+                facet_args = list(nrow = 2, labeller = label_parsed))
+p + facet_text(size = 15)
+
+ggsave(file.path(outdir, "plot_mcmc-plot_FCR-by-species.png"), height = 8, width = 11.5)
+
+# Make plots of Posterior distributions with 80% credible intervals
+distribution_grouped <- as.matrix(fit_grouped)
+p2 <- mcmc_areas_ridges(distribution_grouped,
+           pars = vars(contains("mu")),
+           prob = 0.8)
+
+p2 + ggtitle("Posterior distributions", "with 80% credible intervals")
+ggsave(file.path(outdir, "plot_post-distribution-plot_FCR-by-species.png"), height = 8, width = 11.5)
 
 
 ################################################################################################################
