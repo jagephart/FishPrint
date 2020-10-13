@@ -5,6 +5,39 @@ date: "6/15/2020"
 output: pdf_document
 ---
 
+## Agenda for next meeting
+
+1. Report back from Alon on FCR modeling and FCR-feed composition relationship
+
+2. Yield/harvest data updates
+- Patrik going through to update the data in this column
+Challenges with data as reported:
+- Unclear in a number of studies what the temporal dimension
+- Number of harvests per year can vary though
+- Some specify it in m3
+Decision:
+- Set all cages to 0? Amount is very small compared to feeds. 
+Focus is on land occupation, but not freshwater or marine area occupation
+
+3. Define groupings
+_ Jessica to suggest some incorporating: 
+- fed commercial, fed non-commercial and unfed
+- intensive, semi-intensitve and extensive
+- * Need to update this classification in the data frame - walk through with group for consensus. 
+- taxa groups? 
+
+4. Next steps: 
+- Standardize units
+- Calculate sd's
+- Think about biodiversity and how to incorporate
+- Think about how to reweight estimates by production/representativeness
+- Add in energy N, P, H2O from refineries 
+- Handling of byproducts 
+- Weighting of feed ingredients:
+  - Just use chicken feather meal for animal products
+  - Soy is more complicated
+- Ocean area required to support 
+
 ## To do
 
 1. The biggest gap is harvest and yield, which is needed to get a per unit land FP, as well as a surface area for evaporative losses. 
@@ -52,15 +85,6 @@ output: pdf_document
 2. Update feed associated FP function to handle fed and non-fed species (or just make all feed ingredient proportions zero for non-fed)
 3. Incorporate differences based on system type in each function
 4. Add categorical variables we need to add/standardize are: system type, fed/unfed, aerated/non-aearated, intensity level
-5. Alon is updating feed ingredient N and P calc indicies
-6. Alon checking built in N difference for live weight versus dry weight
-7. Alon checking equation for via fat N and P method
-
-From Alon:
-I made the following minor changes to the code and committed them to github
-1) changing the indices of feed N/P from Canadian feed file --> re-downloaded the data file and copied over the new indices
-2) "cleaning" the DM /1 thing --> added this into the N and P by fat functions
-3) and converting built_N and P to DM...so all the N and P in the nutrition columns for the three different methods should have similar values. From a quick glance this is currently more true for N now than P. --> I am not sure I know what this one means
 
 
 ```{r setup, echo=FALSE, warning=FALSE}
@@ -100,16 +124,17 @@ fishNutrition <- fishNutrition %>%
   mutate(
     N = fishN(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal),
     P = fishP(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal),
-    N_fat=fishN_viaFat(Water,Fat.total),
-    P_fat=fishP_viaFat(Water,Fat.total),
-    N_built_in=Nitrogen.total,P_built_in=Phosphorus/100) %>% #conversion to units of percentages. Nitrogen.total is in units of g/100 edible gram; Phosphorous in the dataset is in mg/100 edible gram
+    N_fat = fishN_viaFat(Water,Fat.total),
+    P_fat = fishP_viaFat(Water,Fat.total),
+    N_built_in = Nitrogen.total*100/(100-Water),
+    P_built_in = Phosphorus/1000*100/(100-Water)) %>% #conversion to units of percentages. Nitrogen.total is in units of g/100 edible gram; Phosphorous in the dataset is in mg/100 edible gram
   group_by(Scientific.Name) %>%
   summarise(N = mean(N, na.rm = TRUE), P = mean(P, na.rm = TRUE), 
             N_fat = mean(N_fat, na.rm = TRUE), P_fat = mean(P_fat, na.rm = TRUE), 
             N_built_in = mean(N_built_in, na.rm = TRUE), .groups = "drop") 
 
 lca <- lca %>%
-  right_join(fishNutrition, by = "Scientific.Name")
+  left_join(fishNutrition, by = "Scientific.Name")
 
 #N and P content of feed in % of DM (read from feed composition tables, USDA 1982)
 feedNutrition <-clean_feedNutrition(feedNutrition_data = 
@@ -185,10 +210,10 @@ The inputs are:
 Alon - update this section to describe the methods from your calcs (in a narrative style) so we have them for the methods section of the paper
 
 The non-feed (which here we mean as the virtual footprint associated with the feed) nitrogen and phosphorus are calculated as by estimating the difference between the N and P in the feeds and the N and P in the final fish, following:
-$$FP_{nonfeedN} = FCR_{dry} N_{Pr} \sum_{i=1}^4 (Pr_{i} p_i) - N_{Pr}Pr_{fish}$$
+$$FP_{nonfeedN} = FCR_{dry} \sum_{i=1}^4 (N_{i} p_i) - N_{fish}$$
 where $N_{Pr}$ represents the average nitrogen content of protein, $Pr_i$ represents the protein content of each feed component, and $Pr_{fish}$ represents the protein content of a unit of fish or shellfish. Similarly, 
 
-$$FP_{nonfeedP} = FCR_{dry} P_{Pr} \sum_{i=1}^4 (P_{i} p_i) - P_{Pr}Pr_{fish}$$
+$$FP_{nonfeedP} = FCR_{dry} \sum_{i=1}^4 (P_{i} p_i) - P_{fish}$$
 where $P_{Pr}$ represents the average phosphorus content of protein.
 
 ### Greenhouse gases
