@@ -16,6 +16,7 @@ lca_dat_clean <- read.csv(file.path(datadir, "lca_clean_with_ranks.csv"))
 
 # FIX IT - remove bivalves from FCR analysis
 
+######################################################################################################
 # Model 1: Remove NA's, and estimate group-level feed conversion ratio for Nile tilapia, Oreochromis niloticus (species with the most FCR data)
 lca_dat_simple <- lca_dat_clean %>%
   filter(is.na(FCR) == FALSE) %>%
@@ -60,7 +61,7 @@ stan_trace(fit_pooled)
 #stan_trace(fit_pooled, pars = c('mu'))
 #stan_trace(fit_pooled, pars = c('sigma'))
 
-################################################################################################################
+######################################################################################################
 # Model 1a: Calculate variance as a "transformed parameter"
 stan_pooled_1a <- 'data {
   int<lower=0> n;  // number of observations
@@ -90,8 +91,8 @@ fit_pooled_1a <- stan(model_code = stan_pooled_1a, data = list(x = x,
                      iter = 50000, warmup = 1000, chain = 3, cores = 3)
 print(fit_pooled_1a)
 
-################################################################################################################
-# Model 2: Remove ALL NA's, and estimate group-level feed conversion ratio for all species
+######################################################################################################
+# Model 2: Remove ALL NA's, and estimate group-level feed conversion ratio for all species and a global feed conversion ratio (mu)
 # NOTE: Stan does not support NA's in data - must be modeled explicitly
 # Estimate group-level means
 lca_dat_groups <- lca_dat_clean %>%
@@ -197,10 +198,91 @@ p2 + ggtitle("Posterior distributions", "with 80% credible intervals")
 ggsave(file.path(outdir, "plot_post-distribution-plot_FCR-by-species.png"), height = 8, width = 11.5)
 
 
-################################################################################################################
-# Model 2a: Include NA's while estimating group-level means
+######################################################################################################
+# Model 2a: Include NA's (but only for studies that have OTHER studies of the same taxa) and estimate group-level and global-level mu
 
-# First, get the sci_name of rows that have missing FCR data
+# First, remove studies that have missing FCR data and no other studies of the same taxa
+lca_dat_with_missing <- lca_dat_clean %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_study = n()) %>% # how many studies per species
+  ungroup() %>%
+  filter(is.na(FCR)==FALSE | is.na(FCR) & n_study != 1) %>% # only keep studies if they have FCR data OR if FCR == NA and it isn't the ONLy study for that taxa
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sp = as.numeric(clean_sci_name)) %>%
+  select(clean_sci_name, FCR, sp) %>%
+  arrange(clean_sci_name)
+
+
+# Warning message because now there are NA's in the data frame
+ggplot(data = lca_dat_with_missing, aes(x = clean_sci_name, y = FCR)) +
+  geom_boxplot() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 16)) + 
+  labs(title = "Boxplots of species-level FCR")
+#ggsave(file.path(outdir, "plot_boxplot_FCR-by-species.png"), height = 8, width = 11.5)
+
+# Separate out the missing data from the observed data:
+lca_dat_observed <- lca_dat_with_missing %>%
+  filter(is.na(FCR)==FALSE)
+
+lca_dat_na <- lca_dat_with_missing %>%
+  filter(is.na(FCR))
+
+x_obs <- lca_dat_observed$FCR
+x_mis <- lca_dat_na$FCR
+n_obs <- length(x_obs)
+n_mis <- length(x_mis)
+j <- length(unique(lca_dat_observed$sp))
+sp <- lca_dat_observed$sp
+
+#### LEFT OFF HERE - installing rtools40 (required to build R packages in Windows)
+
+stan_grouped <- 'data {
+  int<lower=0> n_obs;  // number of observations
+  int<lower=0> n_mis;  // number of missing observations
+  vector[n_obs] x_obs; // data
+  int j; // number of species
+  int sp[n_obs]; // species indicators
+}
+parameters {
+  real<lower=0> mu;
+  real<lower=0> sp_sigma;
+  vector[j] sp_mu;
+  real<lower=0> sigma;
+  real x_mis[n_mis]; // missing data are treated as parameters
+}
+
+model {
+  // priors
+  // sigma ~ cauchy(0, 5);
+  // note: because priors are optional, not sure whether I should bother giving sigma a cauchy distribution
+
+  // likelihood
+  sp_mu ~ normal(mu, sigma);
+  x_obs ~ normal(sp_mu[sp], sp_sigma);
+  x_mis ~ normal(sp_mu[sp], sp_sigma);
+
+}'
+
+
+# 
+stan_grouped_model <- stan_model(model_code = stan_grouped)
+
+# Fit model:
+fit_grouped <- stan(model_code = stan_grouped, data = list(x_obs = x_obs,
+                                                           n_obs = n_obs,
+                                                           n_mis = n_mis,
+                                                           j = j,
+                                                           sp = sp),
+                    iter = 50000, warmup = 1000, chain = 3, cores = 3)
+
+print(fit_grouped)
+
+######################################################################################################
+# Model 3: Include all NA's and estimate FCR for multiple levels (not just species-level and global-level)
+
+# Which group-levels should be modeled?
+# First, get the sci_name of studies that have missing FCR data and no other studies of the same taxa
 missing_dat <- lca_dat_clean %>%
   group_by(clean_sci_name) %>%
   mutate(n_study = n()) %>%
@@ -208,6 +290,7 @@ missing_dat <- lca_dat_clean %>%
   filter(is.na(FCR) & n_study == 1) %>%
   select(clean_sci_name, sci_name_rank)
 
+# missing_dat
 # A tibble: 3 x 1
 # clean_sci_name
 # <chr>         
@@ -215,20 +298,17 @@ missing_dat <- lca_dat_clean %>%
 # 2 Macrobrachium 
 # 3 Brachyura     
 
-# LEFT OFF HERE
-# Now which of these sci_names have no other studies of the same taxa
+# Now which of these sci_names have no other studies with overlapping taxa
+# e.g., the FCR for the study on genus Macrobrachium does not need to be estimated because there are species-level studies of Macrobrachium spp.
 for (i in 1:nrow(missing_dat)){
-  rank_search <- missing_dat[i,]$sci_name_rank
-  lca_dat_clean %>%
-    group_by(!!rank_search) #%>%
-    mutate(n_study = n()) %>%
-    ungroup() %>%
-    select(kingdom:n_study) %>%
-    unique()
+  taxa_na <- missing_dat[i,]$clean_sci_name
+  rank_search <- sym(missing_dat[i,]$sci_name_rank)
+  lca_dat_rank <- lca_dat_clean %>%
+    filter(!!rank_search == taxa_na)
+  if (nrow(lca_dat_rank) == 1){
+    print(paste(taxa_na, " has no overlapping taxa with data", sep = ""))
+  }
 }
-
-
-# Try just Brachyura for now - Brachyura is infraorder so estimate one level up? Suborder
 
 # Create species level and other higher group levels based on examining NAs...
 lca_dat_groups_full <- lca_dat_clean %>%
@@ -243,43 +323,3 @@ lca_dat_groups_full <- lca_dat_clean %>%
          ord = as.numeric(order),
          sbord = as.numeric(suborder),
          class = as.numeric(superclass))
-
-ggplot(data = lca_dat_groups, aes(x = clean_sci_name, y = FCR)) +
-  geom_boxplot() +
-  theme_classic() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 16)) + 
-  labs(title = "Boxplots of species-level FCR")
-#ggsave(file.path(outdir, "plot_boxplot_FCR-by-species.png"), height = 8, width = 11.5)
-
-
-x <- lca_dat_groups$FCR
-n <- nrow(lca_dat_groups)
-j <- length(unique(lca_dat_groups$sp))
-sp <- lca_dat_groups$sp
-
-
-stan_grouped <- 'data {
-  int<lower=0> n;  // number of observations
-  vector[n] x; // data
-  int j; // number of species
-  int sp[n]; // species indicators
-}
-parameters {
-  real<lower=0> mu;
-  real<lower=0> sp_sigma;
-  vector[j] sp_mu;
-  real<lower=0> sigma;
-}
-
-model {
-  // priors
-  // sigma ~ cauchy(0, 5);
-  // note: because priors are optional, not sure whether I should bother giving sigma a cauchy distribution
-
-  // likelihood
-  sp_mu ~ normal(mu, sigma);
-  x ~ normal(sp_mu[sp], sp_sigma);
-
-}'
-
-
