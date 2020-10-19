@@ -5,6 +5,7 @@ library(tidyverse)
 library(rstan)
 library(taxize)
 library(data.table)
+library(bayesplot) # for mcmc_areas_ridges
 
 # Mac
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
@@ -170,8 +171,7 @@ sp_index_key <- lca_dat_groups %>%
   mutate(param_name = paste("sp_mu[", clean_sci_name, "]", sep =""))
 write.csv(sp_index_key, file.path(outdir, "sp_info.csv"), row.names = FALSE)
 
-
-# Replace 
+# Replace param names
 names(fit_grouped)[grep(names(fit_grouped), pattern = "sp_mu")] <- sp_index_key$param_name
 
 # Diagnostics
@@ -204,12 +204,12 @@ ggsave(file.path(outdir, "plot_post-distribution-plot_FCR-by-species.png"), heig
 # First, remove studies that have missing FCR data and no other studies of the same taxa
 lca_dat_with_missing <- lca_dat_clean %>%
   group_by(clean_sci_name) %>%
-  mutate(n_study = n()) %>% # how many studies per species
+  mutate(n_study_with_data = sum(is.na(FCR)==FALSE)) %>% # how many studies per species that have data
   ungroup() %>%
-  filter(is.na(FCR)==FALSE | is.na(FCR) & n_study != 1) %>% # only keep studies if they have FCR data OR if FCR == NA and it isn't the ONLy study for that taxa
+  filter(is.na(FCR)==FALSE | is.na(FCR) & n_study_with_data > 0) %>% # only keep studies if they have FCR data OR if FCR == NA and there is at least one study with data
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sp = as.numeric(clean_sci_name)) %>%
-  select(clean_sci_name, FCR, sp) %>%
+  select(clean_sci_name, FCR, sp, n_study_with_data) %>%
   arrange(clean_sci_name)
 
 
@@ -233,16 +233,16 @@ x_mis <- lca_dat_na$FCR
 n_obs <- length(x_obs)
 n_mis <- length(x_mis)
 j <- length(unique(lca_dat_observed$sp))
-sp <- lca_dat_observed$sp
-
-#### LEFT OFF HERE - installing rtools40 (required to build R packages in Windows)
+sp_obs <- lca_dat_observed$sp
+sp_mis <- lca_dat_na$sp
 
 stan_grouped <- 'data {
   int<lower=0> n_obs;  // number of observations
   int<lower=0> n_mis;  // number of missing observations
   vector[n_obs] x_obs; // data
   int j; // number of species
-  int sp[n_obs]; // species indicators
+  int sp_obs[n_obs]; // species indicators for observed data
+  int sp_mis[n_mis]; // species indicators for NAs
 }
 parameters {
   real<lower=0> mu;
@@ -259,36 +259,83 @@ model {
 
   // likelihood
   sp_mu ~ normal(mu, sigma);
-  x_obs ~ normal(sp_mu[sp], sp_sigma);
-  x_mis ~ normal(sp_mu[sp], sp_sigma);
+  x_obs ~ normal(sp_mu[sp_obs], sp_sigma);
+  x_mis ~ normal(sp_mu[sp_mis], sp_sigma);
 
 }'
 
-
-# 
-stan_grouped_model <- stan_model(model_code = stan_grouped)
+grouped_mod <- stan_model(model_code = stan_grouped, verbose = TRUE)
+# Note: For Windows, apparently OK to ignore this warning message:
+# Warning message:
+#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
+#   'C:/rtools40/usr/mingw_/bin/g++' not found
 
 # Fit model:
-fit_grouped <- stan(model_code = stan_grouped, data = list(x_obs = x_obs,
+  fit_grouped <- sampling(object = grouped_mod, data = list(x_obs = x_obs,
+                                                           x_mis = x_mis,
                                                            n_obs = n_obs,
                                                            n_mis = n_mis,
                                                            j = j,
-                                                           sp = sp),
-                    iter = 50000, warmup = 1000, chain = 3, cores = 3)
+                                                           sp_obs = sp_obs,
+                                                           sp_mis = sp_mis))
 
 print(fit_grouped)
 
+
+# How to interpret sp index numbers:
+# What are the sample sizes per group:
+sp_index_key <- lca_dat_with_missing %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_sci_name = n()) %>%
+  ungroup() %>%
+  select(sp, clean_sci_name, n_sci_name) %>%
+  arrange(sp) %>%
+  unique() %>%
+  mutate(param_name = paste("sp_mu[", clean_sci_name, "]", sep =""))
+#write.csv(sp_index_key, file.path(outdir, "sp_info.csv"), row.names = FALSE)
+
+# How to interpret x_mis index numbers:
+x_mis_key <- lca_dat_with_missing %>%
+  filter(is.na(FCR)) %>%
+  group_by(clean_sci_name) %>%
+  mutate(sci_name_index = row_number()) %>%
+  mutate(param_name = paste("x_mis[", clean_sci_name, " ", sci_name_index, "]", sep = ""))
+
+# Replace param names; first copy to fit_grouped_clean so as not to overwrite original sampling output
+fit_grouped_clean <- fit_grouped
+names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "sp_mu")] <- sp_index_key$param_name
+names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "x_mis")] <- x_mis_key$param_name
+
+
+# Make plots of Posterior distributions with 80% credible intervals
+distribution_grouped <- as.matrix(fit_grouped_clean)
+p_mu <- mcmc_areas_ridges(distribution_grouped,
+                        pars = vars(contains("mu")),
+                        prob = 0.8)
+p_mu + ggtitle("Posterior distributions", "with 80% credible intervals")
+
+p_mis <- mcmc_areas_ridges(distribution_grouped,
+                       pars = vars(contains("x_mis")),
+                       prob = 0.8)
+p_mis + ggtitle("Posterior distributions", "with 80% credible intervals")
+
+p_sigma <- mcmc_areas_ridges(distribution_grouped,
+                             pars = vars(contains("sigma")),
+                             prob = 0.8)
+p_sigma + ggtitle("Posterior distributions", "with 80% credible intervals")
+
+
 ######################################################################################################
-# Model 3: Include all NA's and estimate FCR for multiple levels (not just species-level and global-level)
+# Model 3: Include NA's and estimate FCR for studies from lower levels - i.e., model more than just species-level and global-level
 
 # Which group-levels should be modeled?
 # First, get the sci_name of studies that have missing FCR data and no other studies of the same taxa
 missing_dat <- lca_dat_clean %>%
   group_by(clean_sci_name) %>%
-  mutate(n_study = n()) %>%
+  mutate(n_study_with_data = sum(is.na(FCR)==FALSE)) %>%
   ungroup() %>%
-  filter(is.na(FCR) & n_study == 1) %>%
-  select(clean_sci_name, sci_name_rank)
+  filter(is.na(FCR) & n_study_with_data == 0) %>%
+  select(clean_sci_name, sci_name_rank, n_study_with_data)
 
 # missing_dat
 # A tibble: 3 x 1
@@ -297,18 +344,31 @@ missing_dat <- lca_dat_clean %>%
 # 1 Actinopterygii 
 # 2 Macrobrachium 
 # 3 Brachyura     
+# 4 Mytilus edulis species                       
+# 5 Mytilus edulis species                       
+# 6 Mytilus edulis species                       
 
+# FIX IT - should be throwing a warning message for Brachyura and Mytilus edulis
 # Now which of these sci_names have no other studies with overlapping taxa
-# e.g., the FCR for the study on genus Macrobrachium does not need to be estimated because there are species-level studies of Macrobrachium spp.
+# e.g., the missing FCR data for the study on genus Macrobrachium can come from the species-level studies of Macrobrachium spp.
+# but the missing data for infraorder = Brachyura has no other overlapping studies
 for (i in 1:nrow(missing_dat)){
   taxa_na <- missing_dat[i,]$clean_sci_name
   rank_search <- sym(missing_dat[i,]$sci_name_rank)
   lca_dat_rank <- lca_dat_clean %>%
-    filter(!!rank_search == taxa_na)
+    group_by(clean_sci_name) %>%
+    mutate(n_study_with_data = sum(is.na(FCR)==FALSE)) %>% # how many studies per species that have data
+    ungroup() %>%
+    filter(filter(!!rank_search == taxa_na) | is.na(FCR) & n_study_with_data > 0)
   if (nrow(lca_dat_rank) == 1){
-    print(paste(taxa_na, " has no overlapping taxa with data", sep = ""))
+    print(paste(taxa_na, " has no overlapping taxa with observed data", sep = ""))
   }
 }
+
+# FIX IT - how to deal with Brachyura and Mytilus edulis
+# options:
+# keep them in, see if the model still runs?
+# remove them, but downstream analysis will have to use a higher-level (e.g., Suborder for infraorder Brachyura) when calculating posterior samples specific to Brachyura
 
 # Create species level and other higher group levels based on examining NAs...
 lca_dat_groups_full <- lca_dat_clean %>%
@@ -323,3 +383,5 @@ lca_dat_groups_full <- lca_dat_clean %>%
          ord = as.numeric(order),
          sbord = as.numeric(suborder),
          class = as.numeric(superclass))
+
+# To keep code simple for now, just model species, genus (to get Macrobrachium), and superclass (for Actinopterygii)
