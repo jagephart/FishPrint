@@ -5,6 +5,7 @@ library(tidyverse)
 library(rstan)
 library(taxize)
 library(data.table)
+library(countrycode) # part of clean.lca
 library(bayesplot) # for mcmc_areas_ridges
 
 # Mac
@@ -13,9 +14,14 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # Windows
 # datadir <- "K:/BFA Environment 2/Data"
 # outdir <- "K:BFA Environment 2/Outputs"
-lca_dat_clean <- read.csv(file.path(datadir, "lca_clean_with_ranks.csv"))
+
+lca_dat <- read.csv(file.path(datadir, "LCA_compiled.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+source("Functions.R")
+
+lca_dat_clean <- clean.lca(LCA_data = lca_dat)
 
 # FIX IT - remove bivalves from FCR analysis
+# LEFT OFF HERE - need to build in taxa group column based on groupings in google slides presentation
 
 ######################################################################################################
 # Model 1: Remove NA's, and estimate group-level feed conversion ratio for Nile tilapia, Oreochromis niloticus (species with the most FCR data)
@@ -199,7 +205,7 @@ ggsave(file.path(outdir, "plot_post-distribution-plot_FCR-by-species.png"), heig
 
 
 ######################################################################################################
-# Model 2a: Include NA's (but only for studies that have OTHER studies of the same taxa) and estimate group-level and global-level mu
+# Model 2a: Include NA's (but only for studies that have OTHER studies of the same taxa) and estimate sciname-level and allseafood-level mu
 
 # First, remove studies that have missing FCR data and no other studies of the same taxa
 lca_dat_with_missing <- lca_dat_clean %>%
@@ -326,7 +332,7 @@ p_sigma + ggtitle("Posterior distributions", "with 80% credible intervals")
 
 
 ######################################################################################################
-# Model 3: Include NA's and estimate FCR for studies from lower levels - i.e., model more than just species-level and global-level
+# Model 3: Include NA's and include sciname, taxagroup, and seafood-level hierarchies
 
 # Which group-levels should be modeled?
 # First, get the sci_name of studies that have missing FCR data and no other studies of the same taxa
