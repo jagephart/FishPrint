@@ -33,7 +33,31 @@ clean.lca <- function(LCA_data){
     select(Year, Country, iso3c, Scientific.Name = Species.scientific.name, Production_system, Sample_size,
            Environment, Intensity, Yield_t_per_HA, Grow_out_period_days, Mortality_rate, FCR, 
            Feed_type, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent, Feed_method,
-           Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L)
+           Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L) %>%
+    mutate(
+      Production_system_group = case_when(
+        (Production_system %in% c("Extensive raft culture", "Intensive lake net-pen", "Marine cages", "Marine net-pen",
+                                  "Marine floating bag", "Lake-based net cages", "Integrated marine rafts", "Longline",
+                                  "Bouchot culture", "Offshore cages", "Floating cages", "Net-pens", "Net pen",
+                                  "Freshwater net pen (?)", "Saltwater net pen", "Semi-intensive cages")) ~ "open",
+        (Production_system %in% c("Intensive pond", "Extensive pond polyculture", "Semi-intensive pond", "Extensive pond",
+                                  "Earthen pond aquaculture", "Integrated pond, high input", "Integrated pond, medium inputs",
+                                  "Solid-walled aquaculture system", "Reservoirs", "Earthen pond aquaculture integrated with pigs",
+                                  "Earthern ponds", "Earthern/concrete ponds", "Ponds", "Silvo pond")) ~ "semi-open",
+        (Production_system %in% c("Indoor recirculating", "Flow-through", "Land-based recirculating", "Onshore tanks",
+                                  "Saltwater flow-through", "Freshwater flow-through", "Recirculating system", 
+                                  "Land-based recirculating system", "Raceway", "Tanks / raceway", 
+                                  "Semi-closed recirculating system")) ~ "closed",
+        (Production_system %in% c("Integrated agri-aquaculture", "Unspecified", "Ecological farm", 
+                                  "Floating net-cage in polyculture pond", "", "Ponds / recirculating", 
+                                  "Ponds / pens")) ~ "not specified"
+      ),  # Check groupings (some recirculating not really closed...)
+      Intensity = case_when(
+        (Intensity %in% c("Intensive")) ~ "Intensive",
+        (Intensity %in% c("Semi-intensive", "Improved extensive", "Imp. extensive")) ~ "Semi-intensive",
+        (Intensity %in% c("Extensive")) ~ "Extensive"
+      ) # Many others can be identified based on the system description
+      )
   
 }
 
