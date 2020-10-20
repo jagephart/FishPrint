@@ -60,15 +60,11 @@ clean.lca <- function(LCA_data){
       ) # Many others can be identified based on the system description
       )
   
-  
-  
   # Clean scientific names data
   # Manually fill in blank scientific names
   # Change osteichthyes (technically includes all terapods) to actinopterygii (bony fishes)
   # Simplify hybrid M. chrysops x M. saxatilis to its genus
   # Change outdated names (P. vannamei and P hypophthalmus)
-  # Remove unnecessary columns
-  # Column clean_sci_name will be the "official" column used throughout code
   LCA_data <- LCA_data %>%
     mutate(Scientific.Name = case_when(Common.Name == "Freshwater prawn" ~ "Dendrobranchiata",
                                        Common.Name == "Indo-Pacific swamp crab; Swimming crabs, etc. nei" ~ "Brachyura",
@@ -84,6 +80,42 @@ clean.lca <- function(LCA_data){
                                       TRUE ~ Scientific.Name)) %>%
     mutate(FCR = case_when(str_detect(Scientific.Name, "Thunnus") ~ FCR/5,
                            TRUE ~ FCR)) 
+  
+  # sort(unique(LCA_data$clean_sci_name))
+  # [1] "Acipenseridae"               "Actinopterygii"              "Anguilla"                    "Anoplopoma fimbria"          "Astacidea"                   "Brachyura"                   "Chanos chanos"              
+  # [8] "Clarias batrachus"           "Clarias gariepinus"          "Cynoscion"                   "Cyprinus carpio"             "Dendrobranchiata"            "Dicentrarchus labrax"        "Epinephelus"                
+  # [15] "Gadus morhua"                "Lates calcarifer"            "Litopenaeus vannamei"        "Macrobrachium"               "Macrobrachium amazonicum"    "Macrobrachium rosenbergii"   "Morone"                     
+  # [22] "Mytilus edulis"              "Mytilus galloprovincialis"   "Oncorhynchus kisutch"        "Oncorhynchus mykiss"         "Oncorhynchus tshawytscha"    "Oreochromis niloticus"       "Pangasianodon hypophthalmus"
+  # [29] "Pangasius"                   "Penaeus"                     "Penaeus monodon"             "Rachycentron canadum"        "Salmo salar"                 "Salmonidae"                  "Salvelinus alpinus"         
+  # [36] "Sciaenops ocellatus"         "Scophthalmidae"              "Seriola rivoliana"           "Sparus aurata"               "Thunnus orientalis"          "Thunnus thynnus"   
+  
+  # LEFT OFF HERE: make sure all scinames have been assigned
+  # Use Column clean_sci_name or common.name to create taxa groupings will be the "official" column used throughout code
+  # Create taxa groupings
+  # CREATE "unassigned" category for: things that are not species-level Acipenseridae, Actinopterygii, Brachyura, Cynoscion spp, "Penaeus" can be fresh or marine
+  # "Dicentrarchus labrax", "Lates calcarifer", "Morone" are migratory - i.e., including oceans, estuaries, and rivers - all categorized as other non-herbivore fin fish for now
+  # Chanos chanos - mostly algae (but also inverts) - categorized as herbivore fin fish for now
+  LCA_data <- LCA_data %>%
+    mutate(taxa_group_name = case_when(clean_sci_name %in% c("") ~ "algae",
+                                  # clean_sci_name %in% c("") ~ "gastropods", # none
+                                  clean_sci_name %in% c("Mytilus galloprovincialis", "Mytilus edulis") ~ "bivalves",
+                                  clean_sci_name %in% c("Chanos chanos") ~ "herbivore finfish",
+                                  clean_sci_name %in% c("Litopenaeus vannamei", "Penaeus monodon") ~ "marine shrimp",
+                                  # clean_sci_name %in% c("") ~ "other marine crustacean",
+                                  Common.Name %in% c("Red crayfish", "Freshwater prawn") | clean_sci_name %in% ("Macrobrachium", "Macrobrachium amazonicum", "Macrobrachium rosenbergii") ~ "freshwater crustacean",
+                                  clean_sci_name %in% c("Thunnus orientalis", "Thunnus thynnus") ~ "tuna",
+                                  clean_sci_name %in% c("Oncorhynchus kisutch", "Oncorhynchus tshawytscha", "Salmo salar", "Salmonidae", "Salvelinus alpinus") ~ "salmon/char",
+                                  clean_sci_name %in% c("Anoplopoma fimbria", "Dicentrarchus labrax", "Epinephelus", "Gadus morhua", "Lates calcarifer", "Morone", "Rachycentron canadum", "Sciaenops ocellatus", "Scophthalmidae", "Seriola rivoliana", "Sparus aurata") ~ "other non-herbivore marine finfish",
+                                  clean_sci_name %in% c("Cyprinus carpio") ~ "carp",
+                                  clean_sci_name %in% c("Oreochromis niloticus") ~ "tilapia",
+                                  clean_sci_name %in% c("Clarias batrachus", "Clarias gariepinus", "Pangasianodon hypophthalmus", "Pangasius") ~ "catfish",
+                                  clean_sci_name %in% c("Anguilla") ~ "eel",
+                                  clean_sci_name %in% c("Oncorhynchus mykiss") ~ "trout",
+                                  clean_sci_name %in% c("Pangasianodon hypophthalmus") ~ "other freshwater finfish",
+                                  # clean_sci_name %in% c("") ~ "amphibians and reptiles", # none
+                                  clean_sci_name %in% c("Acipenseridae", "Actinopterygii", "Brachyura", "Cynoscion", "Penaeus") ~ "unassigned"
+                                  ))
+  
 }
 
 #_____________________________________________________________________________________________________#
