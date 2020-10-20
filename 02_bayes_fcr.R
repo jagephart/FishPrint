@@ -335,7 +335,8 @@ missing_dat <- lca_dat_clean %>%
   mutate(n_study_with_data = sum(is.na(FCR)==FALSE)) %>%
   ungroup() %>%
   filter(is.na(FCR) & n_study_with_data == 0) %>%
-  select(clean_sci_name, sci_name_rank, n_study_with_data)
+  select(clean_sci_name, sci_name_rank, n_study_with_data) %>%
+  unique()
 
 # missing_dat
 # A tibble: 3 x 1
@@ -348,40 +349,87 @@ missing_dat <- lca_dat_clean %>%
 # 5 Mytilus edulis species                       
 # 6 Mytilus edulis species                       
 
-# FIX IT - should be throwing a warning message for Brachyura and Mytilus edulis
-# Now which of these sci_names have no other studies with overlapping taxa
+# Test missing_dat and create a vector (drop_taxa) of sci_names that have no other studies from lower classification levels
 # e.g., the missing FCR data for the study on genus Macrobrachium can come from the species-level studies of Macrobrachium spp.
-# but the missing data for infraorder = Brachyura has no other overlapping studies
+# but the missing data for infraorder = Brachyura has no other studies of lower-level taxa to draw this info from
+drop_taxa <- NULL
 for (i in 1:nrow(missing_dat)){
   taxa_na <- missing_dat[i,]$clean_sci_name
   rank_search <- sym(missing_dat[i,]$sci_name_rank)
   lca_dat_rank <- lca_dat_clean %>%
-    group_by(clean_sci_name) %>%
-    mutate(n_study_with_data = sum(is.na(FCR)==FALSE)) %>% # how many studies per species that have data
-    ungroup() %>%
-    filter(filter(!!rank_search == taxa_na) | is.na(FCR) & n_study_with_data > 0)
-  if (nrow(lca_dat_rank) == 1){
+    filter(!!rank_search == taxa_na) %>%
+    filter(is.na(FCR)==FALSE)
+  if (nrow(lca_dat_rank) == 0){
     print(paste(taxa_na, " has no overlapping taxa with observed data", sep = ""))
+    drop_taxa <- append(drop_taxa, values = taxa_na)
   }
 }
 
 # FIX IT - how to deal with Brachyura and Mytilus edulis
 # options:
-# keep them in, see if the model still runs?
 # remove them, but downstream analysis will have to use a higher-level (e.g., Suborder for infraorder Brachyura) when calculating posterior samples specific to Brachyura
+# keep them in, see if the model still runs?
 
-# Create species level and other higher group levels based on examining NAs...
+# 
+# Create species level and other higher group levels
 lca_dat_groups_full <- lca_dat_clean %>%
-  group_by(clean_sci_name) %>%
-  mutate(n_studies = n()) %>%
-  ungroup() %>%
-  filter((is.na(FCR) & n_studies != 1)==FALSE) %>%
+  filter(clean_sci_name %in% drop_taxa == FALSE) %>%
   mutate(across(where(is.character), as.factor),
          sp = as.numeric(species),
          gen = as.numeric(genus),
          fam = as.numeric(family),
          ord = as.numeric(order),
          sbord = as.numeric(suborder),
-         class = as.numeric(superclass))
+         spcl = as.numeric(superclass)) %>%
+  droplevels()
 
-# To keep code simple for now, just model species, genus (to get Macrobrachium), and superclass (for Actinopterygii)
+# To keep code simple for now, just model species, genus (to get Macrobrachium), superclass (for Actinopterygii), and global (across all taxa)
+
+# Data that enter at the "x" level (individual studies that are species)
+x_obs <- lca_dat_groups_full %>% filter(is.na(sp) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "species") %>% select(clean_sci_name, FCR, sp)
+#x_mis <- lca_dat_groups_full %>% filter(is.na(sp) == FALSE & is.na(FCR) == TRUE & sci_name_rank == "species") %>% select(clean_sci_name, FCR) %>% unique() # FIX IT - leave these out? don't need to estimate these?
+
+x_gen_obs <- lca_dat_groups_full %>% filter(is.na(gen) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "genus") %>% select(clean_sci_name, FCR) %>% unique()
+x_gen_mis <- lca_dat_groups_full %>% filter(is.na(gen) == FALSE & is.na(FCR) == TRUE & sci_name_rank == "genus") %>% select(clean_sci_name, FCR) %>% unique()
+
+# FIX IT -leave these out since there's no observed data and we're estimating from lower levels:
+#x_spcl_obs <- lca_dat_groups_full %>% filter(is.na(gen) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "superclass") %>% select(clean_sci_name, FCR) %>% unique() 
+#x_spcl_mis <- lca_dat_groups_full %>% filter(is.na(gen) == FALSE & is.na(FCR) == TRUE & sci_name_rank == "superclass") %>% select(clean_sci_name, FCR) %>% unique() 
+
+n_x_obs <- length(x_obs)
+n_gen_obs <- length(x_gen_obs)
+n_gen_mis <- length(x_gen_mis)
+j <- length(unique(lca_dat_observed$sp))
+sp_obs <- lca_dat_observed$sp
+sp_mis <- lca_dat_na$sp
+
+stan_grouped <- 'data {
+  int<lower=0> n_obs;  // number of observations
+  int<lower=0> n_mis;  // number of missing observations
+  vector[n_obs] x_obs; // data
+  int j; // number of species
+  int sp_obs[n_obs]; // species indicators for observed data
+  int sp_mis[n_mis]; // species indicators for NAs
+}
+parameters {
+  real<lower=0> mu;
+  real<lower=0> sp_sigma;
+  vector[j] sp_mu;
+  real<lower=0> sigma;
+  real x_mis[n_mis]; // missing data are treated as parameters
+}
+
+model {
+  // priors
+  // sigma ~ cauchy(0, 5);
+  // note: because priors are optional, not sure whether I should bother giving sigma a cauchy distribution
+
+  // likelihood
+  spcl_mu[spcl_index] ~ normal(mu, sigma);
+  gen_mu[gen_obs] ~ normal(spcl_mu[spcl_index], spcl_sigma);
+  gen_mu[gen_mis] ~ normal(spcl_mu[spcl_index], spcl_sigma);
+  sp_mu[sp_obs] ~ normal(gen_mu[gen_obs], gen_sigma);
+  sp_mu[sp_obs] ~ normal(gen_mu[gen_mis], gen_sigma);
+  x_obs ~ normal(sp_mu[sp_obs], sp_sigma);
+
+}'

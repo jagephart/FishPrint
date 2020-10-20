@@ -37,6 +37,13 @@ lca_fix_names <- lca_dat %>%
 ################################################################################################################
 # use package taxize to get higher classification levels for each species
 
+# LEFT OFF HERE:
+# FIX IT - need to get API key for ncbi eventually started getting the following message:
+# No ENTREZ API key provided
+# Get one via taxize::use_entrez()
+# See https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new-api-keys-for-the-e-utilities/
+#   Error: Too Many Requests (HTTP 429)
+
 # Use NCBI database? more resolution, but have to remove all the different "clade" ranks - can't merge on this name
 # classify_ncbi <- classification("Penaeus monodon", db = "ncbi")
 # classify_ncbi[[1]]
@@ -48,6 +55,13 @@ lca_fix_names <- lca_dat %>%
 # classify_worms <- classification("Thunnus albacares", db = "worms")
 # classify_worms[[1]]
 
+# WORMS is unable to find results for:
+# no_results
+# Clarias gariepinus                TRUE
+# Macrobrachium amazonicum          TRUE
+# Pangasianodon hypophthalmus       TRUE
+# Pangasius hypophthalmus           TRUE
+
 # Get full species list
 species_list <- sort(unique(lca_fix_names$clean_sci_name))
 # TEST: species_list <- c("Penaeus monodon", "Oreochromis niloticus")
@@ -56,7 +70,7 @@ species_list <- sort(unique(lca_fix_names$clean_sci_name))
 # Use classification function to get higher ranks for all species
 # IMPORTANT: RUN THIS AS A SINGLE LINE, otherwise when function asks for further input Re: osteichthyes, it will accept next line of code as the input
 # NOTE: when prompted choose "bony fishes" for osteichthyes
-taxa_ranks <- lapply(species_list, classification, db = "ncbi")
+taxa_ranks <- lapply(species_list, classification, db = "worms")
 
 # Which taxa did not find a match in the classification database:
 classify_test <- data.frame(no_results = unlist(lapply(taxa_ranks, is.na))) %>%
