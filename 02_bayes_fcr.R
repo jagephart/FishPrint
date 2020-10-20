@@ -424,7 +424,7 @@ x_spcl_mis_dat <- lca_dat_groups_full %>% filter(is.na(spcl) == FALSE & is.na(FC
 sp_obs <- lca_dat_observed$sp
 sp_mis <- lca_dat_na$sp
 
-# LEFT OFF HERE: WHERE DOES GENUS-LEVEL DATA go in the likelihood code
+# LEFT OFF HERE: WHERE DOES GENUS-LEVEL DATA go in the likelihood
 stan_grouped <- 'data {
   vector[n_x_obs] x_obs; // species-level data
   int<lower=0> n_x_obs;  // number of species observations
