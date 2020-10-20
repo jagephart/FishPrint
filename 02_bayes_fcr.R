@@ -271,13 +271,13 @@ grouped_mod <- stan_model(model_code = stan_grouped, verbose = TRUE)
 #   'C:/rtools40/usr/mingw_/bin/g++' not found
 
 # Fit model:
-  fit_grouped <- sampling(object = grouped_mod, data = list(x_obs = x_obs,
-                                                           x_mis = x_mis,
-                                                           n_obs = n_obs,
-                                                           n_mis = n_mis,
-                                                           j = j,
-                                                           sp_obs = sp_obs,
-                                                           sp_mis = sp_mis))
+fit_grouped <- sampling(object = grouped_mod, data = list(x_obs = x_obs,
+                                                          x_mis = x_mis,
+                                                          n_obs = n_obs,
+                                                          n_mis = n_mis,
+                                                          j = j,
+                                                          sp_obs = sp_obs,
+                                                          sp_mis = sp_mis))
 
 print(fit_grouped)
 
@@ -335,19 +335,17 @@ missing_dat <- lca_dat_clean %>%
   mutate(n_study_with_data = sum(is.na(FCR)==FALSE)) %>%
   ungroup() %>%
   filter(is.na(FCR) & n_study_with_data == 0) %>%
-  select(clean_sci_name, sci_name_rank, n_study_with_data) %>%
+  select(clean_sci_name, sci_name_rank) %>%
   unique()
 
 # missing_dat
-# A tibble: 3 x 1
-# clean_sci_name
-# <chr>         
-# 1 Actinopterygii 
-# 2 Macrobrachium 
-# 3 Brachyura     
-# 4 Mytilus edulis species                       
-# 5 Mytilus edulis species                       
-# 6 Mytilus edulis species                       
+# A tibble: 4 x 2
+# clean_sci_name sci_name_rank
+# <chr>          <chr>        
+# 1 Actinopterygii superclass   
+# 2 Macrobrachium  genus        
+# 3 Brachyura      infraorder   
+# 4 Mytilus edulis species                      
 
 # Test missing_dat and create a vector (drop_taxa) of sci_names that have no other studies from lower classification levels
 # e.g., the missing FCR data for the study on genus Macrobrachium can come from the species-level studies of Macrobrachium spp.
@@ -360,63 +358,98 @@ for (i in 1:nrow(missing_dat)){
     filter(!!rank_search == taxa_na) %>%
     filter(is.na(FCR)==FALSE)
   if (nrow(lca_dat_rank) == 0){
-    print(paste(taxa_na, " has no overlapping taxa with observed data", sep = ""))
+    print(paste(taxa_na, " ", rank_search, " has no overlapping taxa with observed data", sep = ""))
     drop_taxa <- append(drop_taxa, values = taxa_na)
   }
 }
 
-# FIX IT - how to deal with Brachyura and Mytilus edulis
-# options:
-# remove them, but downstream analysis will have to use a higher-level (e.g., Suborder for infraorder Brachyura) when calculating posterior samples specific to Brachyura
-# keep them in, see if the model still runs?
+# options: 
+# 1 - remove drop_taxa (no overlapping taxa with observed data) from dataset?
+# 2 - keep all taxa in missing_dat - i.e., model them as missing data, which means having to include each of their classification levels in the hierarchies
 
-# 
+# For now, keep it simple, just species, genus, and global (so remove Actinopterygii and Brachyura since they are NAs and their levels aren't included)
 # Create species level and other higher group levels
 lca_dat_groups_full <- lca_dat_clean %>%
-  filter(clean_sci_name %in% drop_taxa == FALSE) %>%
+  filter(clean_sci_name %in% c("Actinopterygii", "Brachyura")) %>% 
   mutate(across(where(is.character), as.factor),
          sp = as.numeric(species),
          gen = as.numeric(genus),
          fam = as.numeric(family),
+         iord = as.numeric(infraorder),
          ord = as.numeric(order),
-         sbord = as.numeric(suborder),
          spcl = as.numeric(superclass)) %>%
   droplevels()
 
-# To keep code simple for now, just model species, genus (to get Macrobrachium), superclass (for Actinopterygii), and global (across all taxa)
+# How to interpret sp index numbers:
+sp_index_key <- lca_dat_groups_full %>%
+  select(clean_sci_name, sp, gen, iord, spcl) %>%
+  arrange(clean_sci_name) %>%
+  unique() %>%
+  mutate(param_name = case_when(is.na(sp)==FALSE ~ paste("sp_mu[", clean_sci_name, "]", sep =""),
+                                TRUE ~ "TBD"))
+#write.csv(sp_index_key, file.path(outdir, "sp_info.csv"), row.names = FALSE)
+
+# For now, just try Hierarchies to include: species, genus (to get Macrobrachium), infraorder (for Brachyura), superclass (for Actinopterygii), and global (across all taxa)
 
 # Data that enter at the "x" level (individual studies that are species)
-x_obs <- lca_dat_groups_full %>% filter(is.na(sp) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "species") %>% select(clean_sci_name, FCR, sp)
-#x_mis <- lca_dat_groups_full %>% filter(is.na(sp) == FALSE & is.na(FCR) == TRUE & sci_name_rank == "species") %>% select(clean_sci_name, FCR) %>% unique() # FIX IT - leave these out? don't need to estimate these?
-
-x_gen_obs <- lca_dat_groups_full %>% filter(is.na(gen) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "genus") %>% select(clean_sci_name, FCR) %>% unique()
-x_gen_mis <- lca_dat_groups_full %>% filter(is.na(gen) == FALSE & is.na(FCR) == TRUE & sci_name_rank == "genus") %>% select(clean_sci_name, FCR) %>% unique()
-
-# FIX IT -leave these out since there's no observed data and we're estimating from lower levels:
-#x_spcl_obs <- lca_dat_groups_full %>% filter(is.na(gen) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "superclass") %>% select(clean_sci_name, FCR) %>% unique() 
-#x_spcl_mis <- lca_dat_groups_full %>% filter(is.na(gen) == FALSE & is.na(FCR) == TRUE & sci_name_rank == "superclass") %>% select(clean_sci_name, FCR) %>% unique() 
-
+x_obs_dat <- lca_dat_groups_full %>% filter(is.na(sp) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "species") %>% select(clean_sci_name, FCR, sp)
+x_mis_dat <- lca_dat_groups_full %>% filter(is.na(sp) == FALSE & is.na(FCR) == TRUE & sci_name_rank == "species") %>% select(clean_sci_name, FCR, sp) 
+x_obs <- x_obs_dat$FCR
+x_mis <- x_mis_dat$FCR
+sp_obs <- x_obs_dat$sp
+sp_mis <- x_mis_dat$sp
 n_x_obs <- length(x_obs)
-n_gen_obs <- length(x_gen_obs)
-n_gen_mis <- length(x_gen_mis)
-j <- length(unique(lca_dat_observed$sp))
+n_x_mis <- length(n_mis)
+n_sp <- length(unique(lca_dat_groups_full$sp))
+
+# Note: for all missing data frames below (e.g., x_gen_mis_dat), we include sci_name_rank for all lower levels (i.e., genus and species) because we still want the genus indices for all species so this can pool up to higher levels
+x_gen_obs_dat <- lca_dat_groups_full %>% filter(is.na(gen) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "genus") %>% select(clean_sci_name, FCR, gen)
+x_gen_mis_dat <- lca_dat_groups_full %>% filter(is.na(gen) == FALSE & is.na(FCR) == TRUE & sci_name_rank %in% c("genus", "species")) %>% select(clean_sci_name, FCR, gen)
+x_gen_obs <- x_gen_obs_dat$FCR
+x_gen_mis <- x_gen_mis_dat$FCR
+gen_obs <- x_gen_obs_dat$gen
+gen_mis <- x_gen_mis_dat$gen
+n_x_gen_obs <- length(x_gen_obs)
+n_x_gen_mis <- length(x_gen_mis)
+n_gen <- length(unique(lca_dat_groups_full$gen))
+
+x_iord_obs_dat <- lca_dat_groups_full %>% filter(is.na(iord) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "infraorder") %>% select(clean_sci_name, FCR, iord)
+x_iord_mis_dat <- lca_dat_groups_full %>% filter(is.na(iord) == FALSE & is.na(FCR) == TRUE & sci_name_rank %in% c("infraorder", "genus", "species")) %>% select(clean_sci_name, FCR, iord)
+
+# Note: no observed data at the superclass level (all missing)
+# x_spcl_obs_dat <- lca_dat_groups_full %>% filter(is.na(spcl) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "superclass") %>% select(clean_sci_name, FCR, spcl)
+x_spcl_mis_dat <- lca_dat_groups_full %>% filter(is.na(spcl) == FALSE & is.na(FCR) == TRUE & sci_name_rank %in% c("superclass", "infraorder", "genus", "species")) %>% select(clean_sci_name, FCR, spcl)
+
+
 sp_obs <- lca_dat_observed$sp
 sp_mis <- lca_dat_na$sp
 
+# LEFT OFF HERE: WHERE DOES GENUS-LEVEL DATA go in the likelihood
 stan_grouped <- 'data {
-  int<lower=0> n_obs;  // number of observations
-  int<lower=0> n_mis;  // number of missing observations
-  vector[n_obs] x_obs; // data
-  int j; // number of species
-  int sp_obs[n_obs]; // species indicators for observed data
-  int sp_mis[n_mis]; // species indicators for NAs
+  vector[n_x_obs] x_obs; // species-level data
+  int<lower=0> n_x_obs;  // number of species observations
+  int<lower=0> n_x_mis;  // number of missing species observations
+  int n_sp; // number of species
+  int sp_obs[n_x_obs]; // species indicators for observed data
+  int sp_mis[n_x_mis]; // species indicators for NAs
+  vector[n_x_gen_obs] x_gen_obs; //genus-level data
+  int<lower=0> n_x_gen_obs;  // number of genus-level observations
+  int<lower=0> n_x_gen_mis;  // number of missing genus-level observations
+  int n_gen; // number of genera
+  int gen_obs[n_x_gen_obs]; // species indicators for observed data
+  int gen_obs[n_x_gen_mis]; // species indicators for NAs
 }
 parameters {
   real<lower=0> mu;
-  real<lower=0> sp_sigma;
-  vector[j] sp_mu;
   real<lower=0> sigma;
-  real x_mis[n_mis]; // missing data are treated as parameters
+  vector[n_gen] gen_mu;
+  real<lower=0> gen_sigma;
+  vector[n_sp] sp_mu;
+  real<lower=0> sp_sigma;
+
+
+  real x_mis[n_x_mis]; // missing data are treated as parameters
+  
 }
 
 model {
@@ -425,11 +458,10 @@ model {
   // note: because priors are optional, not sure whether I should bother giving sigma a cauchy distribution
 
   // likelihood
-  spcl_mu[spcl_index] ~ normal(mu, sigma);
-  gen_mu[gen_obs] ~ normal(spcl_mu[spcl_index], spcl_sigma);
-  gen_mu[gen_mis] ~ normal(spcl_mu[spcl_index], spcl_sigma);
-  sp_mu[sp_obs] ~ normal(gen_mu[gen_obs], gen_sigma);
-  sp_mu[sp_obs] ~ normal(gen_mu[gen_mis], gen_sigma);
+  gen_mu ~ normal(mu, sigma);
+  sp_mu ~ normal(gen_mu[gen_obs], gen_sigma);
+  sp_mu ~ normal(gen_mu[gen_mis], gen_sigma);
   x_obs ~ normal(sp_mu[sp_obs], sp_sigma);
+  x_mis ~ normal(sp_mu[sp_mis], sp_sigma);
 
 }'
