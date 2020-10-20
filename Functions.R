@@ -58,6 +58,7 @@ clean.lca <- function(LCA_data){
         (Intensity %in% c("Semi-intensive", "Improved extensive", "Imp. extensive")) ~ "Semi-intensive",
         (Intensity %in% c("Extensive")) ~ "Extensive"
       ) # Many others can be identified based on the system description
+      # Add fed/un-fed categories and replace FCR with 0 for all unfed 
       )
   
   # Clean scientific names data
