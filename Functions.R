@@ -30,7 +30,8 @@ clean.lca <- function(LCA_data){
     Feed_FMFO_percent = Feed_FMFO_percent/sum_percent,
     Feed_animal_percent = Feed_animal_percent/sum_percent
     ) %>%
-    select(Year, Country, iso3c, Scientific.Name = Species.scientific.name, Production_system, Sample_size,
+    select(Year, Country, iso3c, Scientific.Name = Species.scientific.name, Common.Name = Species.common.name, 
+           Production_system, Sample_size,
            Environment, Intensity, Yield_t_per_HA, Grow_out_period_days, Mortality_rate, FCR, 
            Feed_type, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent, Feed_method,
            Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L) %>%
@@ -59,6 +60,30 @@ clean.lca <- function(LCA_data){
       ) # Many others can be identified based on the system description
       )
   
+  
+  
+  # Clean scientific names data
+  # Manually fill in blank scientific names
+  # Change osteichthyes (technically includes all terapods) to actinopterygii (bony fishes)
+  # Simplify hybrid M. chrysops x M. saxatilis to its genus
+  # Change outdated names (P. vannamei and P hypophthalmus)
+  # Remove unnecessary columns
+  # Column clean_sci_name will be the "official" column used throughout code
+  LCA_data <- LCA_data %>%
+    mutate(Scientific.Name = case_when(Common.Name == "Freshwater prawn" ~ "Dendrobranchiata",
+                                       Common.Name == "Indo-Pacific swamp crab; Swimming crabs, etc. nei" ~ "Brachyura",
+                                       Common.Name == "Red crayfish" ~ "Astacidea", # crayfish are split into two superfamilies, so go to the next higher-classification, infraorder = Astacidea
+                                       Common.Name == "Salmonids nei" ~ "Salmonidae",
+                                       Common.Name == "Yellowtail_Seriola_Almaco jack" ~ "Seriola rivoliana",
+                                               TRUE ~ Scientific.Name)) %>%
+    mutate(clean_sci_name = case_when(str_detect(Scientific.Name, "spp") ~ str_replace(Scientific.Name, pattern = " spp\\.| spp", replacement = ""),
+                                      Scientific.Name == "Morone chrysops x M. saxatilis" ~ "Morone",
+                                      Scientific.Name == "Osteichthyes" ~ "Actinopterygii",
+                                      Scientific.Name == "Penaeus vannamei" ~ "Litopenaeus vannamei",
+                                      Scientific.Name == "Pangasius hypophthalmus" ~ "Pangasianodon hypophthalmus", 
+                                      TRUE ~ Scientific.Name)) %>%
+    mutate(FCR = case_when(str_detect(Scientific.Name, "Thunnus") ~ FCR/5,
+                           TRUE ~ FCR)) 
 }
 
 #_____________________________________________________________________________________________________#
