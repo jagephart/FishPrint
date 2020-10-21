@@ -61,13 +61,13 @@ clean.lca <- function(LCA_data){
       # Add fed/un-fed categories and replace FCR with 0 for all unfed 
       )
   
-  # Clean scientific names data
-  # Manually fill in blank scientific names
+  # Note: Create column clean_sci_name - use this as the "official" scientific name column
+  # Manually fill in blank scientific names based on Common.Name
   # Change osteichthyes (technically includes all terapods) to actinopterygii (bony fishes)
   # Simplify hybrid M. chrysops x M. saxatilis to its genus
   # Change outdated names (P. vannamei and P hypophthalmus)
   LCA_data <- LCA_data %>%
-    mutate(Scientific.Name = case_when(Common.Name == "Freshwater prawn" ~ "Dendrobranchiata",
+    mutate(clean_sci_name = case_when(Common.Name == "Freshwater prawn" ~ "Dendrobranchiata",
                                        Common.Name == "Indo-Pacific swamp crab; Swimming crabs, etc. nei" ~ "Brachyura",
                                        Common.Name == "Red crayfish" ~ "Astacidea", # crayfish are split into two superfamilies, so go to the next higher-classification, infraorder = Astacidea
                                        Common.Name == "Salmonids nei" ~ "Salmonidae",
@@ -91,7 +91,6 @@ clean.lca <- function(LCA_data){
   # [36] "Sciaenops ocellatus"         "Scophthalmidae"              "Seriola rivoliana"           "Sparus aurata"               "Thunnus orientalis"          "Thunnus thynnus"   
   
   # Use Column clean_sci_name and common.name to create taxa groupings
-  # Note: use clean_sci_name as the "official" scientific name column used throughout code
   # CREATE "unassigned" category for: things that are not species-level Acipenseridae, Actinopterygii, Brachyura, Cynoscion spp, "Penaeus" can be fresh or marine
   # "Dicentrarchus labrax", "Lates calcarifer", "Morone" are migratory - i.e., including oceans, estuaries, and rivers - all categorized as other non-herbivore fin fish for now
   # Chanos chanos - mostly algae (but also inverts) - categorized as herbivore fin fish for now
