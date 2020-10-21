@@ -114,7 +114,8 @@ clean.lca <- function(LCA_data){
                                   clean_sci_name %in% c("Pangasianodon hypophthalmus") ~ "other freshwater finfish",
                                   # clean_sci_name %in% c("") ~ "amphibians and reptiles", # none
                                   TRUE ~ "unassigned"
-                                  ))
+                                  )) %>%
+    arrange(clean_sci_name) # LAST STEP arrange by sciname
   
 }
 

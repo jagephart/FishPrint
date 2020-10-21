@@ -645,7 +645,7 @@ fit_grouped <- sampling(object = grouped_mod, data = list(x_obs = x_obs,
                                                           n_grp_obs = n_grp_obs,
                                                           n_grp_mis = n_grp_mis,
                                                           n_grp = n_grp),
-                        iter = 10000, warmup = 1000, chain = 3, cores = 3)
+                        iter = 50000, warmup = 1000, chain = 3, cores = 1)
 # IF STILL CRASHING, TRY RUNNING ON ONE CORE
 print(fit_grouped)
 
