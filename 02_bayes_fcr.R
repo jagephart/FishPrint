@@ -334,7 +334,7 @@ p_sigma <- mcmc_areas_ridges(distribution_grouped,
 p_sigma + ggtitle("Posterior distributions", "with 80% credible intervals")
 
 ######################################################################################################
-# Model 2b: Same as 2a, but use gamma distribution instead of normal
+# Model 2b: Same as 2a, but use gamma distribution instead of normal - STILL HAVE NOT FINISHED CODING THIS SECTION
 
 # First, remove studies that have missing FCR data and no other studies of the same taxa
 lca_dat_with_missing <- lca_dat_clean %>%
@@ -505,11 +505,20 @@ lca_dat_groups_full <- lca_dat_clean %>%
   droplevels() %>%
   arrange(clean_sci_name)
 
-groupings_key <- lca_dat_groups_full %>%
+name_assignments_key <- lca_dat_groups_full %>%
   select(Scientific.Name, Common.Name, clean_sci_name, taxa_group_name) %>%
   unique()
 
-write.csv(groupings_key, file.path(outdir, "groupings_key.csv"), row.names = FALSE)
+write.csv(name_assignments_key, file.path(outdir, "name_assignments_key.csv"), row.names = FALSE)
+
+groupings_and_sample_size_key <- lca_dat_groups_full %>%
+  group_by(clean_sci_name) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  select(clean_sci_name, taxa_group_name, n) %>%
+  unique()
+
+write.csv(groupings_and_sample_size_key, file.path(outdir, "sample_size_key.csv"), row.names = FALSE)
 
 # Data "x" that enter at the clean_sci_name level (individual studies, regardless of classification ranking)
 x_obs_dat <- lca_dat_groups_full %>% filter(is.na(FCR) == FALSE) %>% select(clean_sci_name, FCR, sci_level, taxa_group_name, grp_level)
@@ -530,47 +539,47 @@ n_grp_mis <- length(grp_mis_key)
 n_grp <- length(unique(lca_dat_groups_full$grp_level))
 
 # ORIGINAL grouped model (RUNS OK, but still trying to get to converge)
-stan_grouped <- 'data {
-  int<lower=0> n_obs;  // number of observations
-  int<lower=0> n_mis;  // number of missing observations
-  vector[n_obs] x_obs; // sciname-level data
-  int sci_obs[n_obs]; // sciname indicators for observed data
-  int sci_mis[n_mis]; // sciname indicators for missing data
-  int n_sci; // number of total scinames
-  int<lower=0> n_grp_obs; // number of groups in observed data
-  int<lower=0> n_grp_mis; // number of groups in missing data
-  int grp_obs_key[n_grp_obs]; // group indicators for observed data
-  int grp_mis_key[n_grp_mis]; // group indicators for missing data
-  int n_grp; // number of total group names
-}
-parameters {
-  real<lower=0> mu;
-  real<lower=0> sigma;
-  vector[n_grp] grp_mu;
-  real<lower=0> grp_sigma;
-  vector[n_sci] sci_mu;
-  real<lower=0> sci_sigma;
-  real x_mis[n_mis]; // missing data are treated as parameters
-
-}
-
-model {
-  // priors
-  // sigma ~ cauchy(0, 5);
-  // note: because priors are optional, not sure whether I should bother giving sigma a cauchy distribution
-
-  // likelihood
-  grp_mu ~ normal(mu, sigma);
-  for (i in 1:n_grp_obs){
-    sci_mu ~ normal(grp_mu[grp_obs_key[i]], grp_sigma);
-  }
-  for (j in 1:n_grp_mis){
-    sci_mu ~ normal(grp_mu[grp_mis_key[j]], grp_sigma);
-  }
-  x_obs ~ normal(sci_mu[sci_obs], sci_sigma);
-  x_mis ~ normal(sci_mu[sci_mis], sci_sigma);
-
-}'
+# stan_grouped <- 'data {
+#   int<lower=0> n_obs;  // number of observations
+#   int<lower=0> n_mis;  // number of missing observations
+#   vector[n_obs] x_obs; // sciname-level data
+#   int sci_obs[n_obs]; // sciname indicators for observed data
+#   int sci_mis[n_mis]; // sciname indicators for missing data
+#   int n_sci; // number of total scinames
+#   int<lower=0> n_grp_obs; // number of groups in observed data
+#   int<lower=0> n_grp_mis; // number of groups in missing data
+#   int grp_obs_key[n_grp_obs]; // group indicators for observed data
+#   int grp_mis_key[n_grp_mis]; // group indicators for missing data
+#   int n_grp; // number of total group names
+# }
+# parameters {
+#   real<lower=0> mu;
+#   real<lower=0> sigma;
+#   vector[n_grp] grp_mu;
+#   real<lower=0> grp_sigma;
+#   vector[n_sci] sci_mu;
+#   real<lower=0> sci_sigma;
+#   real x_mis[n_mis]; // missing data are treated as parameters
+# 
+# }
+# 
+# model {
+#   // priors
+#   // sigma ~ cauchy(0, 5);
+#   // note: because priors are optional, not sure whether I should bother giving sigma a cauchy distribution
+# 
+#   // likelihood
+#   grp_mu ~ normal(mu, sigma);
+#   for (i in 1:n_grp_obs){
+#     sci_mu ~ normal(grp_mu[grp_obs_key[i]], grp_sigma);
+#   }
+#   for (j in 1:n_grp_mis){
+#     sci_mu ~ normal(grp_mu[grp_mis_key[j]], grp_sigma);
+#   }
+#   x_obs ~ normal(sci_mu[sci_obs], sci_sigma);
+#   x_mis ~ normal(sci_mu[sci_mis], sci_sigma);
+# 
+# }'
 
 # NEW MODEL WITH MORE SPECIFIC BOUNDS ON PARAMETERS
 stan_grouped <- 'data {
@@ -636,8 +645,8 @@ fit_grouped <- sampling(object = grouped_mod, data = list(x_obs = x_obs,
                                                           n_grp_obs = n_grp_obs,
                                                           n_grp_mis = n_grp_mis,
                                                           n_grp = n_grp),
-                        iter = 50000, warmup = 1000, chain = 3, cores = 3)
-
+                        iter = 10000, warmup = 1000, chain = 3, cores = 3)
+# IF STILL CRASHING, TRY RUNNING ON ONE CORE
 print(fit_grouped)
 
 # How to interpret sci index numbers:

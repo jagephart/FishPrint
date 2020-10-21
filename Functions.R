@@ -78,7 +78,7 @@ clean.lca <- function(LCA_data){
                                       Scientific.Name == "Osteichthyes" ~ "Actinopterygii",
                                       Scientific.Name == "Penaeus vannamei" ~ "Litopenaeus vannamei",
                                       Scientific.Name == "Pangasius hypophthalmus" ~ "Pangasianodon hypophthalmus", 
-                                      TRUE ~ Scientific.Name)) %>%
+                                      TRUE ~ clean_sci_name)) %>%
     mutate(FCR = case_when(str_detect(Scientific.Name, "Thunnus") ~ FCR/5,
                            TRUE ~ FCR)) 
   
