@@ -20,8 +20,11 @@ source("Functions.R")
 
 lca_dat_clean <- clean.lca(LCA_data = lca_dat)
 
-# FIX IT - remove bivalves from FCR analysis
-# LEFT OFF HERE - need to build in taxa group column based on groupings in google slides presentation
+# Remove bivalves from FCR analysis
+lca_dat_clean <- lca_dat_clean %>%
+  filter(taxa_group_name != "bivalves")
+  
+
 
 ######################################################################################################
 # Model 1: Remove NA's, and estimate group-level feed conversion ratio for Nile tilapia, Oreochromis niloticus (species with the most FCR data)
@@ -330,20 +333,145 @@ p_sigma <- mcmc_areas_ridges(distribution_grouped,
                              prob = 0.8)
 p_sigma + ggtitle("Posterior distributions", "with 80% credible intervals")
 
+######################################################################################################
+# Model 2b: Same as 2a, but use gamma distribution instead of normal
+
+# First, remove studies that have missing FCR data and no other studies of the same taxa
+lca_dat_with_missing <- lca_dat_clean %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_study_with_data = sum(is.na(FCR)==FALSE)) %>% # how many studies per species that have data
+  ungroup() %>%
+  filter(is.na(FCR)==FALSE | is.na(FCR) & n_study_with_data > 0) %>% # only keep studies if they have FCR data OR if FCR == NA and there is at least one study with data
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sp = as.numeric(clean_sci_name)) %>%
+  select(clean_sci_name, FCR, sp, n_study_with_data) %>%
+  arrange(clean_sci_name)
+
+
+# Warning message because now there are NA's in the data frame
+ggplot(data = lca_dat_with_missing, aes(x = clean_sci_name, y = FCR)) +
+  geom_boxplot() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 16)) + 
+  labs(title = "Boxplots of species-level FCR")
+#ggsave(file.path(outdir, "plot_boxplot_FCR-by-species.png"), height = 8, width = 11.5)
+
+# Separate out the missing data from the observed data:
+lca_dat_observed <- lca_dat_with_missing %>%
+  filter(is.na(FCR)==FALSE)
+
+lca_dat_na <- lca_dat_with_missing %>%
+  filter(is.na(FCR))
+
+x_obs <- lca_dat_observed$FCR
+x_mis <- lca_dat_na$FCR
+n_obs <- length(x_obs)
+n_mis <- length(x_mis)
+j <- length(unique(lca_dat_observed$sp))
+sp_obs <- lca_dat_observed$sp
+sp_mis <- lca_dat_na$sp
+
+stan_grouped <- 'data {
+  int<lower=0> n_obs;  // number of observations
+  int<lower=0> n_mis;  // number of missing observations
+  vector[n_obs] x_obs; // data
+  int j; // number of species
+  int sp_obs[n_obs]; // species indicators for observed data
+  int sp_mis[n_mis]; // species indicators for NAs
+}
+parameters {
+  real<lower=0> mu;
+  real<lower=0> sp_sigma;
+  vector[j] sp_mu; 
+  real<lower=0> sigma;
+  real x_mis[n_mis]; // missing data are treated as parameters
+}
+
+model {
+  // priors
+  // sigma ~ cauchy(0, 5);
+  // note: because priors are optional, not sure whether I should bother giving sigma a cauchy distribution
+
+  // likelihood
+  sp_mu ~ normal(mu, sigma);
+  x_obs ~ normal(sp_mu[sp_obs], sp_sigma);
+  x_mis ~ normal(sp_mu[sp_mis], sp_sigma);
+
+}'
+
+grouped_mod <- stan_model(model_code = stan_grouped, verbose = TRUE)
+# Note: For Windows, apparently OK to ignore this warning message:
+# Warning message:
+#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
+#   'C:/rtools40/usr/mingw_/bin/g++' not found
+
+# Fit model:
+fit_grouped <- sampling(object = grouped_mod, data = list(x_obs = x_obs,
+                                                          x_mis = x_mis,
+                                                          n_obs = n_obs,
+                                                          n_mis = n_mis,
+                                                          j = j,
+                                                          sp_obs = sp_obs,
+                                                          sp_mis = sp_mis))
+
+print(fit_grouped)
+
+
+# How to interpret sp index numbers:
+# What are the sample sizes per group:
+sp_index_key <- lca_dat_with_missing %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_sci_name = n()) %>%
+  ungroup() %>%
+  select(sp, clean_sci_name, n_sci_name) %>%
+  arrange(sp) %>%
+  unique() %>%
+  mutate(param_name = paste("sp_mu[", clean_sci_name, "]", sep =""))
+#write.csv(sp_index_key, file.path(outdir, "sp_info.csv"), row.names = FALSE)
+
+# How to interpret x_mis index numbers:
+x_mis_key <- lca_dat_with_missing %>%
+  filter(is.na(FCR)) %>%
+  group_by(clean_sci_name) %>%
+  mutate(sci_name_index = row_number()) %>%
+  mutate(param_name = paste("x_mis[", clean_sci_name, " ", sci_name_index, "]", sep = ""))
+
+# Replace param names; first copy to fit_grouped_clean so as not to overwrite original sampling output
+fit_grouped_clean <- fit_grouped
+names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "sp_mu")] <- sp_index_key$param_name
+names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "x_mis")] <- x_mis_key$param_name
+
+
+# Make plots of Posterior distributions with 80% credible intervals
+distribution_grouped <- as.matrix(fit_grouped_clean)
+p_mu <- mcmc_areas_ridges(distribution_grouped,
+                          pars = vars(contains("mu")),
+                          prob = 0.8)
+p_mu + ggtitle("Posterior distributions", "with 80% credible intervals")
+
+p_mis <- mcmc_areas_ridges(distribution_grouped,
+                           pars = vars(contains("x_mis")),
+                           prob = 0.8)
+p_mis + ggtitle("Posterior distributions", "with 80% credible intervals")
+
+p_sigma <- mcmc_areas_ridges(distribution_grouped,
+                             pars = vars(contains("sigma")),
+                             prob = 0.8)
+p_sigma + ggtitle("Posterior distributions", "with 80% credible intervals")
 
 ######################################################################################################
-# Model 3: Include NA's and include sciname, taxagroup, and seafood-level hierarchies
+# Model 3: Include all NA's and include three hierarchical levels: sciname, taxagroup, and all-seafood
 
-# Which group-levels should be modeled?
-# First, get the sci_name of studies that have missing FCR data and no other studies of the same taxa
+# Are there any scinames that don't have any other data to draw from at the taxagroup level
 missing_dat <- lca_dat_clean %>%
-  group_by(clean_sci_name) %>%
+  group_by(taxa_group_name) %>%
   mutate(n_study_with_data = sum(is.na(FCR)==FALSE)) %>%
   ungroup() %>%
   filter(is.na(FCR) & n_study_with_data == 0) %>%
-  select(clean_sci_name, sci_name_rank) %>%
+  select(clean_sci_name, taxa_group_name) %>%
   unique()
 
+# OLD CODE FOR TESTING taxonomic overlap of missing_data with rest of dataset:
 # missing_dat
 # A tibble: 4 x 2
 # clean_sci_name sci_name_rank
@@ -356,105 +484,116 @@ missing_dat <- lca_dat_clean %>%
 # Test missing_dat and create a vector (drop_taxa) of sci_names that have no other studies from lower classification levels
 # e.g., the missing FCR data for the study on genus Macrobrachium can come from the species-level studies of Macrobrachium spp.
 # but the missing data for infraorder = Brachyura has no other studies of lower-level taxa to draw this info from
-drop_taxa <- NULL
-for (i in 1:nrow(missing_dat)){
-  taxa_na <- missing_dat[i,]$clean_sci_name
-  rank_search <- sym(missing_dat[i,]$sci_name_rank)
-  lca_dat_rank <- lca_dat_clean %>%
-    filter(!!rank_search == taxa_na) %>%
-    filter(is.na(FCR)==FALSE)
-  if (nrow(lca_dat_rank) == 0){
-    print(paste(taxa_na, " ", rank_search, " has no overlapping taxa with observed data", sep = ""))
-    drop_taxa <- append(drop_taxa, values = taxa_na)
-  }
-}
+# drop_taxa <- NULL
+# for (i in 1:nrow(missing_dat)){
+#   taxa_na <- missing_dat[i,]$clean_sci_name
+#   rank_search <- sym(missing_dat[i,]$sci_name_rank)
+#   lca_dat_rank <- lca_dat_clean %>%
+#     filter(!!rank_search == taxa_na) %>%
+#     filter(is.na(FCR)==FALSE)
+#   if (nrow(lca_dat_rank) == 0){
+#     print(paste(taxa_na, " ", rank_search, " has no overlapping taxa with observed data", sep = ""))
+#     drop_taxa <- append(drop_taxa, values = taxa_na)
+#   }
+# }
 
-# options: 
-# 1 - remove drop_taxa (no overlapping taxa with observed data) from dataset?
-# 2 - keep all taxa in missing_dat - i.e., model them as missing data, which means having to include each of their classification levels in the hierarchies
-
-# For now, keep it simple, just species, genus, and global (so remove Actinopterygii and Brachyura since they are NAs and their levels aren't included)
-# Create species level and other higher group levels
+# Create sciname and taxagroup levels
 lca_dat_groups_full <- lca_dat_clean %>%
-  filter(clean_sci_name %in% c("Actinopterygii", "Brachyura")) %>% 
   mutate(across(where(is.character), as.factor),
-         sp = as.numeric(species),
-         gen = as.numeric(genus),
-         fam = as.numeric(family),
-         iord = as.numeric(infraorder),
-         ord = as.numeric(order),
-         spcl = as.numeric(superclass)) %>%
-  droplevels()
+         sci_level = as.numeric(clean_sci_name),
+         grp_level = as.numeric(taxa_group_name)) %>%
+  droplevels() %>%
+  arrange(clean_sci_name)
 
-# How to interpret sp index numbers:
-sp_index_key <- lca_dat_groups_full %>%
-  select(clean_sci_name, sp, gen, iord, spcl) %>%
-  arrange(clean_sci_name) %>%
-  unique() %>%
-  mutate(param_name = case_when(is.na(sp)==FALSE ~ paste("sp_mu[", clean_sci_name, "]", sep =""),
-                                TRUE ~ "TBD"))
-#write.csv(sp_index_key, file.path(outdir, "sp_info.csv"), row.names = FALSE)
+groupings_key <- lca_dat_groups_full %>%
+  select(Scientific.Name, Common.Name, clean_sci_name, taxa_group_name) %>%
+  unique()
 
-# For now, just try Hierarchies to include: species, genus (to get Macrobrachium), infraorder (for Brachyura), superclass (for Actinopterygii), and global (across all taxa)
+write.csv(groupings_key, file.path(outdir, "groupings_key.csv"), row.names = FALSE)
 
-# Data that enter at the "x" level (individual studies that are species)
-x_obs_dat <- lca_dat_groups_full %>% filter(is.na(sp) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "species") %>% select(clean_sci_name, FCR, sp)
-x_mis_dat <- lca_dat_groups_full %>% filter(is.na(sp) == FALSE & is.na(FCR) == TRUE & sci_name_rank == "species") %>% select(clean_sci_name, FCR, sp) 
+# Data "x" that enter at the clean_sci_name level (individual studies, regardless of classification ranking)
+x_obs_dat <- lca_dat_groups_full %>% filter(is.na(FCR) == FALSE) %>% select(clean_sci_name, FCR, sci_level, taxa_group_name, grp_level)
+x_mis_dat <- lca_dat_groups_full %>% filter(is.na(FCR) == TRUE) %>% select(clean_sci_name, FCR, sci_level, taxa_group_name, grp_level) 
 x_obs <- x_obs_dat$FCR
 x_mis <- x_mis_dat$FCR
-sp_obs <- x_obs_dat$sp
-sp_mis <- x_mis_dat$sp
-n_x_obs <- length(x_obs)
-n_x_mis <- length(n_mis)
-n_sp <- length(unique(lca_dat_groups_full$sp))
+sci_obs <- x_obs_dat$sci_level
+sci_mis <- x_mis_dat$sci_level
+n_obs <- length(x_obs)
+n_mis <- length(x_mis)
+n_sci <- length(unique(lca_dat_groups_full$sci_level))
 
-# Note: for all missing data frames below (e.g., x_gen_mis_dat), we include sci_name_rank for all lower levels (i.e., genus and species) because we still want the genus indices for all species so this can pool up to higher levels
-x_gen_obs_dat <- lca_dat_groups_full %>% filter(is.na(gen) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "genus") %>% select(clean_sci_name, FCR, gen)
-x_gen_mis_dat <- lca_dat_groups_full %>% filter(is.na(gen) == FALSE & is.na(FCR) == TRUE & sci_name_rank %in% c("genus", "species")) %>% select(clean_sci_name, FCR, gen)
-x_gen_obs <- x_gen_obs_dat$FCR
-x_gen_mis <- x_gen_mis_dat$FCR
-gen_obs <- x_gen_obs_dat$gen
-gen_mis <- x_gen_mis_dat$gen
-n_x_gen_obs <- length(x_gen_obs)
-n_x_gen_mis <- length(x_gen_mis)
-n_gen <- length(unique(lca_dat_groups_full$gen))
+## Create a vector of group-level indicators where j-th element gives group ID for sci-name ID j
+grp_obs_key <- unique(x_obs_dat[c("sci_level", "grp_level")])[,"grp_level"]
+grp_mis_key <- unique(x_mis_dat[c("sci_level", "grp_level")])[,"grp_level"]
+n_grp_obs <- length(grp_obs_key)
+n_grp_mis <- length(grp_mis_key)
+n_grp <- length(unique(lca_dat_groups_full$grp_level))
 
-x_iord_obs_dat <- lca_dat_groups_full %>% filter(is.na(iord) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "infraorder") %>% select(clean_sci_name, FCR, iord)
-x_iord_mis_dat <- lca_dat_groups_full %>% filter(is.na(iord) == FALSE & is.na(FCR) == TRUE & sci_name_rank %in% c("infraorder", "genus", "species")) %>% select(clean_sci_name, FCR, iord)
-
-# Note: no observed data at the superclass level (all missing)
-# x_spcl_obs_dat <- lca_dat_groups_full %>% filter(is.na(spcl) == FALSE & is.na(FCR) == FALSE & sci_name_rank == "superclass") %>% select(clean_sci_name, FCR, spcl)
-x_spcl_mis_dat <- lca_dat_groups_full %>% filter(is.na(spcl) == FALSE & is.na(FCR) == TRUE & sci_name_rank %in% c("superclass", "infraorder", "genus", "species")) %>% select(clean_sci_name, FCR, spcl)
-
-
-sp_obs <- lca_dat_observed$sp
-sp_mis <- lca_dat_na$sp
-
-# LEFT OFF HERE: WHERE DOES GENUS-LEVEL DATA go in the likelihood
+# ORIGINAL grouped model (RUNS OK, but still trying to get to converge)
 stan_grouped <- 'data {
-  vector[n_x_obs] x_obs; // species-level data
-  int<lower=0> n_x_obs;  // number of species observations
-  int<lower=0> n_x_mis;  // number of missing species observations
-  int n_sp; // number of species
-  int sp_obs[n_x_obs]; // species indicators for observed data
-  int sp_mis[n_x_mis]; // species indicators for NAs
-  vector[n_x_gen_obs] x_gen_obs; //genus-level data
-  int<lower=0> n_x_gen_obs;  // number of genus-level observations
-  int<lower=0> n_x_gen_mis;  // number of missing genus-level observations
-  int n_gen; // number of genera
-  int gen_obs[n_x_gen_obs]; // species indicators for observed data
-  int gen_obs[n_x_gen_mis]; // species indicators for NAs
+  int<lower=0> n_obs;  // number of observations
+  int<lower=0> n_mis;  // number of missing observations
+  vector[n_obs] x_obs; // sciname-level data
+  int sci_obs[n_obs]; // sciname indicators for observed data
+  int sci_mis[n_mis]; // sciname indicators for missing data
+  int n_sci; // number of total scinames
+  int<lower=0> n_grp_obs; // number of groups in observed data
+  int<lower=0> n_grp_mis; // number of groups in missing data
+  int grp_obs_key[n_grp_obs]; // group indicators for observed data
+  int grp_mis_key[n_grp_mis]; // group indicators for missing data
+  int n_grp; // number of total group names
 }
 parameters {
   real<lower=0> mu;
   real<lower=0> sigma;
-  vector[n_gen] gen_mu;
-  real<lower=0> gen_sigma;
-  vector[n_sp] sp_mu;
-  real<lower=0> sp_sigma;
+  vector[n_grp] grp_mu;
+  real<lower=0> grp_sigma;
+  vector[n_sci] sci_mu;
+  real<lower=0> sci_sigma;
+  real x_mis[n_mis]; // missing data are treated as parameters
 
+}
 
-  real x_mis[n_x_mis]; // missing data are treated as parameters
+model {
+  // priors
+  // sigma ~ cauchy(0, 5);
+  // note: because priors are optional, not sure whether I should bother giving sigma a cauchy distribution
+
+  // likelihood
+  grp_mu ~ normal(mu, sigma);
+  for (i in 1:n_grp_obs){
+    sci_mu ~ normal(grp_mu[grp_obs_key[i]], grp_sigma);
+  }
+  for (j in 1:n_grp_mis){
+    sci_mu ~ normal(grp_mu[grp_mis_key[j]], grp_sigma);
+  }
+  x_obs ~ normal(sci_mu[sci_obs], sci_sigma);
+  x_mis ~ normal(sci_mu[sci_mis], sci_sigma);
+
+}'
+
+# NEW MODEL WITH MORE SPECIFIC BOUNDS ON PARAMETERS
+stan_grouped <- 'data {
+  int<lower=0> n_obs;  // number of observations
+  int<lower=0> n_mis;  // number of missing observations
+  vector[n_obs] x_obs; // sciname-level data
+  int sci_obs[n_obs]; // sciname indicators for observed data
+  int sci_mis[n_mis]; // sciname indicators for missing data
+  int n_sci; // number of total scinames
+  int<lower=0> n_grp_obs; // number of groups in observed data
+  int<lower=0> n_grp_mis; // number of groups in missing data
+  int grp_obs_key[n_grp_obs]; // group indicators for observed data
+  int grp_mis_key[n_grp_mis]; // group indicators for missing data
+  int n_grp; // number of total group names
+}
+parameters {
+  real<lower=0> mu;
+  real<lower=0> sigma;
+  real<lower=0> grp_mu[n_grp]; // CHANGED FROM vector[n_grp] grp_mu
+  real<lower=0> grp_sigma;
+  real<lower=0> sci_mu[n_sci]; // CHANGED FROM vector[n_sci] sci_mu
+  real<lower=0> sci_sigma;
+  real<lower=0> x_mis[n_mis]; // missing data are treated as parameters CHANGED THIS TO <lower=0>
   
 }
 
@@ -464,10 +603,86 @@ model {
   // note: because priors are optional, not sure whether I should bother giving sigma a cauchy distribution
 
   // likelihood
-  gen_mu ~ normal(mu, sigma);
-  sp_mu ~ normal(gen_mu[gen_obs], gen_sigma);
-  sp_mu ~ normal(gen_mu[gen_mis], gen_sigma);
-  x_obs ~ normal(sp_mu[sp_obs], sp_sigma);
-  x_mis ~ normal(sp_mu[sp_mis], sp_sigma);
+  grp_mu ~ normal(mu, sigma);
+  for (i in 1:n_grp_obs){
+    sci_mu ~ normal(grp_mu[grp_obs_key[i]], grp_sigma);
+  }
+  for (j in 1:n_grp_mis){
+    sci_mu ~ normal(grp_mu[grp_mis_key[j]], grp_sigma);
+  }
+  x_obs ~ normal(sci_mu[sci_obs], sci_sigma);
+  x_mis ~ normal(sci_mu[sci_mis], sci_sigma);
 
 }'
+
+# Compile model
+grouped_mod <- stan_model(model_code = stan_grouped, verbose = TRUE)
+# Note: For Windows, apparently OK to ignore this warning message:
+# Warning message:
+#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
+#   'C:/rtools40/usr/mingw_/bin/g++' not found
+# See forum discussion: https://discourse.mc-stan.org/t/rstan-on-windows/16673/60
+
+# Fit model:
+fit_grouped <- sampling(object = grouped_mod, data = list(x_obs = x_obs,
+                                                          x_mis = x_mis,
+                                                          n_obs = n_obs,
+                                                          n_mis = n_mis,
+                                                          n_sci = n_sci,
+                                                          sci_obs = sci_obs,
+                                                          sci_mis = sci_mis,
+                                                          grp_obs_key = grp_obs_key,
+                                                          grp_mis_key = grp_mis_key,
+                                                          n_grp_obs = n_grp_obs,
+                                                          n_grp_mis = n_grp_mis,
+                                                          n_grp = n_grp),
+                        iter = 50000, warmup = 1000, chain = 3, cores = 3)
+
+print(fit_grouped)
+
+# How to interpret sci index numbers:
+sci_index_key <- lca_dat_groups_full %>%
+  select(clean_sci_name, sci_level) %>%
+  arrange(sci_level) %>%
+  unique() %>%
+  mutate(sci_param_name = paste("sci_mu[", clean_sci_name, "]", sep = ""))
+#write.csv(sp_index_key, file.path(outdir, "sp_info.csv"), row.names = FALSE)
+
+# How to interpret grp index numbers:
+grp_index_key <- lca_dat_groups_full %>%
+  select(taxa_group_name, grp_level) %>%
+  arrange(grp_level) %>%
+  unique() %>%
+  mutate(grp_param_name = paste("grp_mu[", taxa_group_name, "]", sep = ""))
+
+# How to interpret x_mis index numbers:
+x_mis_key <- lca_dat_groups_full %>%
+  filter(is.na(FCR)) %>%
+  group_by(clean_sci_name) %>%
+  mutate(sci_name_index = row_number()) %>%
+  mutate(x_mis_param_name = paste("x_mis[", clean_sci_name, " ", sci_name_index, " ", taxa_group_name, "]", sep = "")) %>%
+  select(clean_sci_name, sci_name_index, x_mis_param_name)
+
+# Replace param names; first copy to fit_grouped_clean to avoid having to re-run sampling as a result of doing something wrong to fit_grouped
+fit_grouped_clean <- fit_grouped
+names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "sci_mu")] <- sci_index_key$sci_param_name
+names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "grp_mu")] <- grp_index_key$grp_param_name
+names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "x_mis")] <- x_mis_key$x_mis_param_name
+
+
+# Make plots of Posterior distributions with 80% credible intervals
+distribution_grouped <- as.matrix(fit_grouped_clean)
+p_mu <- mcmc_areas_ridges(distribution_grouped,
+                          pars = vars(contains("mu")),
+                          prob = 0.8)
+p_mu + ggtitle("Posterior distributions", "with 80% credible intervals")
+
+p_mis <- mcmc_areas_ridges(distribution_grouped,
+                           pars = vars(contains("x_mis")),
+                           prob = 0.8)
+p_mis + ggtitle("Posterior distributions", "with 80% credible intervals")
+
+p_sigma <- mcmc_areas_ridges(distribution_grouped,
+                             pars = vars(contains("sigma")),
+                             prob = 0.8)
+p_sigma + ggtitle("Posterior distributions", "with 80% credible intervals")
