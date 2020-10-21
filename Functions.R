@@ -90,20 +90,20 @@ clean.lca <- function(LCA_data){
   # [29] "Pangasius"                   "Penaeus"                     "Penaeus monodon"             "Rachycentron canadum"        "Salmo salar"                 "Salmonidae"                  "Salvelinus alpinus"         
   # [36] "Sciaenops ocellatus"         "Scophthalmidae"              "Seriola rivoliana"           "Sparus aurata"               "Thunnus orientalis"          "Thunnus thynnus"   
   
-  # LEFT OFF HERE: make sure all scinames have been assigned
-  # Use Column clean_sci_name or common.name to create taxa groupings will be the "official" column used throughout code
-  # Create taxa groupings
+  # Use Column clean_sci_name and common.name to create taxa groupings
+  # Note: use clean_sci_name as the "official" scientific name column used throughout code
   # CREATE "unassigned" category for: things that are not species-level Acipenseridae, Actinopterygii, Brachyura, Cynoscion spp, "Penaeus" can be fresh or marine
   # "Dicentrarchus labrax", "Lates calcarifer", "Morone" are migratory - i.e., including oceans, estuaries, and rivers - all categorized as other non-herbivore fin fish for now
   # Chanos chanos - mostly algae (but also inverts) - categorized as herbivore fin fish for now
   LCA_data <- LCA_data %>%
-    mutate(taxa_group_name = case_when(clean_sci_name %in% c("") ~ "algae",
+    mutate(taxa_group_name = case_when(#clean_sci_name %in% c("") ~ "algae", # none
                                   # clean_sci_name %in% c("") ~ "gastropods", # none
                                   clean_sci_name %in% c("Mytilus galloprovincialis", "Mytilus edulis") ~ "bivalves",
                                   clean_sci_name %in% c("Chanos chanos") ~ "herbivore finfish",
                                   clean_sci_name %in% c("Litopenaeus vannamei", "Penaeus monodon") ~ "marine shrimp",
                                   # clean_sci_name %in% c("") ~ "other marine crustacean",
-                                  Common.Name %in% c("Red crayfish", "Freshwater prawn") | clean_sci_name %in% ("Macrobrachium", "Macrobrachium amazonicum", "Macrobrachium rosenbergii") ~ "freshwater crustacean",
+                                  Common.Name %in% c("Red crayfish", "Freshwater prawn") ~ "freshwater crustacean",
+                                  clean_sci_name %in% c("Macrobrachium", "Macrobrachium amazonicum", "Macrobrachium rosenbergii") ~ "freshwater crustacean", # note: freshwater crustacean assigned by sciname and commonnames
                                   clean_sci_name %in% c("Thunnus orientalis", "Thunnus thynnus") ~ "tuna",
                                   clean_sci_name %in% c("Oncorhynchus kisutch", "Oncorhynchus tshawytscha", "Salmo salar", "Salmonidae", "Salvelinus alpinus") ~ "salmon/char",
                                   clean_sci_name %in% c("Anoplopoma fimbria", "Dicentrarchus labrax", "Epinephelus", "Gadus morhua", "Lates calcarifer", "Morone", "Rachycentron canadum", "Sciaenops ocellatus", "Scophthalmidae", "Seriola rivoliana", "Sparus aurata") ~ "other non-herbivore marine finfish",
@@ -114,7 +114,7 @@ clean.lca <- function(LCA_data){
                                   clean_sci_name %in% c("Oncorhynchus mykiss") ~ "trout",
                                   clean_sci_name %in% c("Pangasianodon hypophthalmus") ~ "other freshwater finfish",
                                   # clean_sci_name %in% c("") ~ "amphibians and reptiles", # none
-                                  clean_sci_name %in% c("Acipenseridae", "Actinopterygii", "Brachyura", "Cynoscion", "Penaeus") ~ "unassigned"
+                                  TRUE ~ "unassigned"
                                   ))
   
 }
