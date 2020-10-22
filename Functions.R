@@ -10,7 +10,7 @@ clean.lca <- function(LCA_data){
   LCA_data$Diesel_L <- as.numeric(LCA_data$Diesel_L)
   LCA_data$Petrol_L <- as.numeric(LCA_data$Petrol_L)
   LCA_data$NaturalGas_L <- as.numeric(LCA_data$NaturalGas_L)
-  LCA_data$Yield_t_per_HA <- as.numeric(LCA_data$Yield_t_per_HA)
+  LCA_data$Yield_t_per_Ha <- as.numeric(LCA_data$Yield_t_per_Ha)
   LCA_data$Grow_out_period_days <- as.numeric(LCA_data$Grow_out_period_days)
   
   # Add country codes
@@ -32,7 +32,7 @@ clean.lca <- function(LCA_data){
     ) %>%
     select(Year, Country, iso3c, Scientific.Name = Species.scientific.name, Common.Name = Species.common.name, 
            Production_system, Sample_size,
-           Environment, Intensity, Yield_t_per_HA, Grow_out_period_days, Mortality_rate, FCR, 
+           Environment, Intensity, Yield_t_per_Ha, Grow_out_period_days, Mortality_rate, FCR, 
            Feed_type, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent, Feed_method,
            Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L) %>%
     mutate(
