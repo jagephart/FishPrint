@@ -68,11 +68,12 @@ clean.lca <- function(LCA_data){
   # Change outdated names (P. vannamei and P hypophthalmus)
   LCA_data <- LCA_data %>%
     mutate(clean_sci_name = case_when(Common.Name == "Freshwater prawn" ~ "Dendrobranchiata",
-                                       Common.Name == "Indo-Pacific swamp crab; Swimming crabs, etc. nei" ~ "Brachyura",
-                                       Common.Name == "Red crayfish" ~ "Astacidea", # crayfish are split into two superfamilies, so go to the next higher-classification, infraorder = Astacidea
-                                       Common.Name == "Salmonids nei" ~ "Salmonidae",
-                                       Common.Name == "Yellowtail_Seriola_Almaco jack" ~ "Seriola rivoliana",
-                                               TRUE ~ Scientific.Name)) %>%
+                                      Common.Name == "Indo-Pacific swamp crab" ~ "Brachyura",
+                                      Common.Name == "Red crayfish" ~ "Astacidea", # crayfish are split into two superfamilies, so go to the next higher-classification, infraorder = Astacidea
+                                      Common.Name == "Salmonids nei" ~ "Salmonidae",
+                                      Common.Name == "Striped bass" ~ "Morone saxatilis",
+                                      Common.Name == "Yellowtail_Seriola_Almaco jack" ~ "Seriola rivoliana",
+                                      TRUE ~ Scientific.Name)) %>%
     mutate(clean_sci_name = case_when(str_detect(Scientific.Name, "spp") ~ str_replace(Scientific.Name, pattern = " spp\\.| spp", replacement = ""),
                                       Scientific.Name == "Morone chrysops x M. saxatilis" ~ "Morone",
                                       Scientific.Name == "Osteichthyes" ~ "Actinopterygii",

@@ -23,20 +23,22 @@ lca_dat_clean <- clean.lca(LCA_data = lca_dat)
 ######################################################################################################
 # Model 1: Remove all NAs - estimate proportion feed for a set of studies of one species
 
-lca_dat_no_na <- lca_dat_clean %>%
-  select(clean_sci_name, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent) %>%
+lca_dat_no_zeroes <- lca_dat_clean %>%
+  select(clean_sci_name, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent, taxa_group_name) %>%
   # NOTE multinomial-dirchlet model requires all elements > 0 (change some to 0.001 for now?)
-  mutate(feed_soy_new = if_else(Feed_soy_percent == 0, true = 0.0001, false = Feed_soy_percent),
-         feed_crops_new = if_else(Feed_othercrops_percent == 0, true = 0.0001, false = Feed_othercrops_percent),
-         feed_fmfo_new = if_else(Feed_FMFO_percent == 0, true = 0.0001, false = Feed_FMFO_percent),
-         feed_animal_new = if_else(Feed_animal_percent == 0, true = 0.0001, false = Feed_animal_percent)) %>%
+  mutate(feed_soy_new = if_else(Feed_soy_percent == 0, true = 0.01, false = Feed_soy_percent),
+         feed_crops_new = if_else(Feed_othercrops_percent == 0, true = 0.01, false = Feed_othercrops_percent),
+         feed_fmfo_new = if_else(Feed_FMFO_percent == 0, true = 0.01, false = Feed_FMFO_percent),
+         feed_animal_new = if_else(Feed_animal_percent == 0, true = 0.01, false = Feed_animal_percent)) %>%
   # Renomoralize values so they sum to 1
   mutate(sum = rowSums(select(., contains("new")))) %>%
   mutate(feed_soy_new = feed_soy_new / sum,
          feed_crops_new = feed_crops_new / sum,
          feed_fmfo_new = feed_fmfo_new / sum,
-         feed_animal_new = feed_animal_new / sum) %>%
-  # Remove NAs
+         feed_animal_new = feed_animal_new / sum)
+
+# Remove NAs
+lca_dat_no_na <- lca_dat_no_zeroes %>%
   filter(is.na(Feed_soy_percent)==FALSE) 
 
 # Try to get dirichlet to work with just one set of studies: Oncorhynchus mykiss
@@ -113,12 +115,21 @@ p_theta
 ######################################################################################################
 # Model 2: Remove all NAs - estimate proportion feed for just two scientific names in the dataset
 
-# Use same lca_dat_no_na from model 1
+lca_dat_no_na <- lca_dat_no_zeroes %>%
+  filter(is.na(Feed_soy_percent)==FALSE) 
+
 lca_2_groups <- lca_dat_no_na %>%
   filter(clean_sci_name %in% c("Oncorhynchus mykiss", "Salmo salar")) %>%
   # Add indices for each sci-name
   mutate(clean_sci_name = as.factor(clean_sci_name),
-         sci = as.numeric(clean_sci_name)) 
+         sci = as.numeric(clean_sci_name))
+
+lca_2_groups <- lca_dat_no_na %>%
+  filter(clean_sci_name %in% c("Macrobrachium amazonicum", "Penaeus monodon"))  %>%
+  # Add indices for each sci-name
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sci = as.numeric(clean_sci_name))
+
 
 # Try to get dirichlet to work with just one set of studies: Oncorhynchus mykiss and Salmo Salar
 # Set data for model:
@@ -156,8 +167,7 @@ sci = lca_2_groups$sci
 
 # Similar to: https://www.alexpghayes.com/blog/some-things-ive-learned-about-stan/
 # FIX IT - Need to create separate alpha's for each group (still need to figure out if it's possible to index on alpha and theta): look into function to_vector
-# FIX IT - Model does OK estimating all alphas, and theta_1, but not theta_2 (try removing one of the data points and see how this affects convergence)
-# Estimate feed component proportions for a single species
+# Estimate feed component proportions for two species
 stan_pooled <- 'data {
   int<lower=0> n;  // number of observations
   int<lower=1> k; // number of feed types
@@ -168,7 +178,7 @@ parameters {
   vector<lower=0>[k] alpha_1; // alpha MUST be a vector, otherwise warning: vector ~ dirichlet(vector);
   simplex[k] theta_1; // vector of estimated sci-level feed weight simplexes; FIX IT - alpha must be a vector but should be able to set up theta as a list of vectors (just like feed_weights)
   vector<lower=0>[k] alpha_2; // 
-  //simplex[k] theta_2;
+  simplex[k] theta_2;
 }
 model {
 
@@ -182,7 +192,7 @@ model {
   }
   // now, estimate feed weights based on the vector of alphas
   theta_1 ~ dirichlet(alpha_1);
-  //theta_2 ~ dirichlet(alpha_2);
+  theta_2 ~ dirichlet(alpha_2);
 }'
 
 no_missing_mod <- stan_model(model_code = stan_pooled, verbose = TRUE)
@@ -198,7 +208,7 @@ fit_grouped <- sampling(object = no_missing_mod, data = list(n = n,
                                                              feed_weights = feed_weights,
                                                              n_sci = n_sci,
                                                              sci = sci))
-                        #, cores = 4, iter = 50000,
+                        #,cores = 4, iter = 10000,
                         #control = list(adapt_delta = 0.99)) # address divergent transitions by increasing delta, i.e., take smaller steps
 print(fit_grouped)
 
@@ -211,3 +221,137 @@ p_theta <- mcmc_areas_ridges(distribution_grouped,
                              pars = vars(contains("theta")),
                              prob = 0.8)
 p_theta
+
+
+######################################################################################################
+# Model 2.1: Same as model 2 but with informative priors:
+# Remove all NAs - estimate proportion feed for just two scientific names in the dataset
+
+## LEFT OFF HERE - how to specify an informative prior to get "Macrobrachium amazonicum" & "Penaeus monodon" to converge
+# FIX IT - Need to create separate alpha's for each group (still need to figure out if it's possible to index on alpha and theta): look into function to_vector
+# Estimate feed component proportions for two species
+stan_pooled <- 'data {
+  int<lower=0> n;  // number of observations
+  int<lower=1> k; // number of feed types
+  simplex[k] feed_weights[n]; // array of observed feed weights simplexes
+  int<lower=1, upper=2> sci[n]; // sci-name indices
+}
+parameters {
+  vector<lower=0>[k] alpha_1; // alpha MUST be a vector, otherwise warning: vector ~ dirichlet(vector);
+  simplex[k] theta_1; // vector of estimated sci-level feed weight simplexes; FIX IT - alpha must be a vector but should be able to set up theta as a list of vectors (just like feed_weights)
+  vector<lower=0>[k] alpha_2; // 
+  simplex[k] theta_2;
+}
+model {
+## LEFT OFF HERE: 
+  alpha_1 ~ multi_normal(vector)
+
+  for (i in 1:n) {
+    if (sci[i]==1){
+      feed_weights[i] ~ dirichlet(alpha_1); // estimate vector of alphas based on the data of feed weights
+    }
+    if (sci[i]==2){
+      feed_weights[i] ~ dirichlet(alpha_2); // estimate vector of alphas based on the data of feed weights
+    }
+  }
+  // now, estimate feed weights based on the vector of alphas
+  theta_1 ~ dirichlet(alpha_1);
+  theta_2 ~ dirichlet(alpha_2);
+}'
+
+
+######################################################################################################
+# Model 2a: Remove all NAs - estimate proportion feed for just two scientific names in the dataset with higher-level grouping
+
+lca_dat_no_na <- lca_dat_no_zeroes %>%
+  filter(is.na(Feed_soy_percent)==FALSE) 
+
+lca_2_groups <- lca_dat_no_na %>%
+  filter(clean_sci_name %in% c("Oncorhynchus mykiss", "Salmo salar")) %>%
+  # Add indices for each sci-name
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sci = as.numeric(clean_sci_name))
+
+# lca_2_groups <- lca_dat_no_na %>%
+#   filter(clean_sci_name %in% c("Macrobrachium amazonicum", "Penaeus monodon"))  %>%
+#   # Add indices for each sci-name
+#   mutate(clean_sci_name = as.factor(clean_sci_name),
+#          sci = as.numeric(clean_sci_name))
+
+# Try to get dirichlet to work with just one set of studies: Oncorhynchus mykiss and Salmo Salar
+# Set data for model:
+feed_weights <- lca_2_groups %>%
+  select(contains("new")) %>%
+  as.matrix()
+k = 4
+n = nrow(feed_weights)
+n_sci = length(unique(lca_2_groups$sci))
+sci = lca_2_groups$sci
+
+# Estimate feed component proportions for two species
+stan_pooled <- 'data {
+  int<lower=0> n;  // number of observations
+  int<lower=1> k; // number of feed types
+  simplex[k] feed_weights[n]; // array of observed feed weights simplexes
+  int<lower=1, upper=2> sci[n]; // sci-name indices
+}
+parameters {
+  vector<lower=0>[k] alpha_1; // alpha MUST be a vector, otherwise warning: vector ~ dirichlet(vector);
+  simplex[k] theta_1; // vector of estimated sci-level feed weight simplexes; FIX IT - alpha must be a vector but should be able to set up theta as a list of vectors (just like feed_weights)
+  vector<lower=0>[k] alpha_2; // 
+  simplex[k] theta_2;
+  vector<lower=0>[k] alpha_all;
+  simplex[k] theta_all;
+  cov_matrix[k] sigma;
+  
+}
+model {
+
+  for (i in 1:n) {
+    if (sci[i]==1){
+      feed_weights[i] ~ dirichlet(alpha_1); // estimate vector of alphas based on the data of feed weights
+    }
+    if (sci[i]==2){
+      feed_weights[i] ~ dirichlet(alpha_2); // estimate vector of alphas based on the data of feed weights
+    }
+  }
+  
+  // model of global-level alpha
+  alpha_1 ~ multi_normal(alpha_all, sigma);
+  alpha_2 ~ multi_normal(alpha_all, sigma);
+  
+  // now, estimate feed weights based on the vectors of alphas
+  theta_1 ~ dirichlet(alpha_1);
+  theta_2 ~ dirichlet(alpha_2);
+  theta_all ~ dirichlet(alpha_all);
+  
+}'
+
+no_missing_mod <- stan_model(model_code = stan_pooled, verbose = TRUE)
+# Note: For Windows, apparently OK to ignore this warning message:
+# Warning message:
+#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
+#   'C:/rtools40/usr/mingw_/bin/g++' not found
+
+# RUNS but gives warning about divergent transitions
+# Fit model:
+fit_grouped <- sampling(object = no_missing_mod, data = list(n = n,
+                                                             k = k,
+                                                             feed_weights = feed_weights,
+                                                             n_sci = n_sci,
+                                                             sci = sci))
+#, cores = 4, iter = 50000,
+#control = list(adapt_delta = 0.99)) # address divergent transitions by increasing delta, i.e., take smaller steps
+print(fit_grouped)
+
+distribution_grouped <- as.matrix(fit_grouped)
+p_alpha <- mcmc_areas_ridges(distribution_grouped,
+                             pars = vars(contains("alpha")),
+                             prob = 0.8)
+p_alpha
+p_theta <- mcmc_areas_ridges(distribution_grouped,
+                             pars = vars(contains("theta")),
+                             prob = 0.8)
+p_theta
+
+
