@@ -84,15 +84,36 @@ fit_pooled <- sampling(object = no_missing_mod, data = list(n = n,
                                                             feed_weights = feed_weights))
 print(fit_pooled)
 
-distribution_pooled <- as.matrix(fit_pooled)
+feeds <- c("soy", "crops", "fmfo", "animal")
+feed_key <- data.frame(alpha_param = paste("alpha[", feeds, "]", sep = ""),
+                       theta_param = paste("theta[", feeds, "]", sep = ""))
+
+fit_pooled_clean <- fit_pooled
+names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "alpha")] <- feed_key$alpha_param
+names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "theta")] <- feed_key$theta_param
+
+
+distribution_pooled <- as.matrix(fit_pooled_clean)
+
+plot_theme <- theme(axis.text=element_text(size=14, color = "black"))
+
 p_alpha <- mcmc_areas_ridges(distribution_pooled,
                        pars = vars(contains("alpha")),
-                       prob = 0.8)
+                       prob = 0.8) + 
+  ggtitle("Oncorhynchus mykiss feed proportion model", "with 80% credible intervals") +
+  plot_theme
+
 p_alpha
+ggsave(filename = file.path(outdir, "bayes-example_trout_feed-proportion_alphas.png"), width = 11, height = 8.5)
+
 p_theta <- mcmc_areas_ridges(distribution_pooled,
                              pars = vars(contains("theta")),
-                             prob = 0.8)
+                             prob = 0.8) + 
+  ggtitle("Oncorhynchus mykiss feed proportion model", "with 80% credible intervals") +
+  plot_theme
+
 p_theta
+ggsave(filename = file.path(outdir, "bayes-example_trout_feed-proportion_thetas.png"), width = 11, height = 8.5)
 
 
 ######################################################################################################
@@ -107,17 +128,17 @@ lca_dat_no_na <- lca_dat_no_zeroes %>%
 #   mutate(clean_sci_name = as.factor(clean_sci_name),
 #          sci = as.numeric(clean_sci_name))
 
-# lca_2_groups <- lca_dat_no_na %>%
-#   filter(clean_sci_name %in% c("Macrobrachium amazonicum", "Penaeus monodon"))  %>%
-#   # Add indices for each sci-name
-#   mutate(clean_sci_name = as.factor(clean_sci_name),
-#          sci = as.numeric(clean_sci_name))
-
-# Now that alpha and theta are vectorized, can include all groups
 lca_2_groups <- lca_dat_no_na %>%
+  filter(clean_sci_name %in% c("Macrobrachium amazonicum", "Penaeus monodon"))  %>%
   # Add indices for each sci-name
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sci = as.numeric(clean_sci_name))
+
+# Now that alpha and theta are vectorized, can include all groups
+# lca_2_groups <- lca_dat_no_na %>%
+#   # Add indices for each sci-name
+#   mutate(clean_sci_name = as.factor(clean_sci_name),
+#          sci = as.numeric(clean_sci_name))
 
 # Set data for model:
 feed_weights <- lca_2_groups %>%
@@ -194,7 +215,7 @@ fit_grouped <- sampling(object = no_missing_mod, data = list(n = n,
                                                              n_sci = n_sci,
                                                              sci = sci),
                         cores = 4)
-                        # cores = 4, iter = 50000, # iter = 10000
+                        #cores = 4, iter = 10000) # iter = 10000
                         # control = list(adapt_delta = 0.99)) # address divergent transitions by increasing delta, i.e., take smaller steps
 print(fit_grouped)
 

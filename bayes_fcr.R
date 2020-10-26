@@ -15,7 +15,7 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # datadir <- "K:/BFA Environment 2/Data"
 # outdir <- "K:BFA Environment 2/Outputs"
 
-lca_dat <- read.csv(file.path(datadir, "LCA_compiled.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201006.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
 source("Functions.R")
 
 lca_dat_clean <- clean.lca(LCA_data = lca_dat)
@@ -24,13 +24,12 @@ lca_dat_clean <- clean.lca(LCA_data = lca_dat)
 lca_dat_clean <- lca_dat_clean %>%
   filter(taxa_group_name != "bivalves")
   
-
-
 ######################################################################################################
 # Model 1: Remove NA's, and estimate group-level feed conversion ratio for Nile tilapia, Oreochromis niloticus (species with the most FCR data)
 lca_dat_simple <- lca_dat_clean %>%
   filter(is.na(FCR) == FALSE) %>%
-  filter(clean_sci_name == "Oreochromis niloticus")
+  filter(clean_sci_name == "Oncorhynchus mykiss")
+  #filter(clean_sci_name == "Oreochromis niloticus")
 
 # Each observation y is normally distributed with corresponding mean theta, and known variance, sigma2
 # Each theta is drawn from a normal group-level distribution with mean mu and variance tau2
@@ -58,8 +57,8 @@ model {
 }'
 
 # Fit model:
-fit_pooled <- stan(model_code = stan_pooled, data = list(x = x, n = n),
-                   iter = 10000, warmup = 1000, chain = 3, cores = 3)
+fit_pooled <- stan(model_code = stan_pooled, data = list(x = x, n = n))
+                   #iter = 10000, warmup = 1000, chain = 3, cores = 3)
 # default: chains = 4, iter = 2000, warmup = floor(iter/2)
 
 print(fit_pooled)
@@ -70,6 +69,19 @@ print(fit_pooled)
 stan_trace(fit_pooled)
 #stan_trace(fit_pooled, pars = c('mu'))
 #stan_trace(fit_pooled, pars = c('sigma'))
+
+distribution_grouped <- as.matrix(fit_pooled)
+
+plot_theme <- theme(axis.text=element_text(size=14, color = "black"))
+
+p <- mcmc_areas_ridges(distribution_grouped,
+                       pars = vars(contains(c("mu", "sigma"))),
+                        prob = 0.8) +
+  ggtitle("Oncorhynchus mykiss FCR model", "with 80% credible intervals") +
+  plot_theme
+
+p 
+ggsave(file.path(outdir, "bayes-example_trout_fcr.png"), height = 8.5, width = 11)
 
 ######################################################################################################
 # Model 1a: Calculate variance as a "transformed parameter"
