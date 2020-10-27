@@ -37,7 +37,27 @@ lca_dat_simple <- lca_dat_clean %>%
 x <- lca_dat_simple$FCR
 n <- nrow(lca_dat_simple)
 
+# Normal distribution model:
 # Use a half-cauchy distribution (weakly informative) prior on sigma:
+# stan_pooled <- 'data {
+#   int<lower=0> n;  // number of observations
+#   vector[n] x; // data
+# }
+# parameters {
+#   real<lower=0> mu;
+#   real<lower=0> sigma;
+# }
+# model {
+#   // priors
+#   // sigma ~ cauchy(0, 5); // if we want to put a prior on sigma
+#   // notice: no prior on mu; any param with no prior is given a uniform
+# 
+#   // likelihood
+#   x ~ normal(mu, sigma); // note: stan interprets second param as standard deviation
+# 
+# }'
+
+# Gamma distribution model
 stan_pooled <- 'data {
   int<lower=0> n;  // number of observations
   vector[n] x; // data
@@ -47,14 +67,15 @@ parameters {
   real<lower=0> sigma;
 }
 model {
-  // priors
-  // sigma ~ cauchy(0, 5); // if we want to put a prior on sigma
-  // notice: no prior on mu; any param with no prior is given a uniform
-
-  // likelihood
-  x ~ normal(mu, sigma); // note: stan interprets second param as standard deviation
+  // sigma is standard deviation
+  real shape = square(mu) / square(sigma);
+  real rate = mu / square(sigma);
+  
+  x ~ gamma(shape, rate);
+  // target += gamma_lpdf(x | shape, rate); // alternative notation
 
 }'
+
 
 # Fit model:
 fit_pooled <- stan(model_code = stan_pooled, data = list(x = x, n = n))
@@ -81,7 +102,7 @@ p <- mcmc_areas_ridges(distribution_grouped,
   plot_theme
 
 p 
-ggsave(file.path(outdir, "bayes-example_trout_fcr.png"), height = 8.5, width = 11)
+ggsave(file.path(outdir, "bayes-example_trout_fcr-gamma-target.png"), height = 8.5, width = 11)
 
 ######################################################################################################
 # Model 1a: Calculate variance as a "transformed parameter"
@@ -139,7 +160,7 @@ ggplot(data = lca_dat_groups, aes(x = clean_sci_name, y = FCR)) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 16)) + 
   labs(title = "Boxplots of species-level FCR")
-ggsave(file.path(outdir, "plot_boxplot_FCR-by-species.png"), height = 8, width = 11.5)
+#ggsave(file.path(outdir, "plot_boxplot_FCR-by-species.png"), height = 8, width = 11.5)
 
 
 x <- lca_dat_groups$FCR
@@ -147,6 +168,33 @@ n <- nrow(lca_dat_groups)
 j <- length(unique(lca_dat_groups$sp))
 sp <- lca_dat_groups$sp
 
+# Normal distribution model:
+# stan_grouped <- 'data {
+#   int<lower=0> n;  // number of observations
+#   vector[n] x; // data
+#   int j; // number of species
+#   int sp[n]; // species indicators
+# }
+# parameters {
+#   real<lower=0> mu;
+#   real<lower=0> sp_sigma;
+#   vector[j] sp_mu;
+#   real<lower=0> sigma;
+# }
+# 
+# model {
+#   // priors
+#   // sigma ~ cauchy(0, 5);
+#   // note: because priors are optional, not sure whether I should bother giving sigma a cauchy distribution
+# 
+#   // likelihood
+#   sp_mu ~ normal(mu, sigma);
+#   x ~ normal(sp_mu[sp], sp_sigma);
+# 
+# }'
+
+# LEFT OFF HERE:
+# Gamma Distribution model:
 stan_grouped <- 'data {
   int<lower=0> n;  // number of observations
   vector[n] x; // data
@@ -155,28 +203,34 @@ stan_grouped <- 'data {
 }
 parameters {
   real<lower=0> mu;
-  real<lower=0> sp_sigma;
-  vector[j] sp_mu;
   real<lower=0> sigma;
+  vector[j] sp_mu;
+  real<lower=0> sp_sigma;
 }
 
 model {
-  // priors
-  // sigma ~ cauchy(0, 5);
-  // note: because priors are optional, not sure whether I should bother giving sigma a cauchy distribution
-
-  // likelihood
-  sp_mu ~ normal(mu, sigma);
-  x ~ normal(sp_mu[sp], sp_sigma);
-
+  vector[j] sp_shape;
+  vector[j] rate;
+  // reparamaterize sci-name level gamma to get sci-name mu and sigma
+  sp_shape = square(sp_mu) / square(sp_sigma);
+  rate = sp_mu / square(sp_sigma);
+  // reparamaterize global gamma to get global mu and sigma
+  real shape = square(mu) / square(sigma);
+  real rate = mu / square(sigma);
+  
+  sp_mu ~ gamma(shape, rate)
+  
+  // sp_shape ~ gamma(a_shape, a_rate) // shape and rate are also always positive so model as gamma
+  // sp_rate ~ gamma(b_shape, b_rate)
+  x ~ gamma(sp_shape[sp], sp_rate[sp]);
 }'
 
 # Fit model:
 fit_grouped <- stan(model_code = stan_grouped, data = list(x = x,
                                                            n = n,
                                                            j = j,
-                                                           sp = sp),
-                    iter = 50000, warmup = 1000, chain = 3, cores = 3)
+                                                           sp = sp))
+                    #iter = 50000, warmup = 1000, chain = 3, cores = 3)
 
 print(fit_grouped)
 
@@ -190,7 +244,7 @@ sp_index_key <- lca_dat_groups %>%
   arrange(sp) %>%
   unique() %>%
   mutate(param_name = paste("sp_mu[", clean_sci_name, "]", sep =""))
-write.csv(sp_index_key, file.path(outdir, "sp_info.csv"), row.names = FALSE)
+#write.csv(sp_index_key, file.path(outdir, "sp_info.csv"), row.names = FALSE)
 
 # Replace param names
 names(fit_grouped)[grep(names(fit_grouped), pattern = "sp_mu")] <- sp_index_key$param_name
@@ -207,7 +261,7 @@ p <- mcmc_trace(posterior_grouped,  pars = c("mu", "sigma"), n_warmup = 1000,
                 facet_args = list(nrow = 2, labeller = label_parsed))
 p + facet_text(size = 15)
 
-ggsave(file.path(outdir, "plot_mcmc-plot_FCR-by-species.png"), height = 8, width = 11.5)
+#ggsave(file.path(outdir, "plot_mcmc-plot_FCR-by-species.png"), height = 8, width = 11.5)
 
 # Make plots of Posterior distributions with 80% credible intervals
 distribution_grouped <- as.matrix(fit_grouped)
@@ -216,7 +270,7 @@ p2 <- mcmc_areas_ridges(distribution_grouped,
            prob = 0.8)
 
 p2 + ggtitle("Posterior distributions", "with 80% credible intervals")
-ggsave(file.path(outdir, "plot_post-distribution-plot_FCR-by-species.png"), height = 8, width = 11.5)
+#ggsave(file.path(outdir, "plot_post-distribution-plot_FCR-by-species.png"), height = 8, width = 11.5)
 
 
 ######################################################################################################
