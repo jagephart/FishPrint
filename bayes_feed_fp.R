@@ -44,10 +44,9 @@ lca_dat_no_na <- lca_dat_no_zeroes %>%
   filter(clean_sci_name == "Oncorhynchus mykiss") %>%
   filter(is.na(Feed_soy_percent)==FALSE) 
 
-
 # Set data for model
 # for FCR model:
-x <- lca_dat_simple$FCR
+x <- lca_dat_no_na$FCR
 
 # for Feed proportion model:
 k = 4
@@ -55,6 +54,19 @@ n = 3
 feed_weights <- lca_dat_no_na %>%
   select(contains("new")) %>%
   as.matrix()
+
+# for final foot print calculation
+fp_dat <- fp_clean %>%
+  filter(Category != "Energy") %>%
+  select(FP, Category, FP_val) 
+
+# ORDER: Animal, crop, FMFO, soy
+fp_carbon_dat <- fp_dat %>%
+  filter(FP == "Carbon") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
 
 # note: dirichlet_rng is just a random number generator:
 # rep_vector(x, m) creates a column consisting of m copies of x
@@ -64,11 +76,11 @@ feed_weights <- lca_dat_no_na %>%
 
 # Estimate feed component proportions for a single species
 stan_pooled <- 'data {
-  vector[n] x; // data
   int<lower=0> n;  // number of observations
+  vector[n] x; // data
   int<lower=1> k; // number of feed types
   simplex[k] feed_weights[n]; // array of feed weights simplexes
-
+  vector[k] fp_carbon_dat;
 }
 parameters {
   // FCR model:
@@ -88,5 +100,48 @@ model {
   theta ~ dirichlet(alpha); // now, estimate feed weights based on the vector of alphas
 }
 generated quantities {
-  feed_footprint
+  real species_carbon_footprint;
+  vector[k] weighted_feed_footprint;
+  real total_feed_footprint;
+  
+  weighted_feed_footprint = fp_carbon_dat .* theta;
+  total_feed_footprint = sum(weighted_feed_footprint);
+  species_carbon_footprint = mu * total_feed_footprint;
 }'
+
+no_missing_mod <- stan_model(model_code = stan_pooled, verbose = TRUE)
+# Note: For Windows, apparently OK to ignore this warning message:
+# Warning message:
+#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
+#   'C:/rtools40/usr/mingw_/bin/g++' not found
+
+# Fit model:
+fit_pooled <- sampling(object = no_missing_mod, data = list(n = n,
+                                                            x = x,
+                                                            k = k,
+                                                            feed_weights = feed_weights,
+                                                            fp_carbon_dat = fp_carbon_dat),
+                       iter = 10000, cores = 4,
+                       control = list(adapt_delta = 0.99))
+print(fit_pooled)
+
+feeds <- c("soy", "crops", "fmfo", "animal")
+feed_key <- data.frame(weighted_feed_footprint = paste("weighted_feed_footprint[", feeds, "]", sep = ""))
+
+fit_pooled_clean <- fit_pooled
+names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "weighted_feed_footprint")] <- feed_key$weighted_feed_footprint
+
+distribution_pooled <- as.matrix(fit_pooled_clean)
+
+# FIX IT - replace parameter names and add plots for other parameters
+plot_theme <- theme(axis.text=element_text(size=14, color = "black"))
+
+p_footprint <- mcmc_areas_ridges(distribution_pooled,
+                             pars = vars(contains("footprint")),
+                             prob = 0.8) + 
+  ggtitle("Oncorhynchus mykiss full feed footprint model", "with 80% credible intervals") +
+  plot_theme +
+  xlim(0, 10)
+
+p_footprint
+ggsave(filename = file.path(outdir, "bayes-example_trout_feed-proportion_alphas.png"), width = 11, height = 8.5)
