@@ -44,6 +44,42 @@ lca_dat_no_na <- lca_dat_no_zeroes %>%
   filter(clean_sci_name == "Oncorhynchus mykiss") %>%
   filter(is.na(Feed_soy_percent)==FALSE) 
 
+
+# BOX PLOTS OF DATA:
+
+# Theme for ALL PLOTS (including mcmc plots)
+plot_theme <- theme(axis.text=element_text(size=14, color = "black"))
+
+# FCR:
+plot_fcr <- lca_dat_no_na %>%
+  select(clean_sci_name, FCR) %>%
+  mutate(clean_sci_name = paste(clean_sci_name, row_number(), sep = "")) %>%
+  pivot_longer(cols = FCR)
+ggplot(data = plot_fcr, aes(x = name, y = value)) +
+  geom_boxplot() +
+  theme_classic() +
+  plot_theme +
+  labs(title = "Boxplots of FCRs for Oncorhynchus mykiss",
+       x = "",
+       y = "")
+ggsave(file.path(outdir, "boxplot_fcr_trout.png"), height = 8, width = 11.5)
+
+
+# feed proportion:
+plot_feed_prop <- lca_dat_no_na %>%
+  select(clean_sci_name, soy = feed_soy_new, crops = feed_crops_new, fmfo = feed_fmfo_new, animal = feed_animal_new) %>%
+  mutate(clean_sci_name = paste(clean_sci_name, row_number(), sep = "")) %>%
+  pivot_longer(cols = soy:animal)
+
+ggplot(data = plot_feed_prop, aes(x = name, y = value)) +
+  geom_boxplot() +
+  theme_classic() +
+  plot_theme +
+  labs(title = "Boxplots of feed proportions for Oncorhynchus mykiss",
+       x = "",
+       y = "")
+ggsave(file.path(outdir, "boxplot_feed-prop_trout.png"), height = 8, width = 11.5)
+
 # Set data for model
 # for FCR model:
 x <- lca_dat_no_na$FCR
@@ -68,6 +104,34 @@ fp_carbon_dat <- fp_dat %>%
   as.matrix() %>%
   c()
 
+fp_nitrogen_dat <- fp_dat %>%
+  filter(FP == "Nitrogen") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+fp_phosphorus_dat <- fp_dat %>%
+  filter(FP == "Phosphorus") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+fp_land_dat <- fp_dat %>%
+  filter(FP == "Land") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+fp_water_dat <- fp_dat %>%
+  filter(FP == "Water") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
 # note: dirichlet_rng is just a random number generator:
 # rep_vector(x, m) creates a column consisting of m copies of x
 # generated quantities {
@@ -81,6 +145,10 @@ stan_pooled <- 'data {
   int<lower=1> k; // number of feed types
   simplex[k] feed_weights[n]; // array of feed weights simplexes
   vector[k] fp_carbon_dat;
+  vector[k] fp_nitrogen_dat;
+  vector[k] fp_phosphorus_dat;
+  vector[k] fp_land_dat;
+  vector[k] fp_water_dat;
 }
 parameters {
   // FCR model:
@@ -100,13 +168,47 @@ model {
   theta ~ dirichlet(alpha); // now, estimate feed weights based on the vector of alphas
 }
 generated quantities {
-  real species_carbon_footprint;
-  vector[k] weighted_feed_footprint;
-  real total_feed_footprint;
+  // Carbon
+  real<lower=0> species_carbon_footprint;
+  vector[k] feed_carbon_footprint;
+  real total_feed_carbon_footprint;
+  // Nitrogen
+  real<lower=0> species_nitrogen_footprint;
+  vector[k] feed_nitrogen_footprint;
+  real total_feed_nitrogen_footprint;
+  // Phosphorus
+  real<lower=0> species_phosphorus_footprint;
+  vector[k] feed_phosphorus_footprint;
+  real total_feed_phosphorus_footprint;
+  // Land
+  real<lower=0> species_land_footprint;
+  vector[k] feed_land_footprint;
+  real total_feed_land_footprint;
+  // Water
+  real<lower=0> species_water_footprint;
+  vector[k] feed_water_footprint;
+  real total_feed_water_footprint;
   
-  weighted_feed_footprint = fp_carbon_dat .* theta;
-  total_feed_footprint = sum(weighted_feed_footprint);
-  species_carbon_footprint = mu * total_feed_footprint;
+  // Calculations
+  feed_carbon_footprint = fp_carbon_dat .* theta;
+  total_feed_carbon_footprint = sum(feed_carbon_footprint);
+  species_carbon_footprint = mu * total_feed_carbon_footprint;
+
+  feed_nitrogen_footprint = fp_nitrogen_dat .* theta;
+  total_feed_nitrogen_footprint = sum(feed_nitrogen_footprint);
+  species_nitrogen_footprint = mu * total_feed_nitrogen_footprint;
+
+  feed_phosphorus_footprint = fp_phosphorus_dat .* theta;
+  total_feed_phosphorus_footprint = sum(feed_phosphorus_footprint);
+  species_phosphorus_footprint = mu * total_feed_phosphorus_footprint;
+  
+  feed_land_footprint = fp_land_dat .* theta;
+  total_feed_land_footprint = sum(feed_land_footprint);
+  species_land_footprint = mu * total_feed_land_footprint;
+  
+  feed_water_footprint = fp_water_dat .* theta;
+  total_feed_water_footprint = sum(feed_water_footprint);
+  species_water_footprint = mu * total_feed_water_footprint;
 }'
 
 no_missing_mod <- stan_model(model_code = stan_pooled, verbose = TRUE)
@@ -120,28 +222,94 @@ fit_pooled <- sampling(object = no_missing_mod, data = list(n = n,
                                                             x = x,
                                                             k = k,
                                                             feed_weights = feed_weights,
-                                                            fp_carbon_dat = fp_carbon_dat),
+                                                            fp_carbon_dat = fp_carbon_dat,
+                                                            fp_nitrogen_dat = fp_nitrogen_dat,
+                                                            fp_phosphorus_dat = fp_phosphorus_dat,
+                                                            fp_land_dat = fp_land_dat,
+                                                            fp_water_dat = fp_water_dat),
                        iter = 10000, cores = 4,
                        control = list(adapt_delta = 0.99))
 print(fit_pooled)
 
 feeds <- c("soy", "crops", "fmfo", "animal")
-feed_key <- data.frame(weighted_feed_footprint = paste("weighted_feed_footprint[", feeds, "]", sep = ""))
+feed_key <- data.frame(carbon_footprint = paste("carbon_footprint[", feeds, "]", sep = ""),
+                       nitrogen_footprint = paste("nitrogen_footprint[", feeds, "]", sep = ""),
+                       phosphorus_footprint = paste("phosphorus_footprint[", feeds, "]", sep = ""),
+                       land_footprint = paste("land_footprint[", feeds, "]", sep = ""),
+                       water_footprint = paste("water_footprint[", feeds, "]", sep = ""))
 
 fit_pooled_clean <- fit_pooled
-names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "weighted_feed_footprint")] <- feed_key$weighted_feed_footprint
+names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "feed_carbon_footprint\\[")] <- feed_key$carbon_footprint
+names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "feed_nitrogen_footprint\\[")] <- feed_key$nitrogen_footprint
+names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "feed_phosphorus_footprint\\[")] <- feed_key$phosphorus_footprint
+names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "feed_land_footprint\\[")] <- feed_key$land_footprint
+names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "feed_water_footprint\\[")] <- feed_key$water_footprint
 
 distribution_pooled <- as.matrix(fit_pooled_clean)
 
 # FIX IT - replace parameter names and add plots for other parameters
-plot_theme <- theme(axis.text=element_text(size=14, color = "black"))
-
-p_footprint <- mcmc_areas_ridges(distribution_pooled,
-                             pars = vars(contains("footprint")),
-                             prob = 0.8) + 
+p_footprint <- mcmc_areas(distribution_pooled,
+                          pars = vars(contains("carbon_footprint")),
+                          prob = 0.8,
+                          prob_outer = 0.9,
+                          area_method = "scaled height",
+                          point_est = "median") + 
   ggtitle("Oncorhynchus mykiss full feed footprint model", "with 80% credible intervals") +
-  plot_theme +
-  xlim(0, 10)
+  xlim(0, 10) +
+  plot_theme 
 
 p_footprint
-ggsave(filename = file.path(outdir, "bayes-example_trout_feed-proportion_alphas.png"), width = 11, height = 8.5)
+ggsave(filename = file.path(outdir, "bayes-example_trout_carbon-feed-footprint.png"), width = 11, height = 8.5)
+
+
+p_footprint <- mcmc_areas(distribution_pooled,
+                          pars = vars(contains("nitrogen_footprint")),
+                          prob = 0.8,
+                          prob_outer = 0.9,
+                          area_method = "scaled height",
+                          point_est = "median") + 
+  ggtitle("Oncorhynchus mykiss full feed footprint model", "with 80% credible intervals") +
+  xlim(0, 0.01) +
+  plot_theme 
+
+p_footprint
+ggsave(filename = file.path(outdir, "bayes-example_trout_nitrogen-feed-footprint.png"), width = 11, height = 8.5)
+
+p_footprint <- mcmc_areas(distribution_pooled,
+                          pars = vars(contains("phosphorus_footprint")),
+                          prob = 0.8,
+                          prob_outer = 0.9,
+                          area_method = "scaled height",
+                          point_est = "median") + 
+  ggtitle("Oncorhynchus mykiss full feed footprint model", "with 80% credible intervals") +
+  xlim(0, 0.001) +
+  plot_theme 
+
+p_footprint
+ggsave(filename = file.path(outdir, "bayes-example_trout_phosphorus-feed-footprint.png"), width = 11, height = 8.5)
+
+p_footprint <- mcmc_areas(distribution_pooled,
+                          pars = vars(contains("land_footprint")),
+                          prob = 0.8,
+                          prob_outer = 0.9,
+                          area_method = "scaled height",
+                          point_est = "median") + 
+  ggtitle("Oncorhynchus mykiss full feed footprint model", "with 80% credible intervals") +
+  xlim(0, 5) +
+  plot_theme 
+
+p_footprint
+ggsave(filename = file.path(outdir, "bayes-example_trout_land-feed-footprint.png"), width = 11, height = 8.5)
+
+p_footprint <- mcmc_areas(distribution_pooled,
+                          pars = vars(contains("water_footprint")),
+                          prob = 0.8,
+                          prob_outer = 0.9,
+                          area_method = "scaled height",
+                          point_est = "median") + 
+  ggtitle("Oncorhynchus mykiss full feed footprint model", "with 80% credible intervals") +
+  xlim(0, 0.2) +
+  plot_theme 
+
+p_footprint
+ggsave(filename = file.path(outdir, "bayes-example_trout_water-feed-footprint.png"), width = 11, height = 8.5)
