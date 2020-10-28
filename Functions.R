@@ -121,6 +121,20 @@ clean.lca <- function(LCA_data){
 }
 
 #_____________________________________________________________________________________________________#
+# Replicate data based on Sample_size column
+#_____________________________________________________________________________________________________#
+rep_data <- function(lca_dat_clean){
+  lca_dat_clean_rep <- lca_dat_clean %>%
+    # Clean up sample size column
+    # First ignore numbers that are percentages, then find and extract any numbers, then fill the rest in with 1s
+    mutate(clean_sample_size = case_when(str_detect(Sample_size, "%") ~ 1,
+                                         str_detect(Sample_size, "[0-9]+") ~ as.numeric(str_extract(Sample_size, pattern = "[0-9]+")),
+                                         TRUE ~ 1)) 
+  
+  lca_dat_clean_rep <- as.data.frame(lapply(lca_dat_clean_rep, rep, lca_dat_clean_rep$clean_sample_size))
+}
+
+#_____________________________________________________________________________________________________#
 # Clean feed footprint data
 #_____________________________________________________________________________________________________#
 clean.feedFP <- function(feedFP_data){

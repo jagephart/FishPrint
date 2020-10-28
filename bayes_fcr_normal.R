@@ -31,6 +31,7 @@ lca_dat_simple <- lca_dat_clean %>%
   filter(clean_sci_name == "Oncorhynchus mykiss")
   #filter(clean_sci_name == "Oreochromis niloticus")
 
+
 # Each observation y is normally distributed with corresponding mean theta, and known variance, sigma2
 # Each theta is drawn from a normal group-level distribution with mean mu and variance tau2
 
@@ -55,7 +56,7 @@ model {
   // likelihood
   x ~ normal(mu, sigma); // note: stan interprets second param as standard deviation
 
-# }'
+}'
 
 # Fit model:
 fit_pooled <- stan(model_code = stan_pooled, data = list(x = x, n = n))
@@ -82,7 +83,7 @@ p <- mcmc_areas_ridges(distribution_grouped,
   plot_theme
 
 p 
-ggsave(file.path(outdir, "bayes-example_trout_fcr-gamma-target.png"), height = 8.5, width = 11)
+#ggsave(file.path(outdir, "bayes-example_trout_fcr-gamma-target.png"), height = 8.5, width = 11)
 
 ######################################################################################################
 # Model 1a: Calculate variance as a "transformed parameter"

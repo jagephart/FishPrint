@@ -26,9 +26,17 @@ lca_dat_clean <- lca_dat_clean %>%
 
 ######################################################################################################
 # Model 1: Remove NA's, and estimate group-level feed conversion ratio for Nile tilapia, Oreochromis niloticus (species with the most FCR data)
+lca_dat_simple <- lca_dat_clean %>%
+  filter(is.na(FCR) == FALSE) %>%
+  filter(clean_sci_name == "Oncorhynchus mykiss")
+  #filter(clean_sci_name == "Dicentrarchus labrax") # Note: doesn't run for n = 1
+
+# Set data
+x <- lca_dat_simple$FCR
+n <- nrow(lca_dat_simple)
 
 # Gamma distribution model
-stan_pooled <- 'data {
+stan_simple <- 'data {
   int<lower=0> n;  // number of observations
   vector[n] x; // data
 }
@@ -46,40 +54,46 @@ model {
 
 }'
 
+# Compile
+simple_mod <- stan_model(model_code = stan_simple, verbose = TRUE)
+# Note: For Windows, apparently OK to ignore this warning message:
+# Warning message:
+#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
+#   'C:/rtools40/usr/mingw_/bin/g++' not found
 
 # Fit model:
-fit_pooled <- stan(model_code = stan_pooled, data = list(x = x, n = n))
-#iter = 10000, warmup = 1000, chain = 3, cores = 3)
-# default: chains = 4, iter = 2000, warmup = floor(iter/2)
+fit_simple <- sampling(object = simple_mod, data = list(x = x,
+                                                        n = n))
 
-print(fit_pooled)
+print(fit_simple)
+
 # Note: lp__ is the sum of the vector of log probabilities (but after removing any constant scale factors, making it not useful for model comparison)
 # https://www.jax.org/news-and-insights/jax-blog/2015/october/lp-in-stan-output#:~:text=Therefore%2C%20%E2%80%9Clp%E2%80%9D%20is%20actually,useful%20for%20model%20comparison%20purposes.
 
 # Diagnostics
-stan_trace(fit_pooled)
-#stan_trace(fit_pooled, pars = c('mu'))
-#stan_trace(fit_pooled, pars = c('sigma'))
+stan_trace(fit_simple)
 
-distribution_grouped <- as.matrix(fit_pooled)
+
+distribution_simple <- as.matrix(fit_simple)
 
 plot_theme <- theme(axis.text=element_text(size=14, color = "black"))
 
-p <- mcmc_areas_ridges(distribution_grouped,
+p <- mcmc_areas_ridges(distribution_simple,
                        pars = vars(contains(c("mu", "sigma"))),
                        prob = 0.8) +
   ggtitle("Oncorhynchus mykiss FCR model", "with 80% credible intervals") +
   plot_theme
 
 p 
-ggsave(file.path(outdir, "bayes-example_trout_fcr-gamma-target.png"), height = 8.5, width = 11)
+#ggsave(file.path(outdir, "bayes-example_trout_fcr-gamma-target.png"), height = 8.5, width = 11)
 
 ######################################################################################################
 # Model 2: Remove ALL NA's, and estimate group-level feed conversion ratio for all species and a global feed conversion ratio (mu)
 
-# NOTE: Stan does not support NA's in data - must be modeled explicitly
-# Estimate group-level means
-lca_dat_groups <- lca_dat_clean %>%
+# If desired, replicate data based on clean_sample_size column:
+lca_dat_clean_rep <- rep_data(lca_dat_clean)
+
+lca_dat_groups <- lca_dat_clean_rep %>%
   filter(is.na(FCR) == FALSE) %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sp= as.numeric(clean_sci_name)) %>%
