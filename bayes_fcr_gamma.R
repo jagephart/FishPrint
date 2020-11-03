@@ -1,24 +1,24 @@
 # Bayesian estimation of FCR (with gamma distribution):
-
-rm(list=ls())
-library(tidyverse)
-library(rstan)
-library(taxize)
-library(data.table)
-library(countrycode) # part of clean.lca
-library(bayesplot) # for mcmc_areas_ridges
-
-# Mac
-datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
-# Windows
-# datadir <- "K:/BFA Environment 2/Data"
-# outdir <- "K:BFA Environment 2/Outputs"
-
-lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201006.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
-source("Functions.R")
-
-lca_dat_clean <- clean.lca(LCA_data = lca_dat)
+  
+  rm(list=ls())
+  library(tidyverse)
+  library(rstan)
+  library(taxize)
+  library(data.table)
+  library(countrycode) # part of clean.lca
+  library(bayesplot) # for mcmc_areas_ridges
+  
+  # Mac
+  datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+  outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+  # Windows
+  # datadir <- "K:/BFA Environment 2/Data"
+  # outdir <- "K:BFA Environment 2/Outputs"
+  
+  lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201006.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+  source("Functions.R")
+  
+  lca_dat_clean <- clean.lca(LCA_data = lca_dat)
 
 # Remove bivalves from FCR analysis
 lca_dat_clean <- lca_dat_clean %>%
@@ -331,6 +331,8 @@ model {
     x[i] ~ gamma(sci_shape[sci[i]], sci_rate[sci[i]]); // equivalent notation to target += but faster
   }
 }'
+
+
 
 # Compile
 no_missing_mod <- stan_model(model_code = stan_grouped, verbose = TRUE)

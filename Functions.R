@@ -66,6 +66,7 @@ clean.lca <- function(LCA_data){
   # Change osteichthyes (technically includes all terapods) to actinopterygii (bony fishes)
   # Simplify hybrid M. chrysops x M. saxatilis to its genus
   # Change outdated names (P. vannamei and P hypophthalmus)
+  # Divide tuna FCR by 5
   LCA_data <- LCA_data %>%
     mutate(clean_sci_name = case_when(Common.Name == "Freshwater prawn" ~ "Dendrobranchiata",
                                       Common.Name == "Indo-Pacific swamp crab" ~ "Brachyura",
@@ -76,6 +77,7 @@ clean.lca <- function(LCA_data){
                                       TRUE ~ Scientific.Name)) %>%
     mutate(clean_sci_name = case_when(str_detect(Scientific.Name, "spp") ~ str_replace(Scientific.Name, pattern = " spp\\.| spp", replacement = ""),
                                       Scientific.Name == "Morone chrysops x M. saxatilis" ~ "Morone",
+                                      Scientific.Name == "Labeo rohita and Catla Catla" ~ "Labeo rohita and Catla catla",
                                       Scientific.Name == "Osteichthyes" ~ "Actinopterygii",
                                       Scientific.Name == "Penaeus vannamei" ~ "Litopenaeus vannamei",
                                       Scientific.Name == "Pangasius hypophthalmus" ~ "Pangasianodon hypophthalmus", 
@@ -99,20 +101,20 @@ clean.lca <- function(LCA_data){
     mutate(taxa_group_name = case_when(#clean_sci_name %in% c("") ~ "algae", # none
                                   # clean_sci_name %in% c("") ~ "gastropods", # none
                                   clean_sci_name %in% c("Mytilus galloprovincialis", "Mytilus edulis") ~ "bivalves",
-                                  clean_sci_name %in% c("Chanos chanos") ~ "herbivore finfish",
-                                  clean_sci_name %in% c("Litopenaeus vannamei", "Penaeus monodon") ~ "marine shrimp",
+                                  clean_sci_name %in% c("Chanos chanos") ~ "herbivore marine finfish",
+                                  clean_sci_name %in% c("Litopenaeus vannamei", "Penaeus monodon", "Penaeus") ~ "marine shrimp",
                                   # clean_sci_name %in% c("") ~ "other marine crustacean",
-                                  Common.Name %in% c("Red crayfish", "Freshwater prawn") ~ "freshwater crustacean",
+                                  Common.Name %in% c("Red crayfish", "Freshwater prawn", "Indo-Pacific swamp crab") ~ "freshwater crustacean",
                                   clean_sci_name %in% c("Macrobrachium", "Macrobrachium amazonicum", "Macrobrachium rosenbergii") ~ "freshwater crustacean", # note: freshwater crustacean assigned by sciname and commonnames
                                   clean_sci_name %in% c("Thunnus orientalis", "Thunnus thynnus") ~ "tuna",
                                   clean_sci_name %in% c("Oncorhynchus kisutch", "Oncorhynchus tshawytscha", "Salmo salar", "Salmonidae", "Salvelinus alpinus") ~ "salmon/char",
-                                  clean_sci_name %in% c("Anoplopoma fimbria", "Dicentrarchus labrax", "Epinephelus", "Gadus morhua", "Lates calcarifer", "Morone", "Rachycentron canadum", "Sciaenops ocellatus", "Scophthalmidae", "Seriola rivoliana", "Sparus aurata") ~ "other non-herbivore marine finfish",
-                                  clean_sci_name %in% c("Cyprinus carpio") ~ "carp",
+                                  clean_sci_name %in% c("Acipenseridae", "Anoplopoma fimbria", "Cynoscion", "Dicentrarchus labrax", "Epinephelus", "Gadus morhua", "Lates calcarifer", "Morone", "Morone saxatilis", "Rachycentron canadum", "Sciaenops ocellatus", "Scophthalmidae", "Seriola rivoliana", "Sparus aurata") ~ "other non-herbivore marine finfish",
+                                  clean_sci_name %in% c("Cyprinus carpio", "Labeo rohita and Catla catla") ~ "carp",
                                   clean_sci_name %in% c("Oreochromis niloticus") ~ "tilapia",
                                   clean_sci_name %in% c("Clarias batrachus", "Clarias gariepinus", "Pangasianodon hypophthalmus", "Pangasius") ~ "catfish",
                                   clean_sci_name %in% c("Anguilla") ~ "eel",
+                                  clean_sci_name %in% c("Actinopterygii") ~ "other freshwater finfishes",
                                   clean_sci_name %in% c("Oncorhynchus mykiss") ~ "trout",
-                                  clean_sci_name %in% c("Pangasianodon hypophthalmus") ~ "other freshwater finfish",
                                   # clean_sci_name %in% c("") ~ "amphibians and reptiles", # none
                                   TRUE ~ "unassigned"
                                   )) %>%
