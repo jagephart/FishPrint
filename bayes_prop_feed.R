@@ -122,11 +122,11 @@ ggsave(filename = file.path(outdir, "bayes-example_trout_feed-proportion_thetas.
 lca_dat_no_na <- lca_dat_no_zeroes %>%
   filter(is.na(Feed_soy_percent)==FALSE) 
 
-lca_groups <- lca_dat_no_na %>%
-  filter(clean_sci_name %in% c("Oncorhynchus mykiss", "Salmo salar")) %>%
-  # Add indices for each sci-name
-  mutate(clean_sci_name = as.factor(clean_sci_name),
-         sci = as.numeric(clean_sci_name))
+# lca_groups <- lca_dat_no_na %>%
+#   filter(clean_sci_name %in% c("Oncorhynchus mykiss", "Salmo salar")) %>%
+#   # Add indices for each sci-name
+#   mutate(clean_sci_name = as.factor(clean_sci_name),
+#          sci = as.numeric(clean_sci_name))
 
 # lca_groups <- lca_dat_no_na %>%
 #   filter(clean_sci_name %in% c("Macrobrachium amazonicum", "Penaeus monodon"))  %>%
@@ -135,10 +135,10 @@ lca_groups <- lca_dat_no_na %>%
 #          sci = as.numeric(clean_sci_name))
 
 # Now that alpha and theta are vectorized, can include all groups
-# lca_groups <- lca_dat_no_na %>%
-#   # Add indices for each sci-name
-#   mutate(clean_sci_name = as.factor(clean_sci_name),
-#          sci = as.numeric(clean_sci_name))
+lca_groups <- lca_dat_no_na %>%
+  # Add indices for each sci-name
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sci = as.numeric(clean_sci_name))
 
 feed_vars <- c("feed_soy_new", "feed_crops_new", "feed_fmfo_new", "feed_animal_new")
 for (i in 1:length(feed_vars)) {
@@ -312,15 +312,10 @@ phi <- phi_mean %>%
   as.matrix() 
 kappa <- phi_mean %>% pull(n_obs) + k
 
-stan_data = list(n = n,
-                 k = k,
-                 feed_weights = feed_weights,
-                 n_sci = n_sci,
-                 sci = sci,
-                 phi = phi,
-                 kappa = kappa)
+
 
 # OLD CODE for just two groups:
+
 # Prior specification following: https://mc-stan.org/docs/2_18/stan-users-guide/reparameterizations.html
 # stan_pooled <- 'data {
 #   int<lower=0> n;  // number of observations
@@ -357,20 +352,78 @@ stan_data = list(n = n,
 #   theta_2 ~ dirichlet(alpha_2);
 # }'
 
+
+# This code vectorize over alpha and theta, allowing all groups to be estiamted
+
+# this stan_data list passes phi in as data
+# stan_data = list(n = n,
+#                  k = k,
+#                  feed_weights = feed_weights,
+#                  n_sci = n_sci,
+#                  sci = sci,
+#                  phi = phi,
+#                  kappa = kappa)
+
+# stan_pooled <- 'data {
+#   int n;  // number of observations
+#   int k; // number of feed types
+#   int n_sci; // number of sci names
+#   simplex[k] feed_weights[n]; // array of observed feed weights simplexes
+#   int sci[n]; // sci-name indices
+#   simplex[k] phi[n_sci];
+#   int kappa[n_sci];
+# }
+# parameters {
+#   // alpha parameter now moved into transformed parameter section
+#   simplex[k] theta[n_sci]; // vectors of estimated sci-level feed weight simplexes;
+# }
+# transformed parameters {
+#   // reparameterize alpha distributions as a vector of means and counts
+#   // phi is expected value of theta (mean feed weights)
+#   // kappa is strength of the prior measured in number of prior observations (minus K)
+#   vector<lower=0>[k] alpha[n_sci];
+#   for (m in 1:n) {
+#     alpha[sci[m]] = kappa[sci[m]] * phi[sci[m]];
+#   }
+# }
+# model {
+# 
+#   for (i in 1:n) {
+#     feed_weights[i] ~ dirichlet(to_vector(alpha[sci[i]]));
+#     // theta[sci[i]] ~ dirichlet(to_vector(alpha[sci[i]])); // this has problems converging here
+#   }
+#   // now, estimate feed weights based on the vector of alphas
+#   for (j in 1:n_sci) {
+#     theta[j] ~ dirichlet(to_vector(alpha[j]));
+#   }
+# }'
+
+
+# NEW CODE: 
 # LEFT OFF HERE - posteriors for the alphas all point-estimates because these are all deterministic, how to give it a proper prior DISTRIBUTION?
-# NEW CODE - try to vectorize over alpha and theta:
+# instead of passing phi as data, pass it as a parameter with a distribution
+
+# this stan_data list only defines kappa (not phi) as data
+# stan_data = list(n = n,
+#                  k = k,
+#                  feed_weights = feed_weights,
+#                  n_sci = n_sci,
+#                  sci = sci,
+#                  kappa = kappa)
+
+
 stan_pooled <- 'data {
   int n;  // number of observations
   int k; // number of feed types
   int n_sci; // number of sci names
   simplex[k] feed_weights[n]; // array of observed feed weights simplexes
   int sci[n]; // sci-name indices
-  simplex[k] phi[n_sci];
   int kappa[n_sci];
 }
 parameters {
   // alpha parameter now moved into transformed parameter section
-  simplex[k] theta[n_sci]; // vectors of estimated sci-level feed weight simplexes;
+  simplex[k] phi[n_sci];
+  simplex[k] theta[n_sci]; // vectors of estimated sci-level feed weight simplexes
 }
 transformed parameters {
   // reparameterize alpha distributions as a vector of means and counts
@@ -382,6 +435,27 @@ transformed parameters {
   }
 }
 model {
+  // priors on specific phi
+  // phi defined as phi[sci][k]
+  
+  // option 1: define feed proportion priors as lower upper bounds (but can only give a prior for one element per simplex - i.e., priors on phi[6][1] and phi[6][2] causes error probably because elements within a simplex are constrained?)
+  phi[2][1] ~ uniform(0.1, 0.2); // hypothetical lower and upper bounds for Oncorhynchus mykiss soy 
+  //phi[6][1] ~ uniform(0.05, 0.2); // lower upper bounds fo Salmo salar soy
+  //phi[6][2] ~ uniform(0.5, 0.6); // lower upper bounds for Salmo salar crops 
+  phi[6][3] ~ uniform(0.3, 0.5); // lower upper bounds for Salmo salar fmfo
+  //phi[6][4] ~ uniform(0.001, 0.01); // lower upper bounds fo Salmo salar animal
+  
+  // option 2: define feed proportions as means (need to define sigmas in parameters block: real<lower=0> sigma_1, sigma_2 etc; etc;)
+  // phi[2][2] ~ normal(0.13, sigma_1); // mean for Oncorhynhchus mykiss soy feed 
+  // phi[6][2] ~ normal(0.5, sigma_2); // mean for Salmo salar crops
+  
+  // eventually, may want to loop through a phi matrix
+  //for (s in 1:n_sci){
+  //  for (f in 1:k){
+  //    phi[sci][k] ~ uniform(lower_bounds, upper_bounds) // need to create vector of lower and upper bounds and pass this in as data
+  //  }
+  // }
+
   for (i in 1:n) {
     feed_weights[i] ~ dirichlet(to_vector(alpha[sci[i]]));
     // theta[sci[i]] ~ dirichlet(to_vector(alpha[sci[i]])); // this has problems converging here
@@ -391,6 +465,7 @@ model {
     theta[j] ~ dirichlet(to_vector(alpha[j]));
   }
 }'
+
 
 no_missing_mod <- stan_model(model_code = stan_pooled, verbose = TRUE)
 # Note: For Windows, apparently OK to ignore this warning message:
