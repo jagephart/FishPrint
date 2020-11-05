@@ -356,47 +356,48 @@ kappa <- phi_mean %>% pull(n_obs) + k
 # This code vectorize over alpha and theta, allowing all groups to be estiamted
 
 # this stan_data list passes phi in as data
-# stan_data = list(n = n,
-#                  k = k,
-#                  feed_weights = feed_weights,
-#                  n_sci = n_sci,
-#                  sci = sci,
-#                  phi = phi,
-#                  kappa = kappa)
+stan_data = list(n = n,
+                 k = k,
+                 feed_weights = feed_weights,
+                 n_sci = n_sci,
+                 sci = sci,
+                 phi = phi,
+                 kappa = kappa)
 
-# stan_pooled <- 'data {
-#   int n;  // number of observations
-#   int k; // number of feed types
-#   int n_sci; // number of sci names
-#   simplex[k] feed_weights[n]; // array of observed feed weights simplexes
-#   int sci[n]; // sci-name indices
-#   simplex[k] phi[n_sci];
-#   int kappa[n_sci];
-# }
-# parameters {
-#   // alpha parameter now moved into transformed parameter section
-#   simplex[k] theta[n_sci]; // vectors of estimated sci-level feed weight simplexes;
-# }
-# transformed parameters {
-#   // reparameterize alpha distributions as a vector of means and counts
-#   // phi is expected value of theta (mean feed weights)
-#   // kappa is strength of the prior measured in number of prior observations (minus K)
-#   vector<lower=0>[k] alpha[n_sci];
-#   for (m in 1:n) {
-#     alpha[sci[m]] = kappa[sci[m]] * phi[sci[m]];
-#   }
-# }
-# model {
-# 
-#   for (i in 1:n) {
-#     feed_weights[i] ~ dirichlet(to_vector(alpha[sci[i]]));
-#     // theta[sci[i]] ~ dirichlet(to_vector(alpha[sci[i]])); // this has problems converging here
-#   }
-#   // now, estimate feed weights based on the vector of alphas
-#   for (j in 1:n_sci) {
-#     theta[j] ~ dirichlet(to_vector(alpha[j]));
-#   }
-# }'
+# Code that passes priors in as data
+stan_pooled <- 'data {
+  int n;  // number of observations
+  int k; // number of feed types
+  int n_sci; // number of sci names
+  simplex[k] feed_weights[n]; // array of observed feed weights simplexes
+  int sci[n]; // sci-name indices
+  simplex[k] phi[n_sci];
+  int kappa[n_sci];
+}
+parameters {
+  // alpha parameter now moved into transformed parameter section
+  simplex[k] theta[n_sci]; // vectors of estimated sci-level feed weight simplexes;
+}
+transformed parameters {
+  // reparameterize alpha distributions as a vector of means and counts
+  // phi is expected value of theta (mean feed weights)
+  // kappa is strength of the prior measured in number of prior observations (minus K)
+  vector<lower=0>[k] alpha[n_sci];
+  for (m in 1:n) {
+    alpha[sci[m]] = kappa[sci[m]] * phi[sci[m]];
+  }
+}
+model {
+
+  for (i in 1:n) {
+    feed_weights[i] ~ dirichlet(to_vector(alpha[sci[i]]));
+    // theta[sci[i]] ~ dirichlet(to_vector(alpha[sci[i]])); // this has problems converging here
+  }
+  // now, estimate feed weights based on the vector of alphas
+  for (j in 1:n_sci) {
+    theta[j] ~ dirichlet(to_vector(alpha[j]));
+  }
+}'
 
 
 # NEW CODE: 
@@ -439,11 +440,11 @@ model {
   // phi defined as phi[sci][k]
   
   // option 1: define feed proportion priors as lower upper bounds (but can only give a prior for one element per simplex - i.e., priors on phi[6][1] and phi[6][2] causes error probably because elements within a simplex are constrained?)
-  phi[2][1] ~ uniform(0.1, 0.2); // hypothetical lower and upper bounds for Oncorhynchus mykiss soy 
+  // phi[2][1] ~ uniform(0.1, 0.2); // hypothetical lower and upper bounds for Oncorhynchus mykiss soy 
   //phi[6][1] ~ uniform(0.05, 0.2); // lower upper bounds fo Salmo salar soy
   //phi[6][2] ~ uniform(0.5, 0.6); // lower upper bounds for Salmo salar crops 
-  phi[6][3] ~ uniform(0.3, 0.5); // lower upper bounds for Salmo salar fmfo
-  //phi[6][4] ~ uniform(0.001, 0.01); // lower upper bounds fo Salmo salar animal
+  //phi[6][3] ~ uniform(0.3, 0.5); // lower upper bounds for Salmo salar fmfo
+  phi[6][4] ~ uniform(0.001, 0.01); // lower upper bounds fo Salmo salar animal
   
   // option 2: define feed proportions as means (need to define sigmas in parameters block: real<lower=0> sigma_1, sigma_2 etc; etc;)
   // phi[2][2] ~ normal(0.13, sigma_1); // mean for Oncorhynhchus mykiss soy feed 
