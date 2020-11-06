@@ -571,7 +571,7 @@ stan_data = list(N = N,
 
 # For priors, get the mean of observations per sci-name
 sci_phi_mean <- lca_groups %>% 
-  select(contains(c("new", "sci", "obs"))) %>%
+  select(contains(c("new", "sci"))) %>%
   group_by(sci) %>% 
   summarise(across(contains("new"), mean)) %>%
   ungroup() %>%
@@ -579,7 +579,7 @@ sci_phi_mean <- lca_groups %>%
 
 # Get mean observations per taxa group
 tx_phi_mean <- lca_groups %>% 
-  select(contains(c("new", "tx", "obs"))) %>%
+  select(contains(c("new", "tx"))) %>%
   group_by(tx) %>% 
   summarise(across(contains("new"), mean)) %>%
   ungroup() %>%

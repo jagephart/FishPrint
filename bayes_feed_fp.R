@@ -36,14 +36,32 @@ fp_dat <- read.csv(file.path(datadir, "Feed_FP_raw.csv"))
 fp_clean <- clean.feedFP(fp_dat)
 
 ######################################################################################################
+# LEFT OFF HERE - model runs but doesn't converge - check model statement carefully
 # Model 2: Remove all NAs - estimate feed footprint for all sci names
 
 # Remove NAs
 lca_dat_no_na <- lca_dat_no_zeroes %>%
-  filter(is.na(Feed_soy_percent)==FALSE) 
+  filter(is.na(Feed_soy_percent)==FALSE) %>%
+  filter(is.na(FCR) == FALSE) %>%
+  filter(FCR != 0) %>%
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sci = as.numeric(clean_sci_name),
+         taxa_group_name = as.factor(taxa_group_name),
+         tx = as.numeric(taxa_group_name)) %>%
+  select(clean_sci_name, sci, taxa_group_name, tx, FCR, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent) %>%
+  # NOTE multinomial-dirchlet model requires all elements > 0 (change some to 0.001 for now?)
+  mutate(feed_soy_new = if_else(Feed_soy_percent == 0, true = 0.01, false = Feed_soy_percent),
+         feed_crops_new = if_else(Feed_othercrops_percent == 0, true = 0.01, false = Feed_othercrops_percent),
+         feed_fmfo_new = if_else(Feed_FMFO_percent == 0, true = 0.01, false = Feed_FMFO_percent),
+         feed_animal_new = if_else(Feed_animal_percent == 0, true = 0.01, false = Feed_animal_percent)) %>%
+  # Renomoralize values so they sum to 1
+  mutate(sum = rowSums(select(., contains("new")))) %>%
+  mutate(feed_soy_new = feed_soy_new / sum,
+         feed_crops_new = feed_crops_new / sum,
+         feed_fmfo_new = feed_fmfo_new / sum,
+         feed_animal_new = feed_animal_new / sum)
 
 # BOX PLOTS OF DATA:
-
 # Theme for ALL PLOTS (including mcmc plots)
 plot_theme <- theme(axis.text=element_text(size=14, color = "black"))
 
@@ -84,19 +102,42 @@ for (i in 1:length(feed_vars)) {
   #ggsave(file.path(outdir, "boxplot_feed-prop_no_na.png"), height = 8, width = 11.5)
 }
 
-# STILL NEED TO REDO THIS SECTION
 # Set data for model
+
+# overall model:
+N = nrow(lca_dat_no_na)
+N_SCI <- length(unique(lca_dat_no_na$sci))
+sci <- lca_dat_no_na$sci
+N_TX <- length(unique(lca_dat_no_na$tx))
+tx <- lca_dat_no_na$tx
+
 # for FCR model:
 x <- lca_dat_no_na$FCR
 
 # for Feed proportion model:
-k = 4
-n = 3
+K = 4
 feed_weights <- lca_dat_no_na %>%
   select(contains("new")) %>%
   as.matrix()
+  
+# Get counts per sci name and counts per taxa group (also included as data in the model):
+sci_kappa <- lca_dat_no_na %>% 
+  select(contains(c("new", "sci", "obs"))) %>%
+  group_by(sci) %>% 
+  summarise(n_obs = n()) %>%
+  ungroup() %>%
+  arrange(sci) %>%
+  pull(n_obs)
 
-# for final foot print calculation
+tx_kappa <- lca_dat_no_na %>% 
+  select(contains(c("new", "tx", "obs"))) %>%
+  group_by(tx) %>% 
+  summarise(n_obs = n()) %>%
+  ungroup() %>%
+  arrange(tx) %>%
+  pull(n_obs)
+
+# data (constants) for final foot print calculation 
 fp_dat <- fp_clean %>%
   filter(Category != "Energy") %>%
   select(FP, Category, FP_val) 
@@ -137,79 +178,221 @@ fp_water_dat <- fp_dat %>%
   as.matrix() %>%
   c()
 
+# Prior information
+# Mean feed proportions per sci-name
+sci_phi_mean <- lca_dat_no_na %>% 
+  select(contains(c("new", "sci", "clean_sci_name"))) %>%
+  group_by(clean_sci_name, sci) %>% 
+  summarise(across(contains("new"), mean)) %>%
+  ungroup() %>%
+  arrange(sci)
+
+# Mean feed proportions per taxa group
+tx_phi_mean <- lca_dat_no_na %>% 
+  select(contains(c("new", "tx", "taxa_group_name"))) %>%
+  group_by(taxa_group_name, tx) %>% 
+  summarise(across(contains("new"), mean)) %>%
+  ungroup() %>%
+  arrange(tx)
+
+
+stan_data <- list(N = N,
+                  N_SCI = N_SCI, 
+                  sci = sci,
+                  N_TX = N_TX,
+                  tx = tx,
+                  x = x,
+                  K = K,
+                  feed_weights = feed_weights,
+                  sci_kappa = sci_kappa,
+                  tx_kappa = tx_kappa,
+                  fp_carbon_dat = fp_carbon_dat,
+                  fp_nitrogen_dat = fp_nitrogen_dat,
+                  fp_phosphorus_dat = fp_phosphorus_dat,
+                  fp_land_dat = fp_land_dat,
+                  fp_water_dat = fp_water_dat)
+
 # Estimate foot print for all scientific names without NAs
-stan_pooled <- 'data {
-  int<lower=0> n;  // number of observations
-  vector[n] x; // data
-  int<lower=1> k; // number of feed types
-  simplex[k] feed_weights[n]; // array of feed weights simplexes
-  vector[k] fp_carbon_dat;
-  vector[k] fp_nitrogen_dat;
-  vector[k] fp_phosphorus_dat;
-  vector[k] fp_land_dat;
-  vector[k] fp_water_dat;
+stan_no_na <- 'data {
+  // data for gamma model for FCR
+  int<lower=0> N;  // number of observations
+  vector<lower=0>[N] x; // data
+  int N_TX; // number of taxa groups
+  int tx[N]; // taxa group index (ordered by unique sci index)
+  int N_SCI; // number of scientific names
+  int sci[N]; // sciname index
+  
+  // data for dirichlet model for feed
+  int K; // number of feed types
+  simplex[K] feed_weights[N]; // array of observed feed weights simplexes
+  int sci_kappa[N_SCI]; // number of observations per sci-name
+  int tx_kappa[N_TX]; // number of observations per taxa group
+  
+  // constants for generated quantities
+  vector[K] fp_carbon_dat;
+  vector[K] fp_nitrogen_dat;
+  vector[K] fp_phosphorus_dat;
+  vector[K] fp_land_dat;
+  vector[K] fp_water_dat;
 }
 parameters {
   // FCR model:
   real<lower=0> mu;
   real<lower=0> sigma;
+  vector<lower=0>[N_TX] tx_mu;
+  real<lower=0> tx_sigma;
+  vector<lower=0>[N_SCI] sci_mu;
+  real<lower=0> sci_sigma;
+  
   // Feed proportion model:
-  vector<lower=0>[k] alpha;
-  simplex[k] theta;
+  simplex[K] sci_phi[N_SCI];
+  simplex[K] sci_theta[N_SCI]; // vectors of estimated sci-level feed weight simplexes
+  simplex[K] tx_phi[N_TX];
+  simplex[K] tx_theta[N_TX];
+  simplex[K] phi;
+  simplex[K] theta;
+}
+transformed parameters {
+  // define transofrmed params for gamma model for FCRs
+  real shape;
+  real rate; 
+  vector[N_SCI] sci_shape;
+  vector[N_SCI] sci_rate;
+  vector[N_TX] tx_shape;
+  vector[N_TX] tx_rate;
+  
+  // define params for dirichlet model for feed proportions
+  vector<lower=0>[K] sci_alpha[N_SCI];
+  vector<lower=0>[K] tx_alpha[N_TX];
+  vector<lower=0>[K] alpha;
+  
+  // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+  // global-level
+  shape = square(mu) / square(sigma);
+  rate = mu / square(sigma);
+  // sci name and taxa group levels
+  for (n in 1:N){
+    tx_shape[tx[n]] = square(tx_mu[tx[n]]) ./ square(tx_sigma);
+    tx_rate[tx[n]] = tx_mu[tx[n]] ./ square(tx_sigma);
+    sci_shape[sci[n]] = square(sci_mu[sci[n]]) ./ square(sci_sigma);
+    sci_rate[sci[n]] = sci_mu[sci[n]] ./ square(sci_sigma);
+  }
+  
+  // reparameterize alphas as a vector of means (phi) and counts (kappas)
+  // phi is expected value of theta (mean feed weights)
+  // kappa is strength of the prior measured in number of prior observations (minus K)
+  alpha = N * phi;
+  for (n_tx in 1:N_TX) {
+    tx_alpha[n_tx] = tx_kappa[n_tx] * tx_phi[n_tx];
+  }    
+  
+  for (n_sci in 1:N_SCI) {
+    sci_alpha[n_sci] = sci_kappa[n_sci] * sci_phi[n_sci];
+  }
 }
 model {
+  // define priors for gamma model for FCRs
+  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+  mu ~ uniform(0, 100);
+  sigma ~ uniform(0, 100);
+  sci_mu ~ uniform(0, 100);
+  sci_sigma ~ uniform(0, 100);
   
-  x ~ normal(mu, sigma); // note: stan interprets second param as standard deviation
-
-  for (i in 1:n) {
-    feed_weights[i] ~ dirichlet(alpha); // estimate vector of alphas based on the data of feed weights
+  // define priors for dirichlet model for feed proportions
+  // sci_phi defined as sci_phi[sci][K]
+  
+  // option 1: define feed proportion priors as lower upper bounds
+  sci_phi[2][1] ~ uniform(0.1, 0.2); // hypothetical lower and upper bounds for Oncorhynchus mykiss soy 
+  
+  // option 2: define feed proportions as means (need to define sigmas in parameters block: real<lower=0> sigma_1, sigma_2 etc; etc;)
+  // sci_phi[2][2] ~ normal(0.13, sigma_1); // mean for Oncorhynhchus mykiss soy feed 
+  
+  
+  // likelihood
+  
+  // global-level for dirichlet
+  tx_mu ~ gamma(shape, rate);
+  
+  for (n in 1:N){
+    // gamma model sci-name and taxa-level (global level is part of transformed params)
+    sci_mu[sci[n]] ~ gamma(tx_shape[tx[n]], tx_rate[tx[n]]);
+    x[n] ~ gamma(sci_shape[sci[n]], sci_rate[sci[n]]);
+    
+    // dirichlet model sci-name and taxa-level
+    tx_phi[tx[n]] ~ dirichlet(alpha);
+    sci_phi[sci[n]] ~ dirichlet(to_vector(tx_alpha[tx[n]]));
+    feed_weights[n] ~ dirichlet(to_vector(sci_alpha[sci[n]])); 
   }
-  theta ~ dirichlet(alpha); // now, estimate feed weights based on the vector of alphas
-}
-generated quantities {
-  // Carbon
-  real<lower=0> species_carbon_footprint;
-  vector[k] feed_carbon_footprint;
-  real total_feed_carbon_footprint;
-  // Nitrogen
-  real<lower=0> species_nitrogen_footprint;
-  vector[k] feed_nitrogen_footprint;
-  real total_feed_nitrogen_footprint;
-  // Phosphorus
-  real<lower=0> species_phosphorus_footprint;
-  vector[k] feed_phosphorus_footprint;
-  real total_feed_phosphorus_footprint;
-  // Land
-  real<lower=0> species_land_footprint;
-  vector[k] feed_land_footprint;
-  real total_feed_land_footprint;
-  // Water
-  real<lower=0> species_water_footprint;
-  vector[k] feed_water_footprint;
-  real total_feed_water_footprint;
-  
-  // Calculations
-  feed_carbon_footprint = fp_carbon_dat .* theta;
-  total_feed_carbon_footprint = sum(feed_carbon_footprint);
-  species_carbon_footprint = mu * total_feed_carbon_footprint;
 
-  feed_nitrogen_footprint = fp_nitrogen_dat .* theta;
-  total_feed_nitrogen_footprint = sum(feed_nitrogen_footprint);
-  species_nitrogen_footprint = mu * total_feed_nitrogen_footprint;
-
-  feed_phosphorus_footprint = fp_phosphorus_dat .* theta;
-  total_feed_phosphorus_footprint = sum(feed_phosphorus_footprint);
-  species_phosphorus_footprint = mu * total_feed_phosphorus_footprint;
-  
-  feed_land_footprint = fp_land_dat .* theta;
-  total_feed_land_footprint = sum(feed_land_footprint);
-  species_land_footprint = mu * total_feed_land_footprint;
-  
-  feed_water_footprint = fp_water_dat .* theta;
-  total_feed_water_footprint = sum(feed_water_footprint);
-  species_water_footprint = mu * total_feed_water_footprint;
+  // dirichlet model - estimate feed weights based on estimated alphas
+  // global level estimates
+  theta ~ dirichlet(to_vector(alpha));
+  // taxa level estimates
+  for (n_tx in 1:N_TX) {
+    tx_theta[n_tx] ~ dirichlet(to_vector(tx_alpha[n_tx]));
+  }
+  // sci-name level estimates
+  for (n_sci in 1:N_SCI) {
+    sci_theta[n_sci] ~ dirichlet(to_vector(sci_alpha[n_sci]));
+  }
 }'
 
+# Add generated quantities later
+# generated quantities {
+#   // Carbon
+#   real<lower=0> species_carbon_footprint;
+#   vector[K] feed_carbon_footprint;
+#   real total_feed_carbon_footprint;
+#   // Nitrogen
+#   real<lower=0> species_nitrogen_footprint;
+#   vector[K] feed_nitrogen_footprint;
+#   real total_feed_nitrogen_footprint;
+#   // Phosphorus
+#   real<lower=0> species_phosphorus_footprint;
+#   vector[K] feed_phosphorus_footprint;
+#   real total_feed_phosphorus_footprint;
+#   // Land
+#   real<lower=0> species_land_footprint;
+#   vector[K] feed_land_footprint;
+#   real total_feed_land_footprint;
+#   // Water
+#   real<lower=0> species_water_footprint;
+#   vector[K] feed_water_footprint;
+#   real total_feed_water_footprint;
+#   
+#   // Calculations
+#   feed_carbon_footprint = fp_carbon_dat .* theta;
+#   total_feed_carbon_footprint = sum(feed_carbon_footprint);
+#   species_carbon_footprint = mu * total_feed_carbon_footprint;
+# 
+#   feed_nitrogen_footprint = fp_nitrogen_dat .* theta;
+#   total_feed_nitrogen_footprint = sum(feed_nitrogen_footprint);
+#   species_nitrogen_footprint = mu * total_feed_nitrogen_footprint;
+# 
+#   feed_phosphorus_footprint = fp_phosphorus_dat .* theta;
+#   total_feed_phosphorus_footprint = sum(feed_phosphorus_footprint);
+#   species_phosphorus_footprint = mu * total_feed_phosphorus_footprint;
+#   
+#   feed_land_footprint = fp_land_dat .* theta;
+#   total_feed_land_footprint = sum(feed_land_footprint);
+#   species_land_footprint = mu * total_feed_land_footprint;
+#   
+#   feed_water_footprint = fp_water_dat .* theta;
+#   total_feed_water_footprint = sum(feed_water_footprint);
+#   species_water_footprint = mu * total_feed_water_footprint;
+# }'
+
+no_na_mod <- stan_model(model_code = stan_no_na, verbose = TRUE)
+# Note: For Windows, apparently OK to ignore this warning message:
+# Warning message:
+#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
+#   'C:/rtools40/usr/mingw_/bin/g++' not found
+
+# Fit model:
+fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4)
+                       #,iter = 10000, cores = 4,
+                       #control = list(adapt_delta = 0.99))
+print(fit_no_na)
 
 ######################################################################################################
 # Model 1: Remove all NAs - estimate feed footprint for Oncorhynchus mykiss
