@@ -1,6 +1,5 @@
 # Combine bayes_prop_feed and bayes_fcr to calculate footprint
 
-
 rm(list=ls())
 library(tidyverse)
 library(rstan)
@@ -35,6 +34,182 @@ lca_dat_no_zeroes <- clean.lca(LCA_data = lca_dat) %>%
 
 fp_dat <- read.csv(file.path(datadir, "Feed_FP_raw.csv"))
 fp_clean <- clean.feedFP(fp_dat)
+
+######################################################################################################
+# Model 2: Remove all NAs - estimate feed footprint for all sci names
+
+# Remove NAs
+lca_dat_no_na <- lca_dat_no_zeroes %>%
+  filter(is.na(Feed_soy_percent)==FALSE) 
+
+# BOX PLOTS OF DATA:
+
+# Theme for ALL PLOTS (including mcmc plots)
+plot_theme <- theme(axis.text=element_text(size=14, color = "black"))
+
+# FCR:
+plot_fcr <- lca_dat_no_na %>%
+  select(clean_sci_name, FCR) %>%
+  #mutate(clean_sci_name = paste(clean_sci_name, row_number(), sep = "")) %>%
+  pivot_longer(cols = FCR)
+ggplot(data = plot_fcr, aes(x = clean_sci_name, y = value)) +
+  geom_boxplot() +
+  theme_classic() +
+  plot_theme +
+  labs(title = "Boxplots of FCRs",
+       x = "",
+       y = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+#ggsave(file.path(outdir, "boxplot_fcr_no_na.png"), height = 8, width = 11.5)
+
+
+# feed proportion:
+plot_feed_prop <- lca_dat_no_na %>%
+  select(clean_sci_name, soy = feed_soy_new, crops = feed_crops_new, fmfo = feed_fmfo_new, animal = feed_animal_new) %>%
+  pivot_longer(cols = soy:animal)
+
+
+
+feed_vars <- c("soy", "crops", "fmfo", "animal")
+for (i in 1:length(feed_vars)) {
+  p <- ggplot(data = plot_feed_prop %>% filter(name == feed_vars[i]), aes(x = clean_sci_name, y = value)) +
+    geom_boxplot() +
+    theme_classic() +
+    plot_theme +
+    labs(title = paste("Boxplots of ", feed_vars[i], " feed proportions", sep = ""),
+         x = "",
+         y = "")  +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  print(p)
+  #ggsave(file.path(outdir, "boxplot_feed-prop_no_na.png"), height = 8, width = 11.5)
+}
+
+# STILL NEED TO REDO THIS SECTION
+# Set data for model
+# for FCR model:
+x <- lca_dat_no_na$FCR
+
+# for Feed proportion model:
+k = 4
+n = 3
+feed_weights <- lca_dat_no_na %>%
+  select(contains("new")) %>%
+  as.matrix()
+
+# for final foot print calculation
+fp_dat <- fp_clean %>%
+  filter(Category != "Energy") %>%
+  select(FP, Category, FP_val) 
+
+# ORDER: Animal, crop, FMFO, soy
+fp_carbon_dat <- fp_dat %>%
+  filter(FP == "Carbon") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+fp_nitrogen_dat <- fp_dat %>%
+  filter(FP == "Nitrogen") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+fp_phosphorus_dat <- fp_dat %>%
+  filter(FP == "Phosphorus") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+fp_land_dat <- fp_dat %>%
+  filter(FP == "Land") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+fp_water_dat <- fp_dat %>%
+  filter(FP == "Water") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+# Estimate foot print for all scientific names without NAs
+stan_pooled <- 'data {
+  int<lower=0> n;  // number of observations
+  vector[n] x; // data
+  int<lower=1> k; // number of feed types
+  simplex[k] feed_weights[n]; // array of feed weights simplexes
+  vector[k] fp_carbon_dat;
+  vector[k] fp_nitrogen_dat;
+  vector[k] fp_phosphorus_dat;
+  vector[k] fp_land_dat;
+  vector[k] fp_water_dat;
+}
+parameters {
+  // FCR model:
+  real<lower=0> mu;
+  real<lower=0> sigma;
+  // Feed proportion model:
+  vector<lower=0>[k] alpha;
+  simplex[k] theta;
+}
+model {
+  
+  x ~ normal(mu, sigma); // note: stan interprets second param as standard deviation
+
+  for (i in 1:n) {
+    feed_weights[i] ~ dirichlet(alpha); // estimate vector of alphas based on the data of feed weights
+  }
+  theta ~ dirichlet(alpha); // now, estimate feed weights based on the vector of alphas
+}
+generated quantities {
+  // Carbon
+  real<lower=0> species_carbon_footprint;
+  vector[k] feed_carbon_footprint;
+  real total_feed_carbon_footprint;
+  // Nitrogen
+  real<lower=0> species_nitrogen_footprint;
+  vector[k] feed_nitrogen_footprint;
+  real total_feed_nitrogen_footprint;
+  // Phosphorus
+  real<lower=0> species_phosphorus_footprint;
+  vector[k] feed_phosphorus_footprint;
+  real total_feed_phosphorus_footprint;
+  // Land
+  real<lower=0> species_land_footprint;
+  vector[k] feed_land_footprint;
+  real total_feed_land_footprint;
+  // Water
+  real<lower=0> species_water_footprint;
+  vector[k] feed_water_footprint;
+  real total_feed_water_footprint;
+  
+  // Calculations
+  feed_carbon_footprint = fp_carbon_dat .* theta;
+  total_feed_carbon_footprint = sum(feed_carbon_footprint);
+  species_carbon_footprint = mu * total_feed_carbon_footprint;
+
+  feed_nitrogen_footprint = fp_nitrogen_dat .* theta;
+  total_feed_nitrogen_footprint = sum(feed_nitrogen_footprint);
+  species_nitrogen_footprint = mu * total_feed_nitrogen_footprint;
+
+  feed_phosphorus_footprint = fp_phosphorus_dat .* theta;
+  total_feed_phosphorus_footprint = sum(feed_phosphorus_footprint);
+  species_phosphorus_footprint = mu * total_feed_phosphorus_footprint;
+  
+  feed_land_footprint = fp_land_dat .* theta;
+  total_feed_land_footprint = sum(feed_land_footprint);
+  species_land_footprint = mu * total_feed_land_footprint;
+  
+  feed_water_footprint = fp_water_dat .* theta;
+  total_feed_water_footprint = sum(feed_water_footprint);
+  species_water_footprint = mu * total_feed_water_footprint;
+}'
+
 
 ######################################################################################################
 # Model 1: Remove all NAs - estimate feed footprint for Oncorhynchus mykiss
