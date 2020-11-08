@@ -7,6 +7,7 @@ library(taxize)
 library(data.table)
 library(countrycode) # part of clean.lca
 library(bayesplot) # for mcmc_areas_ridges
+library(shinystan)
 
 # Mac
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
@@ -515,13 +516,14 @@ p_theta <- mcmc_areas(distribution_grouped,
 p_theta
 
 ######################################################################################################
-# Model 3: Still no NAs, make into two-level model with priors on phi
+# Model 3: Still no NAs, make into three-level model with priors on phi
 # Remove all NAs - estimate proportion feed for just two scientific names in the dataset
 
 lca_dat_no_na <- lca_dat_no_zeroes %>%
-  filter(is.na(Feed_soy_percent)==FALSE) 
+  filter(is.na(Feed_soy_percent)==FALSE) %>%
+  filter(clean_sci_name %in% c("Oncorhynchus mykiss", "Salmo salar"))
 
-# Now that alpha and theta are vectorized, can include all groups
+# Add indices
 lca_groups <- lca_dat_no_na %>%
   # Add indices for each sci-name
   mutate(clean_sci_name = as.factor(clean_sci_name),
@@ -661,6 +663,9 @@ no_missing_mod <- stan_model(model_code = stan_pooled, verbose = TRUE)
 # RUNS but gives warning about divergent transitions
 # Fit model:
 fit_grouped <- sampling(object = no_missing_mod, data = stan_data, cores = 4)
+
+launch_shinystan(fit_grouped)
+
 #,cores = 4, iter = 10000,
 #control = list(adapt_delta = 0.99)) # address divergent transitions by increasing delta, i.e., take smaller steps
 print(fit_grouped)

@@ -67,6 +67,8 @@ fit_simple <- sampling(object = simple_mod, data = list(x = x,
 
 print(fit_simple)
 
+launch_shinystan(fit_simple)
+
 # Note: lp__ is the sum of the vector of log probabilities (but after removing any constant scale factors, making it not useful for model comparison)
 # https://www.jax.org/news-and-insights/jax-blog/2015/october/lp-in-stan-output#:~:text=Therefore%2C%20%E2%80%9Clp%E2%80%9D%20is%20actually,useful%20for%20model%20comparison%20purposes.
 

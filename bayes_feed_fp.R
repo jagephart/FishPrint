@@ -7,6 +7,7 @@ library(taxize)
 library(data.table)
 library(countrycode) # part of clean.lca
 library(bayesplot) # for mcmc_areas_ridges
+library(shinystan)
 
 # Mac
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
@@ -30,13 +31,12 @@ lca_dat_no_zeroes <- clean.lca(LCA_data = lca_dat) %>%
   mutate(feed_soy_new = feed_soy_new / sum,
          feed_crops_new = feed_crops_new / sum,
          feed_fmfo_new = feed_fmfo_new / sum,
-         feed_animal_new = feed_animal_new / sum)
+         feed_animal_new = feed_animal_new / sum) 
 
 fp_dat <- read.csv(file.path(datadir, "Feed_FP_raw.csv"))
 fp_clean <- clean.feedFP(fp_dat)
 
 ######################################################################################################
-# LEFT OFF HERE - model runs but doesn't converge - check model statement carefully
 # Model 2: Remove all NAs - estimate feed footprint for all sci names
 
 # Remove NAs
@@ -59,7 +59,12 @@ lca_dat_no_na <- lca_dat_no_zeroes %>%
   mutate(feed_soy_new = feed_soy_new / sum,
          feed_crops_new = feed_crops_new / sum,
          feed_fmfo_new = feed_fmfo_new / sum,
-         feed_animal_new = feed_animal_new / sum)
+         feed_animal_new = feed_animal_new / sum) %>%
+  select(clean_sci_name, sci, taxa_group_name, tx, FCR, contains("new"))
+
+# Try for just two scientific names:
+lca_dat_no_na <- lca_dat_no_na %>%
+  filter(clean_sci_name %in% c("Oncorhynchus mykiss", "Salmo salar"))
 
 # BOX PLOTS OF DATA:
 # Theme for ALL PLOTS (including mcmc plots)
@@ -251,6 +256,10 @@ parameters {
   simplex[K] tx_theta[N_TX];
   simplex[K] phi;
   simplex[K] theta;
+  
+  // Params for the dirichlet priors:
+  // real<lower=0> sigma_1;
+  // real<lower=0> sigma_2;
 }
 transformed parameters {
   // define transofrmed params for gamma model for FCRs
@@ -293,20 +302,25 @@ transformed parameters {
 model {
   // define priors for gamma model for FCRs
   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-  mu ~ uniform(0, 100);
-  sigma ~ uniform(0, 100);
-  sci_mu ~ uniform(0, 100);
-  sci_sigma ~ uniform(0, 100);
+  mu ~ uniform(0, 10); // note: uniform(0,100) for all of these doesnt help much with convergence
+  sigma ~ uniform(0, 10);
+  tx_mu ~ uniform(0, 10);
+  tx_sigma ~ uniform(0, 10);
+  sci_mu ~ uniform(0, 10);
+  sci_sigma ~ uniform(0, 10);
   
   // define priors for dirichlet model for feed proportions
   // sci_phi defined as sci_phi[sci][K]
   
   // option 1: define feed proportion priors as lower upper bounds
-  sci_phi[2][1] ~ uniform(0.1, 0.2); // hypothetical lower and upper bounds for Oncorhynchus mykiss soy 
+  // sci_phi[2][1] ~ uniform(0.1, 0.2); // hypothetical lower and upper bounds for Oncorhynchus mykiss soy 
+  // sci_phi[6][1] ~ uniform(0.05, 0.2); // lower upper bounds fo Salmo salar soy
   
-  // option 2: define feed proportions as means (need to define sigmas in parameters block: real<lower=0> sigma_1, sigma_2 etc; etc;)
-  // sci_phi[2][2] ~ normal(0.13, sigma_1); // mean for Oncorhynhchus mykiss soy feed 
-  
+  // option 2: define feed proportions as means (need to define sigmas in parameters block: real<lower=0> sigma_1, sigma_2 etc;)
+  // sci_phi[2][1] ~ normal(0.13, sigma_1); // mean for Oncorhynhchus mykiss soy feed 
+  // sci_phi[6][1] ~ normal(0.7, sigma_2); // mean for Salmo salar soy feed
+  // tx_phi[6][1] ~ normal(0.13, sigma_1); // mean for taxa-level trout soy feed 
+  // tx_phi[4][1] ~ normal(0.7, sigma_2); // mean for taxa-level salmon/char soy feed
   
   // likelihood
   
@@ -389,10 +403,13 @@ no_na_mod <- stan_model(model_code = stan_no_na, verbose = TRUE)
 #   'C:/rtools40/usr/mingw_/bin/g++' not found
 
 # Fit model:
-fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4)
+# Set seed while testing
+fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729")
                        #,iter = 10000, cores = 4,
                        #control = list(adapt_delta = 0.99))
 print(fit_no_na)
+
+launch_shinystan(fit_no_na)
 
 ######################################################################################################
 # Model 1: Remove all NAs - estimate feed footprint for Oncorhynchus mykiss
@@ -584,10 +601,12 @@ fit_pooled <- sampling(object = no_missing_mod, data = list(n = n,
                                                             fp_nitrogen_dat = fp_nitrogen_dat,
                                                             fp_phosphorus_dat = fp_phosphorus_dat,
                                                             fp_land_dat = fp_land_dat,
-                                                            fp_water_dat = fp_water_dat),
-                       iter = 10000, cores = 4,
-                       control = list(adapt_delta = 0.99))
+                                                            fp_water_dat = fp_water_dat))#,
+                       # iter = 10000, cores = 4,
+                       # control = list(adapt_delta = 0.99))
 print(fit_pooled)
+
+launch_shinystan(fit_pooled)
 
 feeds <- c("soy", "crops", "fmfo", "animal")
 feed_key <- data.frame(carbon_footprint = paste("carbon_footprint[", feeds, "]", sep = ""),
