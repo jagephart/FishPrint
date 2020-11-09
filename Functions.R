@@ -18,11 +18,6 @@ clean.lca <- function(LCA_data){
   LCA_data$iso3c <- countrycode(LCA_data$Country, origin = "country.name", destination = "iso3c")
   
   # Scale feed percents to sum to 100%
-  is.na(LCA_data$Feed_soy_percent) <- 0
-  is.na(LCA_data$Feed_othercrops_percent) <- 0
-  is.na(LCA_data$Feed_FMFO_percent) <- 0
-  is.na(LCA_data$Feed_animal_percent) <- 0
-  
   LCA_data <- LCA_data %>%
     mutate(sum_percent = Feed_soy_percent+Feed_othercrops_percent+Feed_FMFO_percent+Feed_animal_percent) %>%
     mutate(
