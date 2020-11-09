@@ -62,30 +62,79 @@ clean.lca <- function(LCA_data){
       # Add fed/un-fed categories and replace FCR with 0 for all unfed 
       )
   
-  
-  
-  # Clean scientific names data
-  # Manually fill in blank scientific names
+  # Note: Create column clean_sci_name - use this as the "official" scientific name column
+  # Manually fill in blank scientific names based on Common.Name
   # Change osteichthyes (technically includes all terapods) to actinopterygii (bony fishes)
   # Simplify hybrid M. chrysops x M. saxatilis to its genus
   # Change outdated names (P. vannamei and P hypophthalmus)
-  # Remove unnecessary columns
-  # Column clean_sci_name will be the "official" column used throughout code
+  # Divide tuna FCR by 5
   LCA_data <- LCA_data %>%
-    mutate(Scientific.Name = case_when(Common.Name == "Freshwater prawn" ~ "Dendrobranchiata",
-                                       Common.Name == "Indo-Pacific swamp crab; Swimming crabs, etc. nei" ~ "Brachyura",
-                                       Common.Name == "Red crayfish" ~ "Astacidea", # crayfish are split into two superfamilies, so go to the next higher-classification, infraorder = Astacidea
-                                       Common.Name == "Salmonids nei" ~ "Salmonidae",
-                                       Common.Name == "Yellowtail_Seriola_Almaco jack" ~ "Seriola rivoliana",
-                                               TRUE ~ Scientific.Name)) %>%
+    mutate(clean_sci_name = case_when(Common.Name == "Freshwater prawn" ~ "Dendrobranchiata",
+                                      Common.Name == "Indo-Pacific swamp crab" ~ "Brachyura",
+                                      Common.Name == "Red crayfish" ~ "Astacidea", # crayfish are split into two superfamilies, so go to the next higher-classification, infraorder = Astacidea
+                                      Common.Name == "Salmonids nei" ~ "Salmonidae",
+                                      Common.Name == "Striped bass" ~ "Morone saxatilis",
+                                      Common.Name == "Yellowtail_Seriola_Almaco jack" ~ "Seriola rivoliana",
+                                      TRUE ~ Scientific.Name)) %>%
     mutate(clean_sci_name = case_when(str_detect(Scientific.Name, "spp") ~ str_replace(Scientific.Name, pattern = " spp\\.| spp", replacement = ""),
                                       Scientific.Name == "Morone chrysops x M. saxatilis" ~ "Morone",
+                                      Scientific.Name == "Labeo rohita and Catla Catla" ~ "Labeo rohita and Catla catla",
                                       Scientific.Name == "Osteichthyes" ~ "Actinopterygii",
                                       Scientific.Name == "Penaeus vannamei" ~ "Litopenaeus vannamei",
                                       Scientific.Name == "Pangasius hypophthalmus" ~ "Pangasianodon hypophthalmus", 
-                                      TRUE ~ Scientific.Name)) %>%
+                                      TRUE ~ clean_sci_name)) %>%
     mutate(FCR = case_when(str_detect(Scientific.Name, "Thunnus") ~ FCR/5,
                            TRUE ~ FCR)) 
+  
+  # sort(unique(LCA_data$clean_sci_name))
+  # [1] "Acipenseridae"               "Actinopterygii"              "Anguilla"                    "Anoplopoma fimbria"          "Astacidea"                   "Brachyura"                   "Chanos chanos"              
+  # [8] "Clarias batrachus"           "Clarias gariepinus"          "Cynoscion"                   "Cyprinus carpio"             "Dendrobranchiata"            "Dicentrarchus labrax"        "Epinephelus"                
+  # [15] "Gadus morhua"                "Lates calcarifer"            "Litopenaeus vannamei"        "Macrobrachium"               "Macrobrachium amazonicum"    "Macrobrachium rosenbergii"   "Morone"                     
+  # [22] "Mytilus edulis"              "Mytilus galloprovincialis"   "Oncorhynchus kisutch"        "Oncorhynchus mykiss"         "Oncorhynchus tshawytscha"    "Oreochromis niloticus"       "Pangasianodon hypophthalmus"
+  # [29] "Pangasius"                   "Penaeus"                     "Penaeus monodon"             "Rachycentron canadum"        "Salmo salar"                 "Salmonidae"                  "Salvelinus alpinus"         
+  # [36] "Sciaenops ocellatus"         "Scophthalmidae"              "Seriola rivoliana"           "Sparus aurata"               "Thunnus orientalis"          "Thunnus thynnus"   
+  
+  # Use Column clean_sci_name and common.name to create taxa groupings
+  # CREATE "unassigned" category for: things that are not species-level Acipenseridae, Actinopterygii, Brachyura, Cynoscion spp, "Penaeus" can be fresh or marine
+  # "Dicentrarchus labrax", "Lates calcarifer", "Morone" are migratory - i.e., including oceans, estuaries, and rivers - all categorized as other non-herbivore fin fish for now
+  # Chanos chanos - mostly algae (but also inverts) - categorized as herbivore fin fish for now
+  LCA_data <- LCA_data %>%
+    mutate(taxa_group_name = case_when(#clean_sci_name %in% c("") ~ "algae", # none
+                                  # clean_sci_name %in% c("") ~ "gastropods", # none
+                                  clean_sci_name %in% c("Mytilus galloprovincialis", "Mytilus edulis") ~ "bivalves",
+                                  clean_sci_name %in% c("Chanos chanos") ~ "herbivore marine finfish",
+                                  clean_sci_name %in% c("Litopenaeus vannamei", "Penaeus monodon", "Penaeus") ~ "marine shrimp",
+                                  # clean_sci_name %in% c("") ~ "other marine crustacean",
+                                  Common.Name %in% c("Red crayfish", "Freshwater prawn", "Indo-Pacific swamp crab") ~ "freshwater crustacean",
+                                  clean_sci_name %in% c("Macrobrachium", "Macrobrachium amazonicum", "Macrobrachium rosenbergii") ~ "freshwater crustacean", # note: freshwater crustacean assigned by sciname and commonnames
+                                  clean_sci_name %in% c("Thunnus orientalis", "Thunnus thynnus") ~ "tuna",
+                                  clean_sci_name %in% c("Oncorhynchus kisutch", "Oncorhynchus tshawytscha", "Salmo salar", "Salmonidae", "Salvelinus alpinus") ~ "salmon/char",
+                                  clean_sci_name %in% c("Acipenseridae", "Anoplopoma fimbria", "Cynoscion", "Dicentrarchus labrax", "Epinephelus", "Gadus morhua", "Lates calcarifer", "Morone", "Morone saxatilis", "Rachycentron canadum", "Sciaenops ocellatus", "Scophthalmidae", "Seriola rivoliana", "Sparus aurata") ~ "other non-herbivore marine finfish",
+                                  clean_sci_name %in% c("Cyprinus carpio", "Labeo rohita and Catla catla") ~ "carp",
+                                  clean_sci_name %in% c("Oreochromis niloticus") ~ "tilapia",
+                                  clean_sci_name %in% c("Clarias batrachus", "Clarias gariepinus", "Pangasianodon hypophthalmus", "Pangasius") ~ "catfish",
+                                  clean_sci_name %in% c("Anguilla") ~ "eel",
+                                  clean_sci_name %in% c("Actinopterygii") ~ "other freshwater finfishes",
+                                  clean_sci_name %in% c("Oncorhynchus mykiss") ~ "trout",
+                                  # clean_sci_name %in% c("") ~ "amphibians and reptiles", # none
+                                  TRUE ~ "unassigned"
+                                  )) %>%
+    arrange(clean_sci_name) # LAST STEP arrange by sciname
+  
+}
+
+#_____________________________________________________________________________________________________#
+# Replicate data based on Sample_size column
+#_____________________________________________________________________________________________________#
+rep_data <- function(lca_dat_clean){
+  lca_dat_clean_rep <- lca_dat_clean %>%
+    # Clean up sample size column
+    # First ignore numbers that are percentages, then find and extract any numbers, then fill the rest in with 1s
+    mutate(clean_sample_size = case_when(str_detect(Sample_size, "%") ~ 1,
+                                         str_detect(Sample_size, "[0-9]+") ~ as.numeric(str_extract(Sample_size, pattern = "[0-9]+")),
+                                         TRUE ~ 1)) 
+  
+  lca_dat_clean_rep <- as.data.frame(lapply(lca_dat_clean_rep, rep, lca_dat_clean_rep$clean_sample_size))
 }
 
 #_____________________________________________________________________________________________________#
