@@ -11,17 +11,13 @@ clean.lca <- function(LCA_data){
   LCA_data$Petrol_L <- as.numeric(LCA_data$Petrol_L)
   LCA_data$NaturalGas_L <- as.numeric(LCA_data$NaturalGas_L)
   LCA_data$Yield_t_per_Ha <- as.numeric(LCA_data$Yield_t_per_Ha)
+  LCA_data$Yield_kg_per_m3 <- as.numeric(LCA_data$Yield_kg_per_m3)
   LCA_data$Grow_out_period_days <- as.numeric(LCA_data$Grow_out_period_days)
   
   # Add country codes
   LCA_data$iso3c <- countrycode(LCA_data$Country, origin = "country.name", destination = "iso3c")
   
   # Scale feed percents to sum to 100%
-  is.na(LCA_data$Feed_soy_percent) <- 0
-  is.na(LCA_data$Feed_othercrops_percent) <- 0
-  is.na(LCA_data$Feed_FMFO_percent) <- 0
-  is.na(LCA_data$Feed_animal_percent) <- 0
-  
   LCA_data <- LCA_data %>%
     mutate(sum_percent = Feed_soy_percent+Feed_othercrops_percent+Feed_FMFO_percent+Feed_animal_percent) %>%
     mutate(
@@ -32,7 +28,7 @@ clean.lca <- function(LCA_data){
     ) %>%
     select(Year, Country, iso3c, Scientific.Name = Species.scientific.name, Common.Name = Species.common.name, 
            Production_system, Sample_size,
-           Environment, Intensity, Yield_t_per_Ha, Grow_out_period_days, Mortality_rate, FCR, 
+           Environment, Intensity, Yield_t_per_Ha, Yield_kg_per_m3, Grow_out_period_days, Mortality_rate, FCR, 
            Feed_type, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent, Feed_method,
            Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L) %>%
     mutate(
@@ -142,7 +138,7 @@ rep_data <- function(lca_dat_clean){
 clean.feedFP <- function(feedFP_data){
   feedFP_data <- feedFP_data %>%
     filter(Unit != "kg PO4-eq") %>% # Not currently using
-    group_by(Category, Unit) %>%
+    group_by(Category, Unit, Allocation.method) %>%
     # Revise this to change from arithmetic mean to a weighted mean
     summarise(FP_val = mean(Value, na.rm = TRUE), SD = sd(Value, na.rm = TRUE), .groups = 'drop') %>% 
     mutate(FP = case_when(
@@ -152,17 +148,18 @@ clean.feedFP <- function(feedFP_data){
       (Unit == "kg N-eq") ~ "Nitrogen",
       (Unit == "kg P-eq") ~ "Phosphorus"
     )) %>%
-    select(FP, Category, FP_val, SD, Unit)
+    select(FP, Category, Allocation.method, FP_val, SD, Unit)
 }
 
 #_____________________________________________________________________________________________________#
 # Estimate off farm, feed-associated footprint
 #_____________________________________________________________________________________________________#
-estimate.feedFP <- function(LCA_data, Feed_data, FP_option){
+estimate.feedFP <- function(LCA_data, Feed_data, FP_option, allocation){
   # FP options are "Carbon", "Water", "Nitrogen", "Phosphorus", and "Land" 
   # Filter to FP option
   Feed_data <- Feed_data %>% 
-    filter(FP == FP_option)
+    filter(FP == FP_option) %>%
+    filter(Allocation.method == allocation)
   
   soy <- Feed_data %>% filter(Category == "Soy") 
   soy <- soy$FP_val
@@ -204,7 +201,7 @@ estimate.onfarm.GHG <- function(LCA_data, energy_data){
 # Estimate on farm land footprint
 #_____________________________________________________________________________________________________#
 estimate.onfarm.land <- function(LCA_data){
-  estimate_FP <- LCA_data$Yield_t_per_HA/LCA_data$harvest
+  estimate_FP <- LCA_data$Yield_t_per_Ha/LCA_data$harvest
   
   return(estimate_FP)
 }

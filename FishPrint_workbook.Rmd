@@ -2,7 +2,9 @@
 title: "FishPrint_workbook"
 author: "Jessica Gephart"
 date: "6/15/2020"
-output: pdf_document
+output:
+  word_document: default
+  pdf_document: default
 ---
 
 ## Agenda for next meeting
@@ -100,7 +102,7 @@ source("Functions.R")
 #_______________________________________________________________________________________________________________________#
 # Load lca data
 #_______________________________________________________________________________________________________________________#
-lca <- clean.lca(LCA_data = read.csv("Data/LCA_compiled.csv", stringsAsFactors = FALSE))
+lca <- clean.lca(LCA_data = read.csv("Data/LCA_compiled_20201109.csv", stringsAsFactors = FALSE))
 
 #_______________________________________________________________________________________________________________________#
 # Load feed FP data 
@@ -179,11 +181,11 @@ $$FP_{feed} = FCR_{dry} \sum_{i=1}^4 FP_{i} p_i$$
 where $FCR_{dry}$ is the dry weight feed conversion ratio, $i$ indexes the feed ingredient, $FP_i$ represents the footprint of the feed ingredient, and $p_i$ represents the proportion of the feed comprised of component $i$. 
 
 ```{r}
-lca$feed.ghg <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Carbon")
-lca$feed.water <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Water")
-lca$feed.N <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Nitrogen")
-lca$feed.P <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Phosphorus")
-lca$feed.land <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Land")
+lca$feed.ghg <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Carbon", allocation = "Mass/physical")
+lca$feed.water <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Water", allocation = "Mass/physical")
+lca$feed.N <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Nitrogen", allocation = "Mass/physical")
+lca$feed.P <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Phosphorus", allocation = "Mass/physical")
+lca$feed.land <- estimate.feedFP(LCA_data = lca, Feed_data = feed_fp, FP_option = "Land", allocation = "Mass/physical")
 ```
 
 For species without LCA data, we will need to estimate FCR and the percent soy, other crops, FMFO and animal products in feeds. 
@@ -223,13 +225,12 @@ The non-feed associated greenhouse gas emissions are calculated as the electrici
 ### Land
 
 The non-feed associated land use refers to the pond area allocated to the growth of a unit of output. This is calculated as: 
-$$FP_{nonfeedland} = Yeild/Harvest$$
+$$FP_{nonfeedland} = Yield/Harvest$$
 
 ### Water 
 
 To calculate the on farm water use, we estimate the evaporative losses over the surface area allocated to the unit of production as:
-$$FP_{nonfeedwater} = C_{aeratoin}Evap_{rate}FP_{nonfeedland}GrowOut$$
-where $C_{aeration}$ is the constant factor for aerated ponds. 
+$$FP_{nonfeedwater} = Evap_{rate}FP_{nonfeedland}GrowOut$$
 
 [Sorry I got lazy with equation notation -- will eventually improve!]
 
