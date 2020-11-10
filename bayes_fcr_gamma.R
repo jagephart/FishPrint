@@ -234,7 +234,7 @@ p2 + ggtitle("Posterior distributions", "with 80% credible intervals")
 
 
 ######################################################################################################
-# Model 3: Still no NA's, but Gamma distribution with 3 levels (sci-name, taxa-group, all-seafood): start with just sci-name and taxa-group for now
+# Model 3: Still no NA's, but Gamma distribution with 2-3 levels (sci-name, taxa-group, all-seafood): start with just sci-name and taxa-group for now
 
 
 # If desired, replicate data based on clean_sample_size column:

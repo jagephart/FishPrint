@@ -19,21 +19,6 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201109.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
 source("Functions.R")
 
-lca_dat_no_zeroes <- clean.lca(LCA_data = lca_dat) %>%
-  select(clean_sci_name, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent, taxa_group_name) %>%
-  # NOTE multinomial-dirchlet model requires all elements > 0 (change some to 0.001 for now?)
-  mutate(feed_soy_new = if_else(Feed_soy_percent == 0, true = 0.01, false = Feed_soy_percent),
-         feed_crops_new = if_else(Feed_othercrops_percent == 0, true = 0.01, false = Feed_othercrops_percent),
-         feed_fmfo_new = if_else(Feed_FMFO_percent == 0, true = 0.01, false = Feed_FMFO_percent),
-         feed_animal_new = if_else(Feed_animal_percent == 0, true = 0.01, false = Feed_animal_percent)) %>%
-  # Renomoralize values so they sum to 1
-  mutate(sum = rowSums(select(., contains("new")))) %>%
-  mutate(feed_soy_new = feed_soy_new / sum,
-         feed_crops_new = feed_crops_new / sum,
-         feed_fmfo_new = feed_fmfo_new / sum,
-         feed_animal_new = feed_animal_new / sum) %>%
-  select(clean_sci_name, taxa_group_name, contains("new"))
-
 # Set the FINAL value to be no less than 0.01
 lca_dat_no_zeroes <- clean.lca(LCA_data = lca_dat) %>%
   select(clean_sci_name, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent, taxa_group_name) %>%
@@ -140,7 +125,8 @@ ggsave(filename = file.path(outdir, "bayes-example_trout_feed-proportion_thetas.
 lca_dat_no_na <- lca_dat_no_zeroes %>%
   filter(is.na(feed_soy_new)==FALSE) 
 
-#lca_groups <- lca_dat_no_na %>%
+lca_groups <- lca_dat_no_na %>%
+  filter(clean_sci_name %in% c("Oncorhynchus mykiss")) %>%
   #filter(clean_sci_name %in% c("Oncorhynchus mykiss", "Salmo salar")) %>% # converges
   #filter(clean_sci_name %in% c("Oncorhynchus mykiss", "Salmo salar", "Macrobrachium amazonicum")) %>% # creates divergent transitions
   #filter(clean_sci_name %in% c("Oncorhynchus mykiss", "Salmo salar", "Oreochromis niloticus")) %>% # converges
@@ -148,8 +134,8 @@ lca_dat_no_na <- lca_dat_no_zeroes %>%
   #filter(clean_sci_name %in% c("Oncorhynchus mykiss", "Salmo salar", "Penaeus monodon")) %>% # creates divergent transitions
   #filter(clean_sci_name %in% c("Penaeus monodon", "Salmo salar")) %>% # creates divergent transitions
   # # Add indices for each sci-name
-  # mutate(clean_sci_name = as.factor(clean_sci_name),
-  #        sci = as.numeric(clean_sci_name))
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sci = as.numeric(clean_sci_name))
 
 # lca_groups <- lca_dat_no_na %>%
 #   filter(clean_sci_name %in% c("Macrobrachium amazonicum", "Penaeus monodon"))  %>%
@@ -369,45 +355,6 @@ phi <- phi_mean %>%
 kappa <- phi_mean %>% pull(n_obs) + k
 
 
-
-# OLD CODE for just two groups:
-# Prior specification following: https://mc-stan.org/docs/2_18/stan-users-guide/reparameterizations.html
-# stan_pooled <- 'data {
-#   int<lower=0> n;  // number of observations
-#   int<lower=1> k; // number of feed types
-#   simplex[k] feed_weights[n]; // array of observed feed weights simplexes
-#   int<lower=1, upper=2> sci[n]; // sci-name indices
-#   simplex[k] phi_1;
-#   simplex[k] phi_2;
-#   real<lower=0> kappa_1;
-#   real<lower=0> kappa_2;
-# }
-# parameters {
-#   simplex[k] theta_1; // vector of estimated sci-level feed weight simplexes; FIX IT - alpha must be a vector but should be able to set up theta as a list of vectors (just like feed_weights)
-#   simplex[k] theta_2;
-# }
-# transformed parameters {
-#   // reparameterize alpha distributions as a vector of means and counts
-#   // phi is expected value of theta (mean feed weights)
-#   // strength of the prior measured in number of prior observations
-#   vector[k] alpha_1 = kappa_1 * phi_1;
-#   vector[k] alpha_2 = kappa_2 * phi_2;
-# }
-# model {
-#   for (i in 1:n) {
-#     if (sci[i]==1){
-#       feed_weights[i] ~ dirichlet(alpha_1); // estimate vector of alphas based on the data of feed weights
-#     }
-#     if (sci[i]==2){
-#       feed_weights[i] ~ dirichlet(alpha_2); // estimate vector of alphas based on the data of feed weights
-#     }
-#   }
-#   // now, estimate feed weights based on the vector of alphas
-#   theta_1 ~ dirichlet(alpha_1);
-#   theta_2 ~ dirichlet(alpha_2);
-# }'
-
-
 # This code vectorizes over alpha and theta, allowing all groups to be estiamted
 # this stan_data list passes phi in as data
 # stan_data = list(n = n,
@@ -567,7 +514,225 @@ p_theta <- mcmc_areas(distribution_grouped,
 p_theta
 
 ######################################################################################################
-# Model 3: Still no NAs, make into three-level model
+# Model 3 Add hierarchies (two to three levels)
+
+######################################################################################################
+# Model 3.1 Two-level model with no priors
+lca_dat_no_na <- lca_dat_no_zeroes %>%
+  filter(is.na(feed_soy_new)==FALSE)
+
+# Keep all data, but Add indices
+lca_groups <- lca_dat_no_na %>%
+  # Add indices for each sci-name
+  mutate(taxa_group_name = as.factor(taxa_group_name),
+         tx = as.numeric(taxa_group_name)) %>%
+  arrange(tx)
+
+# Test a smaller dataset (just salmon/char)
+# lca_groups <- lca_dat_no_na %>%
+  #filter(taxa_group_name %in% c("salmon/char")) %>%
+  #filter(clean_sci_name %in% c("Oncorhynchus mykiss")) %>%
+  # filter(taxa_group_name %in% c("salmon/char", "marine shrimp")) %>%
+  # mutate(taxa_group_name = as.factor(taxa_group_name),
+  #        tx = as.numeric(taxa_group_name)) %>%
+  # arrange(tx)
+
+# Try analyzing only groups with  n>1; also remove Thunnus orientalis since both data points are identical (effectively n = 1)
+# lca_groups <- lca_dat_no_na %>%
+#   group_by(clean_sci_name) %>%
+#   mutate(n_sci = n()) %>%
+#   ungroup() %>%
+#   filter(n_sci > 1) %>%
+#   filter(clean_sci_name != "Thunnus orientalis") %>%
+#   # Add indices for each sci-name
+#   mutate(taxa_group_name = as.factor(taxa_group_name),
+#          tx = as.numeric(taxa_group_name)) %>%
+#   arrange(tx)
+
+# Set data for model:
+feed_weights <- lca_groups %>%
+  select(contains("new")) %>%
+  as.matrix()
+K = 4
+N = nrow(feed_weights)
+N_TX = length(unique(lca_groups$tx))
+tx = lca_groups$tx
+
+# Get counts per taxa group:
+tx_kappa <- lca_groups %>% 
+  select(contains(c("new", "tx"))) %>%
+  group_by(tx) %>% 
+  summarise(n_obs = n()) %>%
+  ungroup() %>%
+  arrange(tx) %>%
+  pull(n_obs)
+
+# Get mean observations per taxa group
+tx_phi_mean <- lca_groups %>% 
+  select(contains(c("new", "tx"))) %>%
+  group_by(tx) %>% 
+  summarise(across(contains("new"), mean)) %>%
+  ungroup() %>%
+  arrange(tx)
+
+# Two-level model with reparameterization
+stan_data = list(N = N,
+                 K = K,
+                 feed_weights = feed_weights,
+                 N_TX = N_TX,
+                 tx = tx,
+                 tx_kappa = tx_kappa)
+
+stan_pooled <- 'data {
+  int N;  // number of total observations
+  int K; // number of feed types
+  int N_TX; // number of taxa groups
+  simplex[K] feed_weights[N]; // array of observed feed weights simplexes
+  int tx[N]; // taxa-group indices
+  int tx_kappa[N_TX]; // number of observations per taxa group
+}
+parameters {
+  simplex[K] tx_theta[N_TX]; // vectors of estimated taxa-level feed weight simplexes
+  simplex[K] theta;
+}
+transformed parameters {
+  // define params
+  vector<lower=0>[K] tx_alpha[N_TX];
+  vector<lower=0>[K] alpha;
+
+  // reparameterize alphas as a vector of means (theta) and counts (kappas)
+  // theta is expected value of theta (mean feed weights)
+  // kappa is strength of the prior measured in number of prior observations (minus K)
+  alpha = N * theta;
+  for (n_tx in 1:N_TX) {
+    tx_alpha[n_tx] = tx_kappa[n_tx] * tx_theta[n_tx];
+  }
+
+}
+model {
+  // likelihood
+  for (n in 1:N) {
+    feed_weights[n] ~ dirichlet(to_vector(tx_alpha[tx[n]]));
+  }
+  for (n_tx in 1:N_TX) {
+    tx_theta[n_tx] ~ dirichlet(alpha);
+  }
+}'
+
+# OLD CODE: Two-level model
+# stan_data = list(N = N,
+#                  K = K,
+#                  feed_weights = feed_weights,
+#                  N_TX = N_TX,
+#                  tx = tx)
+# stan_pooled <- 'data {
+#   int N;  // number of total observations
+#   int K; // number of feed types
+#   int N_TX; // number of taxa groups
+#   simplex[K] feed_weights[N]; // array of observed feed weights simplexes
+#   int tx[N]; // taxa-group indices
+# }
+# parameters {
+#   vector<lower=0>[K] tx_alpha[N_TX]; // vector of dirichlet priors, one for each taxa group
+#   simplex[K] tx_theta[N_TX]; // vectors of estimated taxa group feed weight simplexes
+#   vector[K] alpha;
+#   simplex[K] theta;
+# }
+# model {
+# 
+#   // likelihood
+#   for (n in 1:N) {
+#     feed_weights[n] ~ dirichlet(to_vector(tx_alpha[tx[n]]));
+#   }
+#   
+#   for (n_tx in 1:N_TX) {
+#     tx_theta[n_tx] ~ dirichlet(to_vector(tx_alpha[n_tx]));
+#     tx_theta[n_tx] ~ dirichlet(alpha);
+#   }
+#   
+#   
+#   theta ~ dirichlet(to_vector(alpha));
+# }'
+
+no_missing_mod <- stan_model(model_code = stan_pooled, verbose = TRUE)
+# Note: For Windows, apparently OK to ignore this warning message:
+# Warning message:
+#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
+#   'C:/rtools40/usr/mingw_/bin/g++' not found
+
+# RUNS but gives warning about divergent transitions
+# Fit model:
+fit_grouped <- sampling(object = no_missing_mod, data = stan_data, cores = 4, seed = "11729")
+# Increasing adapt_delta decreases the divergences but doesn't get rid of them
+# fit_grouped <- sampling(object = no_missing_mod, data = stan_data, cores = 4, seed = "11720", control = list(adapt_delta = 0.9))
+# fit_grouped <- sampling(object = no_missing_mod, data = stan_data, cores = 4, seed = "11720", control = list(adapt_delta = 0.99))
+
+#launch_shinystan(fit_grouped)
+
+#,cores = 4, iter = 10000,
+#control = list(adapt_delta = 0.99)) # address divergent transitions by increasing delta, i.e., take smaller steps
+print(fit_grouped)
+
+# Create formatted names for taxa-group level
+# Format of parameters is: theta[sci_name, feed]
+tx_feed_key <- lca_groups %>%
+  select(contains(c("taxa_group_name", "new", "tx"))) %>%
+  pivot_longer(cols = contains("new"), names_to = "feed") %>%
+  select(-value) %>%
+  unique() %>%
+  mutate(feed_index = case_when(str_detect(feed, "soy") ~ 1,
+                                str_detect(feed, "crops") ~ 2,
+                                str_detect(feed, "fmfo") ~ 3,
+                                str_detect(feed, "animal") ~ 4)) %>%
+  # Clean feed names
+  mutate(feed = gsub(feed, pattern = "feed_", replacement = "")) %>%
+  mutate(feed = gsub(feed, pattern = "_new", replacement = "")) %>%
+  mutate(index = paste("[", tx, ",", feed_index, "]", sep = "")) %>%
+  mutate(tx_theta_param_name = paste("theta[", taxa_group_name, ", ", feed, "]", sep = "")) %>%
+  mutate(tx_alpha_param_name = paste("alpha[", taxa_group_name, ", ", feed, "]", sep = "")) %>%
+  # IMPORTANT before replaceing param names: ARRANGE BY FEED, THEN TAXA NAME TO MATCH HOW NAMES ARE ARRANGED IN STANFIT OBJECT
+  arrange(feed_index, tx)
+
+overall_feed_key <- lca_groups %>%
+  select(contains("new")) %>%
+  pivot_longer(cols = contains("new"), names_to = "feed") %>%
+  select(-value) %>%
+  unique() %>%
+  mutate(feed_index = case_when(str_detect(feed, "soy") ~ 1,
+                                str_detect(feed, "crops") ~ 2,
+                                str_detect(feed, "fmfo") ~ 3,
+                                str_detect(feed, "animal") ~ 4)) %>%
+  # Clean feed names
+  mutate(feed = gsub(feed, pattern = "feed_", replacement = "")) %>%
+  mutate(feed = gsub(feed, pattern = "_new", replacement = "")) %>%
+  mutate(overall_theta_param_name = paste("theta[overall, ", feed, "]", sep = "")) %>%
+  mutate(overall_alpha_param_name = paste("alpha[overall, ", feed, "]", sep = "")) %>%
+  # IMPORTANT before replaceing param names: ARRANGE BY FEED TO MATCH HOW NAMES ARE ARRANGED IN STANFIT OBJECT
+  arrange(feed_index)
+
+# Replace param names; first copy to fit_grouped_clean to avoid having to re-run sampling as a result of doing something wrong to fit_grouped
+fit_grouped_clean <- fit_grouped
+# Taxa-level
+names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "tx_alpha")] <- tx_feed_key$tx_alpha_param_name
+names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "tx_theta")] <- tx_feed_key$tx_theta_param_name
+# Global-level
+names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "alpha\\[[1-4]")] <- overall_feed_key$overall_alpha_param_name
+names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "theta\\[[1-4]")] <- overall_feed_key$overall_theta_param_name
+
+distribution_grouped <- as.matrix(fit_grouped_clean)
+p_alpha <- mcmc_areas(distribution_grouped,
+                      pars = vars(contains("alpha")),
+                      prob = 0.8,
+                      area_method = "scaled height")
+p_alpha
+p_theta <- mcmc_areas(distribution_grouped,
+                      pars = vars(contains("theta")),
+                      prob = 0.8,
+                      area_method = "scaled height")
+p_theta
+
+######################################################################################################
+# Model 3.2: Still no NAs, make into two or three-level model
 # Remove all NAs - estimate proportion feed for just two scientific names in the dataset
 
 lca_dat_no_na <- lca_dat_no_zeroes %>%
@@ -590,7 +755,6 @@ lca_groups <- lca_dat_no_na %>%
          taxa_group_name = as.factor(taxa_group_name),
          tx = as.numeric(taxa_group_name)) %>%
   arrange(sci)
-
 
 # # Try analyzing only groups with  n>1; also remove Thunnus orientalis since both data points are identical (effectively n = 1)
 # lca_groups <- lca_dat_no_na %>%
@@ -651,13 +815,13 @@ tx_phi_mean <- lca_groups %>%
   arrange(tx)
 
 # Three-level model with no priors:
-stan_data = list(N = N,
-                 K = K,
-                 feed_weights = feed_weights,
-                 N_SCI = N_SCI,
-                 N_TX = N_TX,
-                 sci = sci,
-                 tx = tx)
+# stan_data = list(N = N,
+#                  K = K,
+#                  feed_weights = feed_weights,
+#                  N_SCI = N_SCI,
+#                  N_TX = N_TX,
+#                  sci = sci,
+#                  tx = tx)
 
 # stan_pooled <- 'data {
 #   int N;  // number of total observations
@@ -696,68 +860,68 @@ stan_data = list(N = N,
 
 # Three level model (no priors), but to help with convergence, try offsetting and scaling simplex:
 # From: https://mc-stan.org/docs/2_21/stan-users-guide/parameterizing-centered-vectors.html
-stan_data = list(N = N,
-                 K = K,
-                 feed_weights = feed_weights,
-                 N_SCI = N_SCI,
-                 N_TX = N_TX,
-                 sci = sci,
-                 tx = tx)
-
-stan_pooled <- 'data {
-  int N;  // number of total observations
-  int K; // number of feed types
-  int N_SCI; // number of sci names
-  int N_TX; // number of taxa groups
-  simplex[K] feed_weights[N]; // array of observed feed weights simplexes
-  int sci[N]; // sci-name indices
-  int tx[N]; // taxa-group indices
-}
-parameters {
-  vector<lower=0>[K] sci_alpha[N_SCI]; // vector of dirichlet priors, one for each sci name (alpha is not a simplex)
-  simplex[K] sci_theta_raw[N_SCI]; // vectors of estimated sci-level feed weight simplexes
-  vector<lower=0>[K] tx_alpha[N_TX];
-  simplex[K] tx_theta_raw[N_TX];
-  vector<lower=0>[K] alpha;
-  simplex[K] theta_raw;
-
-  // scaling parameters
-  real sci_theta_scale[N_SCI]; // vectors of estimated sci-level feed weight simplexes
-  real tx_theta_scale[N_TX];
-  real theta_scale;
-}
-transformed parameters {
-  vector[K] sci_theta[N_SCI];
-  vector[K] tx_theta[N_TX];
-  vector[K] theta;
-
-  for (n_sci in 1:N_SCI){
-    sci_theta[N_SCI] = sci_theta_scale[N_SCI] * (sci_theta_raw[N_SCI] - inv(K));
-  }
-
-  for (n_tx in 1:N_TX) {
-    tx_theta[N_TX] = tx_theta_scale[N_TX] * (tx_theta_raw[N_TX] - inv(K));
-  }
-  theta = theta_scale * (theta_raw - inv(K));
-
-}
-model {
-
-  // likelihood
-  for (n in 1:N) {
-    tx_theta_raw[tx[n]] ~ dirichlet(alpha);
-    sci_theta_raw[sci[n]] ~ dirichlet(to_vector(tx_alpha[tx[n]]));
-    feed_weights[n] ~ dirichlet(to_vector(sci_alpha[sci[n]]));
-  }
-  // now, estimate feed weights based on the vector of alphas
-  theta_raw ~ dirichlet(to_vector(alpha));
-  for (n_tx in 1:N_TX) {
-    tx_theta_raw[n_tx] ~ dirichlet(to_vector(tx_alpha[n_tx]));
-  }
-  for (n_sci in 1:N_SCI) {
-    sci_theta_raw[n_sci] ~ dirichlet(to_vector(sci_alpha[n_sci]));
-  }
-}'
+# stan_data = list(N = N,
+#                  K = K,
+#                  feed_weights = feed_weights,
+#                  N_SCI = N_SCI,
+#                  N_TX = N_TX,
+#                  sci = sci,
+#                  tx = tx)
+# 
+# stan_pooled <- 'data {
+#   int N;  // number of total observations
+#   int K; // number of feed types
+#   int N_SCI; // number of sci names
+#   int N_TX; // number of taxa groups
+#   simplex[K] feed_weights[N]; // array of observed feed weights simplexes
+#   int sci[N]; // sci-name indices
+#   int tx[N]; // taxa-group indices
+# }
+# parameters {
+#   vector<lower=0>[K] sci_alpha[N_SCI]; // vector of dirichlet priors, one for each sci name (alpha is not a simplex)
+#   simplex[K] sci_theta_raw[N_SCI]; // vectors of estimated sci-level feed weight simplexes
+#   vector<lower=0>[K] tx_alpha[N_TX];
+#   simplex[K] tx_theta_raw[N_TX];
+#   vector<lower=0>[K] alpha;
+#   simplex[K] theta_raw;
+# 
+#   // scaling parameters
+#   real sci_theta_scale[N_SCI]; // vectors of estimated sci-level feed weight simplexes
+#   real tx_theta_scale[N_TX];
+#   real theta_scale;
+# }
+# transformed parameters {
+#   vector[K] sci_theta[N_SCI];
+#   vector[K] tx_theta[N_TX];
+#   vector[K] theta;
+# 
+#   for (n_sci in 1:N_SCI){
+#     sci_theta[N_SCI] = sci_theta_scale[N_SCI] * (sci_theta_raw[N_SCI] - inv(K));
+#   }
+# 
+#   for (n_tx in 1:N_TX) {
+#     tx_theta[N_TX] = tx_theta_scale[N_TX] * (tx_theta_raw[N_TX] - inv(K));
+#   }
+#   theta = theta_scale * (theta_raw - inv(K));
+# 
+# }
+# model {
+# 
+#   // likelihood
+#   for (n in 1:N) {
+#     tx_theta_raw[tx[n]] ~ dirichlet(alpha);
+#     sci_theta_raw[sci[n]] ~ dirichlet(to_vector(tx_alpha[tx[n]]));
+#     feed_weights[n] ~ dirichlet(to_vector(sci_alpha[sci[n]]));
+#   }
+#   // now, estimate feed weights based on the vector of alphas
+#   theta_raw ~ dirichlet(to_vector(alpha));
+#   for (n_tx in 1:N_TX) {
+#     tx_theta_raw[n_tx] ~ dirichlet(to_vector(tx_alpha[n_tx]));
+#   }
+#   for (n_sci in 1:N_SCI) {
+#     sci_theta_raw[n_sci] ~ dirichlet(to_vector(sci_alpha[n_sci]));
+#   }
+# }'
 
 # Three-level model with priors
 # Appears like model is only valid when only one element in the phi simplex (per scientific name) is given a prior
