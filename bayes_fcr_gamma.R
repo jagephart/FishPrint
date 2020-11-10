@@ -234,21 +234,206 @@ p2 + ggtitle("Posterior distributions", "with 80% credible intervals")
 
 
 ######################################################################################################
-# Model 3: Still no NA's, but Gamma distribution with 2-3 levels (sci-name, taxa-group, all-seafood): start with just sci-name and taxa-group for now
+# Model 3: Still no NA's, but Gamma distribution with 2-3 levels (sci-name, taxa-group, all-seafood)
+
+######################################################################################################
+# Model 3.1: Two-levels
 
 
+# Test on smaller subset
+lca_dat_groups <- lca_dat_clean %>%
+  #filter(taxa_group_name %in% c("salmon/char")) %>%
+  filter(taxa_group_name %in% c("salmon/char", "marine shrimp")) %>%
+  filter(is.na(FCR) == FALSE) %>% 
+  filter(FCR != 0) %>%
+  mutate(taxa_group_name = as.factor(taxa_group_name),
+         tx = as.numeric(taxa_group_name)) %>%
+  select(clean_sci_name, taxa_group_name, tx, FCR) %>%
+  arrange(tx)
+
+
+
+# Run analysis on all non-NA data
+# lca_dat_groups <- lca_dat_clean %>%
+#   filter(is.na(FCR) == FALSE) %>% 
+#   filter(FCR != 0) %>%
+#   mutate(taxa_group_name = as.factor(taxa_group_name),
+#          tx = as.numeric(taxa_group_name)) %>%
+#   select(clean_sci_name, taxa_group_name, tx, FCR) %>%
+# arrange(sci)
+
+# Boxplot of data
+ggplot(data = lca_dat_groups, aes(x = clean_sci_name, y = FCR)) +
+  geom_boxplot() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 16)) + 
+  labs(title = "Boxplots of FCR by scientific name")
+#ggsave(file.path(outdir, "plot_boxplot_FCR-by-species.png"), height = 8, width = 11.5)
+
+ggplot(data = lca_dat_groups, aes(x = taxa_group_name, y = FCR)) +
+  geom_boxplot() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 16)) + 
+  labs(title = "Boxplots of FCR by taxa group")
+
+groupings_and_sample_size_key <- lca_dat_groups %>%
+  group_by(taxa_group_name) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  select(taxa_group_name, n) %>%
+  unique()
+
+x <- lca_dat_groups$FCR
+N <- nrow(lca_dat_groups)
+N_TX <- length(unique(lca_dat_groups$tx))
+tx <- lca_dat_groups$tx
+
+stan_data <- list(x = x, N = N, N_TX = N_TX, tx = tx)
+
+stan_grouped <- 'data {
+  int<lower=0> N;  // number of observations
+  vector<lower=0>[N] x; // data
+  int N_TX; // number of taxa groups
+  int tx[N]; // taxa group index
+}
+parameters {
+  real<lower=0> mu;
+  real<lower=0> sigma;
+  vector<lower=0>[N_TX] tx_mu;
+  real<lower=0> tx_sigma;
+}
+transformed parameters {
+  // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+  real shape;
+  real rate;
+  vector[N_TX] tx_shape;
+  vector[N_TX] tx_rate;
+
+  // global-level
+  shape = square(mu) / square(sigma);
+  rate = mu / square(sigma);
+  
+  // taxa group level
+  for (n_tx in 1:N_TX){
+    tx_shape[n_tx] = square(tx_mu[n_tx]) ./ square(tx_sigma);
+    tx_rate[n_tx] = tx_mu[n_tx] ./ square(tx_sigma);
+  }
+}
+model {
+  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+  mu ~ uniform(0, 10);
+  sigma ~ uniform(0, 10);
+  tx_mu ~ uniform(0, 10);
+  tx_sigma ~ uniform(0, 10);
+
+  // likelihood
+  for (n in 1:N){
+    x[n] ~ gamma(tx_shape[tx[n]], tx_rate[tx[n]]); // equivalent notation to target += but faster
+  }
+  
+  for (n_tx in 1:N_TX){
+    tx_mu[n_tx] ~ gamma(shape, rate);
+  }
+}'
+
+
+# OLD CODE: combined loop
+# stan_grouped <- 'data {
+#   int<lower=0> N;  // number of observations
+#   vector<lower=0>[N] x; // data
+#   int N_TX; // number of taxa groups
+#   int tx[N]; // taxa group index (ordered by unique sci index)
+#   int N_SCI; // number of scientific names
+#   int sci[N]; // sciname index
+# }
+# parameters {
+#   real<lower=0> mu;
+#   real<lower=0> sigma;
+#   vector<lower=0>[N_TX] tx_mu;
+#   real<lower=0> tx_sigma;
+#   vector<lower=0>[N_SCI] sci_mu;
+#   real<lower=0> sci_sigma;
+# }
+# transformed parameters {
+#   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+#   real shape;
+#   real rate; 
+#   vector[N_SCI] sci_shape;
+#   vector[N_SCI] sci_rate;
+#   vector[N_TX] tx_shape;
+#   vector[N_TX] tx_rate;
+#   
+#   // global-level
+#   shape = square(mu) / square(sigma);
+#   rate = mu / square(sigma);
+#   // sci name and taxa group levels
+#   for (j in 1:N){
+#     tx_shape[tx[j]] = square(tx_mu[tx[j]]) ./ square(tx_sigma);
+#     tx_rate[tx[j]] = tx_mu[tx[j]] ./ square(tx_sigma);
+#     sci_shape[sci[j]] = square(sci_mu[sci[j]]) ./ square(sci_sigma);
+#     sci_rate[sci[j]] = sci_mu[sci[j]] ./ square(sci_sigma);
+#   }
+# }
+# model {
+#   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+#   //mu ~ uniform(0.05, 100);
+#   //sigma ~ uniform(0, 100);
+#   //sci_sigma ~ uniform(0, 100);
+#   
+#   // Specific prior for Salmonidae
+#   // sci_mu[19] ~ uniform(6, 10);
+#   
+#   // likelihood
+#   tx_mu ~ gamma(shape, rate);
+#   for (i in 1:N){
+#     sci_mu[sci[i]] ~ gamma(tx_shape[tx[i]], tx_rate[tx[i]]);
+#     x[i] ~ gamma(sci_shape[sci[i]], sci_rate[sci[i]]); // equivalent notation to target += but faster
+#   }
+# }'
+
+# Compile
+no_missing_mod <- stan_model(model_code = stan_grouped, verbose = TRUE)
+# Note: For Windows, apparently OK to ignore this warning message:
+# Warning message:
+#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
+#   'C:/rtools40/usr/mingw_/bin/g++' not found
+
+# Fit model:
+fit_grouped <- sampling(object = no_missing_mod, data = stan_data, cores = 4)
+#iter = 10000)
+
+print(fit_grouped)
+
+######################################################################################################
+# Model 3.2: Three-levels
 # If desired, replicate data based on clean_sample_size column:
 # lca_dat_clean <- rep_data(lca_dat_clean)
 # IMPORTANT for convergence: filter out FCR == 0
 
+# Test on smaller subset
 lca_dat_groups <- lca_dat_clean %>%
+  #filter(taxa_group_name %in% c("salmon/char")) %>%
+  filter(taxa_group_name %in% c("salmon/char", "marine shrimp")) %>%
   filter(is.na(FCR) == FALSE) %>% 
   filter(FCR != 0) %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sci = as.numeric(clean_sci_name),
          taxa_group_name = as.factor(taxa_group_name),
          tx = as.numeric(taxa_group_name)) %>%
-  select(clean_sci_name, sci, taxa_group_name, tx, FCR)
+  select(clean_sci_name, sci, taxa_group_name, tx, FCR) %>%
+  arrange(sci)
+
+# Run analysis on all non-NA data
+lca_dat_groups <- lca_dat_clean %>%
+  filter(clean_sci_name %in% c("Salmonidae")==FALSE) %>%
+  filter(is.na(FCR) == FALSE) %>%
+  filter(FCR != 0) %>%
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sci = as.numeric(clean_sci_name),
+         taxa_group_name = as.factor(taxa_group_name),
+         tx = as.numeric(taxa_group_name)) %>%
+  select(clean_sci_name, sci, taxa_group_name, tx, FCR) %>%
+arrange(sci)
 
 # Boxplot of data
 ggplot(data = lca_dat_groups, aes(x = clean_sci_name, y = FCR)) +
@@ -272,69 +457,145 @@ groupings_and_sample_size_key <- lca_dat_groups %>%
   unique()
 
 x <- lca_dat_groups$FCR
-n <- nrow(lca_dat_groups)
-n_sci <- length(unique(lca_dat_groups$sci))
-sci <- lca_dat_groups$sci
-n_tx <- length(unique(lca_dat_groups$tx))
-tx <- lca_dat_groups$tx
+N <- nrow(lca_dat_groups)
+N_SCI <- length(unique(lca_dat_groups$sci))
+n_to_sci <- lca_dat_groups$sci
+N_TX <- length(unique(lca_dat_groups$tx))
+sci_to_tx <- lca_dat_groups %>%
+  select(sci, tx) %>%
+  unique() %>%
+  pull(tx)
+  
 #tx <- unique(lca_dat_groups[c("sci", "tx")])[,"tx"]
 
-stan_data <- list(x = x, n = n, n_sci = n_sci, sci = sci, n_tx = n_tx, tx = tx)
+stan_data <- list(x = x, N = N, N_SCI = N_SCI, n_to_sci = n_to_sci, N_TX = N_TX, sci_to_tx = sci_to_tx)
 
 stan_grouped <- 'data {
-  int<lower=0> n;  // number of observations
-  vector<lower=0>[n] x; // data
-  int n_tx; // number of taxa groups
-  int tx[n]; // taxa group index (ordered by unique sci index)
-  int n_sci; // number of scientific names
-  int sci[n]; // sciname index
+  int<lower=0> N;  // number of observations
+  vector<lower=0>[N] x; // data
+  int N_TX; // number of taxa groups
+  int N_SCI; // number of scientific names
+  int sci_to_tx[N_SCI]; // taxa group index
+  int n_to_sci[N]; // sciname index
 }
 parameters {
   real<lower=0> mu;
   real<lower=0> sigma;
-  vector<lower=0>[n_tx] tx_mu;
+  vector<lower=0>[N_TX] tx_mu;
   real<lower=0> tx_sigma;
-  vector<lower=0>[n_sci] sci_mu;
+  vector<lower=0>[N_SCI] sci_mu;
   real<lower=0> sci_sigma;
 }
 transformed parameters {
   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
   real shape;
-  real rate; 
-  vector[n_sci] sci_shape;
-  vector[n_sci] sci_rate;
-  vector[n_tx] tx_shape;
-  vector[n_tx] tx_rate;
-  
+  real rate;
+  vector[N_SCI] sci_shape;
+  vector[N_SCI] sci_rate;
+  vector[N_TX] tx_shape;
+  vector[N_TX] tx_rate;
+
   // global-level
   shape = square(mu) / square(sigma);
   rate = mu / square(sigma);
-  // sci name and taxa group levels
-  for (j in 1:n){
-    tx_shape[tx[j]] = square(tx_mu[tx[j]]) ./ square(tx_sigma);
-    tx_rate[tx[j]] = tx_mu[tx[j]] ./ square(tx_sigma);
-    sci_shape[sci[j]] = square(sci_mu[sci[j]]) ./ square(sci_sigma);
-    sci_rate[sci[j]] = sci_mu[sci[j]] ./ square(sci_sigma);
+  
+  // taxa group level
+  for (n_tx in 1:N_TX){
+    tx_shape[n_tx] = square(tx_mu[n_tx]) ./ square(tx_sigma);
+    tx_rate[n_tx] = tx_mu[n_tx] ./ square(tx_sigma);
+  }
+  
+  // sci name level
+  for (n_sci in 1:N_SCI){
+    sci_shape[n_sci] = square(sci_mu[n_sci]) ./ square(sci_sigma);
+    sci_rate[n_sci] = sci_mu[n_sci] ./ square(sci_sigma);
   }
 }
 model {
   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-  //mu ~ uniform(0.05, 100);
-  //sigma ~ uniform(0, 100);
-  //sci_sigma ~ uniform(0, 100);
+  mu ~ uniform(0, 100);
+  sigma ~ uniform(0, 100);
+  tx_mu ~ uniform(0, 100);
+  tx_sigma ~ uniform(0, 100);
+  sci_mu ~ uniform(0, 100);
   
-  // Specific prior for Salmonidae
-  sci_mu[19] ~ uniform(6, 10);
-  
+  // Model only converges when prior given to Salmonidae 
+  //for (i in 1:N_SCI){
+  //  if (i == 6) 
+  //  sci_mu[i] ~ uniform(6, 10);
+  //  else
+  //  sci_mu[i] ~ uniform(0, 10);
+  //}
+  sci_sigma ~ uniform(0, 100);
+
   // likelihood
-  tx_mu ~ gamma(shape, rate);
-  for (i in 1:n){
-    sci_mu[sci[i]] ~ gamma(tx_shape[tx[i]], tx_rate[tx[i]]);
-    x[i] ~ gamma(sci_shape[sci[i]], sci_rate[sci[i]]); // equivalent notation to target += but faster
+  for (n in 1:N){
+    x[n] ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]); // equivalent notation to target += but faster
+  }
+  
+  for (n_sci in 1:N_SCI){
+    sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
+  }
+  
+  for (n_tx in 1:N_TX){
+    tx_mu[n_tx] ~ gamma(shape, rate);
   }
 }'
 
 
+# OLD CODE: combined loop
+# stan_grouped <- 'data {
+#   int<lower=0> N;  // number of observations
+#   vector<lower=0>[N] x; // data
+#   int N_TX; // number of taxa groups
+#   int tx[N]; // taxa group index (ordered by unique sci index)
+#   int N_SCI; // number of scientific names
+#   int sci[N]; // sciname index
+# }
+# parameters {
+#   real<lower=0> mu;
+#   real<lower=0> sigma;
+#   vector<lower=0>[N_TX] tx_mu;
+#   real<lower=0> tx_sigma;
+#   vector<lower=0>[N_SCI] sci_mu;
+#   real<lower=0> sci_sigma;
+# }
+# transformed parameters {
+#   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+#   real shape;
+#   real rate; 
+#   vector[N_SCI] sci_shape;
+#   vector[N_SCI] sci_rate;
+#   vector[N_TX] tx_shape;
+#   vector[N_TX] tx_rate;
+#   
+#   // global-level
+#   shape = square(mu) / square(sigma);
+#   rate = mu / square(sigma);
+#   // sci name and taxa group levels
+#   for (j in 1:N){
+#     tx_shape[tx[j]] = square(tx_mu[tx[j]]) ./ square(tx_sigma);
+#     tx_rate[tx[j]] = tx_mu[tx[j]] ./ square(tx_sigma);
+#     sci_shape[sci[j]] = square(sci_mu[sci[j]]) ./ square(sci_sigma);
+#     sci_rate[sci[j]] = sci_mu[sci[j]] ./ square(sci_sigma);
+#   }
+# }
+# model {
+#   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+#   //mu ~ uniform(0.05, 100);
+#   //sigma ~ uniform(0, 100);
+#   //sci_sigma ~ uniform(0, 100);
+#   
+#   // Specific prior for Salmonidae
+#   // sci_mu[19] ~ uniform(6, 10);
+#   
+#   // likelihood
+#   tx_mu ~ gamma(shape, rate);
+#   for (i in 1:N){
+#     sci_mu[sci[i]] ~ gamma(tx_shape[tx[i]], tx_rate[tx[i]]);
+#     x[i] ~ gamma(sci_shape[sci[i]], sci_rate[sci[i]]); // equivalent notation to target += but faster
+#   }
+# }'
 
 # Compile
 no_missing_mod <- stan_model(model_code = stan_grouped, verbose = TRUE)
@@ -344,8 +605,9 @@ no_missing_mod <- stan_model(model_code = stan_grouped, verbose = TRUE)
 #   'C:/rtools40/usr/mingw_/bin/g++' not found
 
 # Fit model:
-fit_grouped <- sampling(object = no_missing_mod, data = stan_data,
-                        iter = 10000, warmup = 1000, chain = 4, cores = 4)
+fit_grouped <- sampling(object = no_missing_mod, data = stan_data, cores = 4,
+                        control = list(adapt_delta = 0.99))
+                        #iter = 10000)
 
 print(fit_grouped)
 

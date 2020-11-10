@@ -804,6 +804,9 @@ parameters {
   simplex[K] sci_theta[N_SCI]; // vectors of estimated sci-level feed weight simplexes
   simplex[K] tx_theta[N_TX]; // vectors of estimated taxa-level feed weight simplexes
   simplex[K] theta;
+  
+  // if needed, define sigma params for mean priors:
+  // real<lower=0> sigma_1;
 }
 transformed parameters {
   // define params
@@ -823,14 +826,14 @@ transformed parameters {
   }
 }
 model {
-  // priors on specific phi
+  // priors on specific theta
   // sci_theta defined as sci_theta[sci][K]
 
   // option 1: define feed proportion priors as lower upper bounds
-  // sci_theta[2][1] ~ uniform(0.1, 0.2); // hypothetical lower and upper bounds 
+  //sci_theta[24][1] ~ uniform(0.001, 0.05); // hypothetical lower and upper bounds 
 
-  // option 2: define feed proportions as means (need to define sigmas in parameters block: real<lower=0> sigma_1, sigma_2 etc; etc;)
-  // sci_theta[2][2] ~ normal(0.13, sigma_1); // hypothetical mean prior
+  // option 2: define feed proportions as means (also need to define sigmas in parameters block: real<lower=0> sigma_1 etc; etc;)
+  // sci_theta[24][1] ~ normal(0.9, sigma_1); // hypothetical mean prior
 
 
   // likelihood
@@ -840,6 +843,10 @@ model {
   
   for (n_sci in 1:N_SCI){
     sci_theta[n_sci] ~ dirichlet(tx_alpha[sci_to_tx[n_sci]]);
+  }
+  
+  for (n_tx in 1:N_TX){
+    tx_theta[n_tx] ~ dirichlet(alpha);
   }
   
 }'
@@ -996,7 +1003,8 @@ names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "alpha\\[[1-4]
 names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "theta\\[[1-4]")] <- overall_feed_key$overall_theta_param_name
 
 distribution_grouped <- as.matrix(fit_grouped_clean)
-# Plot all together
+
+# Plot all in one plot
 p_alpha <- mcmc_areas(distribution_grouped,
                       pars = vars(contains("alpha")),
                       prob = 0.8,
@@ -1004,6 +1012,18 @@ p_alpha <- mcmc_areas(distribution_grouped,
 p_alpha
 p_theta <- mcmc_areas(distribution_grouped,
                       pars = vars(contains("theta")),
+                      prob = 0.8,
+                      area_method = "scaled height")
+p_theta
+
+# Choose secific plot
+p_alpha <- mcmc_areas(distribution_grouped,
+                      pars = vars(contains("alpha") & contains("Thunnus thynnus")),
+                      prob = 0.8,
+                      area_method = "scaled height")
+p_alpha
+p_theta <- mcmc_areas(distribution_grouped,
+                      pars = vars(contains("theta") & contains("Thunnus thynnus")),
                       prob = 0.8,
                       area_method = "scaled height")
 p_theta
