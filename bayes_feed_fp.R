@@ -409,7 +409,15 @@ fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "1
                        #control = list(adapt_delta = 0.99))
 print(fit_no_na)
 
+# Check diagnostics: https://betanalpha.github.io/assets/case_studies/rstan_workflow.html
+# check_n_eff(fit_no_na)
+# check_rhat(fit_no_na)
+# check_treedepth(fit_no_na) # if needed, re-run with larger treedepth
+# check_div(fit_no_na) # if needed, re-run with larger adapt
+check_all_diagnostics(fit_no_na)
+
 launch_shinystan(fit_no_na)
+
 
 ######################################################################################################
 # Model 1: Remove all NAs - estimate feed footprint for Oncorhynchus mykiss
