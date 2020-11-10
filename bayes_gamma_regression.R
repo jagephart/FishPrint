@@ -29,26 +29,35 @@ lca_dat_clean <- clean.lca(LCA_data = lca_dat)
 
 # Remove NAs (which also removes bivalves) and 0's
 lca_dat_groups <- lca_dat_clean %>%
+  select(clean_sci_name, FCR, taxa = taxa_group_name, intensity = Intensity, system = Production_system_group) %>%
   filter(is.na(FCR) == FALSE) %>% 
   filter(FCR != 0) %>%
-  mutate(taxa = as.factor(taxa_group_name),
+  drop_na() %>%
+  arrange(clean_sci_name, intensity, system) %>%
+  mutate(taxa = as.factor(taxa),
          tx = as.numeric(taxa),
-         intensity = as.factor(Intensity),
+         intensity = as.factor(intensity),
          its = as.numeric(intensity),
-         system = as.factor(Production_system_group),
+         system = as.factor(system),
          ps = as.numeric(system)) %>%
-  select(clean_sci_name, FCR, taxa, tx, intensity, its, system, ps) %>%
-  drop_na() # This last drop NA filters any tx, its, or ps NAs
+  select(clean_sci_name, FCR, taxa, tx, intensity, its, system, ps)
 
 # Set data:
 N = nrow(lca_dat_groups)
 y = lca_dat_groups$FCR
 X <- model.matrix(object = ~taxa + intensity + system, 
-                  data = lca_dat_groups %>% select(taxa, intensity, system))
+                  data = lca_dat_groups %>% select(taxa, intensity, system)) 
 K = ncol(X) # number of predictors
 
-stan_data <- list(N = N, y = y, K = K, X = X)
+# Center all non-intercept variables and scale by 2 standard deviations
+covars.sd<-apply(X[,-1], MARGIN=2, FUN=sd)
+X <- scale(X[,-1], center=TRUE, scale=2*covars.sd) 
 
+# Recreate intercept column
+intercept_col <- rep(1, nrow(X))
+X <- cbind(intercept_col, X)
+
+stan_data <- list(N = N, y = y, K = K, X = X)
 # FIX IT - is canonical inverse link more appropriate for categorical variables?
 
 # FIX IT - reparamterize on shape and mean?
@@ -108,22 +117,31 @@ fit_simple <- sampling(object = simple_mod, data = stan_data)
 
 print(fit_simple)
 
-# Response variable scinames
-sci_index_key <- lca_dat_groups %>%
+
+# Clean up param names:
+fit_simple_clean <- fit_simple
+
+# Observation-level param names (species - intensity - system - study number combo)
+study_index_key <- lca_dat_groups %>%
   select(clean_sci_name, intensity, system) %>%
-  arrange(clean_sci_name) %>%
-  mutate(sci_param_name = paste("sp_mu[", clean_sci_name, "]", sep =""),
-         shape_param_name = paste("sp_shape[", clean_sci_name, "]", sep =""),
-         rate_param_name = paste("sp_rate[", clean_sci_name, "]", sep = ""))
+  group_by(clean_sci_name, intensity, system) %>%
+  # Add row number to differentiate 
+  mutate(study_number = row_number()) %>%
+  mutate(mu_param_name = paste("mu[", clean_sci_name, "-", intensity, "-", system, "-", study_number, "]", sep =""),
+         shape_param_name = paste("shape[", clean_sci_name, "-", intensity, "-", system, "-", study_number, "]", sep =""),
+         rate_param_name = paste("rate[", clean_sci_name, "-", intensity, "-", system, "-", study_number, "]", sep = ""),
+         yrep_param_name = paste("y_rep[", clean_sci_name, "-", intensity, "-", system, "-", study_number, "]", sep = ""))
 #write.csv(sp_index_key, file.path(outdir, "sp_info.csv"), row.names = FALSE)
 
-# LEFT OFF HERE
 # Clean up beta parameter names
-beta_index_key <- colnames(X) %>% str_remove(pattern = "taxa|intensity|system|\\(|\\)")
-  
-
+beta_index_key <- data.frame(beta_name = colnames(X) %>% str_remove(pattern = "taxa|intensity|system|\\(|\\)")) %>%
+  mutate(beta_param_name = paste("beta[", beta_name, "]", sep = ""))
 
 # Replace param names
-names(fit_grouped)[grep(names(fit_grouped), pattern = "sp_mu")] <- sp_index_key$mu_param_name
-names(fit_grouped)[grep(names(fit_grouped), pattern = "sp_shape")] <- sp_index_key$shape_param_name
-names(fit_grouped)[grep(names(fit_grouped), pattern = "sp_rate")] <- sp_index_key$rate_param_name
+names(fit_simple_clean)[grep(names(fit_simple_clean), pattern = "beta")] <- beta_index_key$beta_param_name
+names(fit_simple_clean)[grep(names(fit_simple_clean), pattern = "mu")] <- study_index_key$mu_param_name
+names(fit_simple_clean)[grep(names(fit_simple_clean), pattern = "shape")] <- study_index_key$shape_param_name
+names(fit_simple_clean)[grep(names(fit_simple_clean), pattern = "rate")] <- study_index_key$rate_param_name
+names(fit_simple_clean)[grep(names(fit_simple_clean), pattern = "y_rep")] <- study_index_key$yrep_param_name
+
+# LEFT OFF HERE - visualize parameters, compare y_rep to y

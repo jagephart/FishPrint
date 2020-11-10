@@ -768,17 +768,23 @@ tx_kappa <- lca_groups %>%
 sci_mean <- lca_groups %>% 
   select(contains(c("new", "clean_sci_name", "sci"))) %>%
   group_by(clean_sci_name, sci) %>% 
-  summarise(across(contains("new"), mean)) %>%
+  summarise(across(contains("new"), mean),
+            n_sci = n()) %>%
   ungroup() %>%
   arrange(sci)
 
 # Get mean observations per taxa group
 tx_mean <- lca_groups %>% 
-  select(contains(c("new", "tax_group_name", "tx"))) %>%
-  group_by(tx) %>% 
-  summarise(across(contains("new"), mean)) %>%
+  select(contains(c("new", "taxa_group_name", "tx"))) %>%
+  group_by(taxa_group_name, tx) %>% 
+  summarise(across(contains("new"), mean),
+            n_tx = n()) %>%
   ungroup() %>%
   arrange(tx)
+
+overall_mean <- lca_groups %>%
+  select(contains(c("new"))) %>%
+  summarise(across(contains("new"), mean))
 
 stan_data = list(N = N,
                  K = K,
@@ -933,6 +939,19 @@ fit_grouped <- sampling(object = no_missing_mod, data = stan_data, cores = 4, se
 
 print(fit_grouped)
 
+distribution_grouped <- as.matrix(fit_grouped)
+# Plot all in one plot
+p_alpha <- mcmc_areas(distribution_grouped,
+                      pars = vars(contains("tx_alpha")),
+                      prob = 0.8,
+                      area_method = "scaled height")
+p_alpha
+p_theta <- mcmc_areas(distribution_grouped,
+                      pars = vars(contains("tx_theta")),
+                      prob = 0.8,
+                      area_method = "scaled height")
+p_theta
+
 # Create formatted names for sci-name level
 # Format of parameters is: theta[sci_name, feed]
 sci_feed_key <- lca_groups %>%
@@ -1002,27 +1021,15 @@ names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "tx_theta")] <
 names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "alpha\\[[1-4]")] <- overall_feed_key$overall_alpha_param_name
 names(fit_grouped_clean)[grep(names(fit_grouped_clean), pattern = "theta\\[[1-4]")] <- overall_feed_key$overall_theta_param_name
 
-distribution_grouped <- as.matrix(fit_grouped_clean)
-
-# Plot all in one plot
-p_alpha <- mcmc_areas(distribution_grouped,
-                      pars = vars(contains("alpha")),
-                      prob = 0.8,
-                      area_method = "scaled height")
-p_alpha
-p_theta <- mcmc_areas(distribution_grouped,
-                      pars = vars(contains("theta")),
-                      prob = 0.8,
-                      area_method = "scaled height")
-p_theta
+distribution_grouped_clean <- as.matrix(fit_grouped_clean)
 
 # Choose secific plot
-p_alpha <- mcmc_areas(distribution_grouped,
+p_alpha <- mcmc_areas(distribution_grouped_clean,
                       pars = vars(contains("alpha") & contains("Thunnus thynnus")),
                       prob = 0.8,
                       area_method = "scaled height")
 p_alpha
-p_theta <- mcmc_areas(distribution_grouped,
+p_theta <- mcmc_areas(distribution_grouped_clean,
                       pars = vars(contains("theta") & contains("Thunnus thynnus")),
                       prob = 0.8,
                       area_method = "scaled height")
@@ -1031,12 +1038,12 @@ p_theta
 # Plot per sci-name
 for (i in 1:length(unique(lca_groups$clean_sci_name))){
   name_i <- as.character(unique(lca_groups$clean_sci_name)[i])
-  p_alpha <- mcmc_areas(distribution_grouped,
+  p_alpha <- mcmc_areas(distribution_grouped_clean,
                         pars = vars(contains("alpha") & contains(name_i)),
                         prob = 0.8,
                         area_method = "scaled height")
   print(p_alpha)
-  p_theta <- mcmc_areas(distribution_grouped,
+  p_theta <- mcmc_areas(distribution_grouped_clean,
                         pars = vars(contains("theta") & contains(name_i)),
                         prob = 0.8,
                         area_method = "scaled height")
@@ -1046,12 +1053,12 @@ for (i in 1:length(unique(lca_groups$clean_sci_name))){
 # Plot per taxa-name
 for (i in 1:length(unique(lca_groups$taxa_group_name))){
   name_i <- as.character(unique(lca_groups$taxa_group_name)[i])
-  p_alpha <- mcmc_areas(distribution_grouped,
+  p_alpha <- mcmc_areas(distribution_grouped_clean,
                         pars = vars(contains("alpha") & contains(name_i)),
                         prob = 0.8,
                         area_method = "scaled height")
   print(p_alpha)
-  p_theta <- mcmc_areas(distribution_grouped,
+  p_theta <- mcmc_areas(distribution_grouped_clean,
                         pars = vars(contains("theta") & contains(name_i)),
                         prob = 0.8,
                         area_method = "scaled height")
@@ -1059,12 +1066,12 @@ for (i in 1:length(unique(lca_groups$taxa_group_name))){
 }
 
 #Plot overall
-p_alpha <- mcmc_areas(distribution_grouped,
+p_alpha <- mcmc_areas(distribution_grouped_clean,
                       pars = vars(contains("alpha") & contains("overall")),
                       prob = 0.8,
                       area_method = "scaled height")
 print(p_alpha)
-p_theta <- mcmc_areas(distribution_grouped,
+p_theta <- mcmc_areas(distribution_grouped_clean,
                       pars = vars(contains("theta") & contains("overall")),
                       prob = 0.8,
                       area_method = "scaled height")
