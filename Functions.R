@@ -53,9 +53,12 @@ clean.lca <- function(LCA_data){
         (Intensity %in% c("Intensive")) ~ "Intensive",
         (Intensity %in% c("Semi-intensive", "Improved extensive", "Imp. extensive")) ~ "Semi-intensive",
         (Intensity %in% c("Extensive")) ~ "Extensive"
-      ) # Many others can be identified based on the system description
+      ),
+      # Many others can be identified based on the system description
       # Add fed/un-fed categories and replace FCR with 0 for all unfed 
-      )
+      ) %>%
+    # Convert "not specified" to NA
+    mutate(Production_system_group = na_if(Production_system_group, "not specified"))
   
   # Note: Create column clean_sci_name - use this as the "official" scientific name column
   # Manually fill in blank scientific names based on Common.Name
