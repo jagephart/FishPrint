@@ -3,10 +3,11 @@
 rm(list=ls())
 library(tidyverse)
 library(rstan)
-library(taxize)
 library(data.table)
 library(countrycode) # part of clean.lca
 library(bayesplot) # for mcmc_areas_ridges
+library(rstanarm)
+library(brms)
 
 # Mac
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
@@ -215,8 +216,6 @@ pp_check(brms_gamma, type = "xyz") # Gives an overview of all valid types
 ######################################################################################################
 # Model 1.3: Using rstanarm
 
-library(rstanarm)
-
 rstanarm_data <- data.frame(cbind(y, X_scaled[,-1]))
 rstanarm_gamma <- stan_glm(y ~ ., data = rstanarm_data, family = Gamma(link = "log"), seed = "11729", cores = 4)
 
@@ -283,25 +282,34 @@ brms_data <- data.frame(cbind(y, X_scaled))
 # Option 2: Imputation while model fitting:
 
 # Which predictors have missing data:
-X_where_na <- apply(X_scaled, MARGIN = 2, is.na)
+X_where_na <- apply(brms_data, MARGIN = 2, is.na)
 colSums(X_where_na)
 
 # For reference, here's the no missing data formula with priors
-brms_gamma <- brm(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + intensitySemi.intensive + systemopen + systemsemi.open,
-                  data = brms_data, family = Gamma(link = "log"), seed = "11729", cores = 4,
-                  set_prior("normal(0,5)", class = "b"), set_prior("normal(0,2.5", class = "Intercept"), set_prior("exponential(rate = 1)", class = "shape"))
+# brms_gamma <- brm(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + intensitySemi.intensive + systemopen + systemsemi.open,
+#                   data = brms_data, family = Gamma(link = "log"), seed = "11729", cores = 4,
+#                   set_prior("normal(0,5)", class = "b"), set_prior("normal(0,2.5", class = "Intercept"), set_prior("exponential(rate = 1)", class = "shape"))
 
 # Set up brms model formula that explains where there is missing data
-missing_dat_form <- brmsformula(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + mi(intensitySemi.intensive) + mi(systemopen) + mi(systemsemi.open)) +
-  brmsformula(intensitySemi.intensive | mi() ~ .) +
-  brmsformula(systemopen | mi() ~ .) +
-  brmsformula(systemsemi.open | mi() ~ .) +
-  set_rescor(FALSE) # FALSE - do not model the residual correlations between the response variables
+# missing_dat_form <- brmsformula(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + mi(intensitySemi.intensive) + mi(systemopen) + mi(systemsemi.open)) +
+#   brmsformula(intensitySemi.intensive | mi() ~ .) +
+#   brmsformula(systemopen | mi() ~ .) +
+#   brmsformula(systemsemi.open | mi() ~ .) +
+#   set_rescor(FALSE) # FALSE - do not model the residual correlations between the response variables
 # FIX IT try set_rescor(TRUE)
 
-# FIX IT: LEFT OFF HERE - model not running with missing data
-brms_gamma_with_na <- brm(missing_dat_form, data = brms_data, family = Gamma(link = "log"), seed = "11729", cores = 4,
-                          set_prior("normal(0,5)", class = "b"), set_prior("normal(0,2.5", class = "Intercept"), set_prior("exponential(rate = 1)", class = "shape"))
+# LEFT OFF HERE: need to specify separate formulas (and how to also specify priors?) for each model before combining into brm function
+# First, try a simpler model, remove all columns with missing data from the analysis except systemsemi.open
+y_brms <- brmsformula(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + mi(systemsemi.open)) + 
+  Gamma(link = "log") + 
+  set_prior("normal(0,5)", class = "b") + 
+  set_prior("normal(0,2.5", class = "Intercept") + 
+  set_prior("exponential(rate = 1)", class = "shape")
+
+semi_open_brms  <- brmsformula(systemsemi.open | mi() ~ .) + 
+  gaussian()
+  
+brms_gamma_with_na <- brm(y_brms + sem_open_brms + set_rescor(FALSE), data = brms_data, family = Gamma(link = "log"), seed = "11729", cores = 4)
 
 
 
