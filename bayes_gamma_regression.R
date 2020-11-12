@@ -272,16 +272,17 @@ X_scaled <- scale(X[,-1], center=TRUE, scale=2*covars.sd)
 # Return option back to the default
 options(na.action='na.omit')
 
-# Recreate intercept column
-intercept_col <- rep(1, nrow(X_scaled))
-X_scaled <- cbind(intercept_col, X_scaled)
+# Note: don't need to create an intercept column for brms
+brms_data <- data.frame(cbind(y, X_scaled))
 
-# Missing data imputation with brms: https://cran.r-project.org/web/packages/brms/vignettes/brms_missings.html
-# Two approaches:
+# Two approaches to Missing data imputation with brms: https://cran.r-project.org/web/packages/brms/vignettes/brms_missings.html
+
 # Option 1: Imputation before model fitting (more computationally intensive, but might be OK for a simple model)
+# FIX IT - try option 1
 
-# Option 2: 
+# Option 2: Imputation while model fitting:
 
+# Which predictors have missing data:
 X_where_na <- apply(X_scaled, MARGIN = 2, is.na)
 colSums(X_where_na)
 
@@ -291,7 +292,17 @@ brms_gamma <- brm(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + intensityS
                   set_prior("normal(0,5)", class = "b"), set_prior("normal(0,2.5", class = "Intercept"), set_prior("exponential(rate = 1)", class = "shape"))
 
 # Set up brms model formula that explains where there is missing data
-bf(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + intensitySemi.intensive + systemopen + systemsemi.open)
+missing_dat_form <- brmsformula(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + mi(intensitySemi.intensive) + mi(systemopen) + mi(systemsemi.open)) +
+  brmsformula(intensitySemi.intensive | mi() ~ .) +
+  brmsformula(systemopen | mi() ~ .) +
+  brmsformula(systemsemi.open | mi() ~ .) +
+  set_rescor(FALSE) # FALSE - do not model the residual correlations between the response variables
+# FIX IT try set_rescor(TRUE)
+
+# FIX IT: LEFT OFF HERE - model not running with missing data
+brms_gamma_with_na <- brm(missing_dat_form, data = brms_data, family = Gamma(link = "log"), seed = "11729", cores = 4,
+                          set_prior("normal(0,5)", class = "b"), set_prior("normal(0,2.5", class = "Intercept"), set_prior("exponential(rate = 1)", class = "shape"))
+
 
 
 # NEXT: try keeping data where FCR is NA
