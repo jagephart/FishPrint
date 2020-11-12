@@ -23,10 +23,6 @@ lca_dat_clean <- clean.lca(LCA_data = lca_dat)
 ######################################################################################################
 # Model 1: Remove ALL NA's (predictors and response), and estimate feed conversion ratio for all scientific names, non-hierarchical
 
-# If desired, replicate data based on clean_sample_size column:
-# lca_dat_clean <- rep_data(lca_dat_clean)
-# IMPORTANT for convergence: filter out FCR == 0
-
 # Remove NAs (which also removes bivalves) and 0's
 lca_dat_groups <- lca_dat_clean %>%
   select(clean_sci_name, FCR, taxa = taxa_group_name, intensity = Intensity, system = Production_system_group) %>%
@@ -42,22 +38,36 @@ lca_dat_groups <- lca_dat_clean %>%
          ps = as.numeric(system)) %>%
   select(clean_sci_name, FCR, taxa, tx, intensity, its, system, ps)
 
+# Does variance increase with mean? (values should bunch up around zero because there is no room for negative FCR)
+ggplot(lca_dat_groups %>%
+         mutate(combo = paste(taxa, system, intensity, sep = " ")), aes(x = combo, y = FCR)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 45))
+
 # Set data:
 N = nrow(lca_dat_groups)
 y = lca_dat_groups$FCR
+
+# Creat model matrix, note: automatically creates column for intercept
 X <- model.matrix(object = ~taxa + intensity + system, 
                   data = lca_dat_groups %>% select(taxa, intensity, system)) 
 K = ncol(X) # number of predictors
 
 # Center all non-intercept variables and scale by 2 standard deviations
 covars.sd<-apply(X[,-1], MARGIN=2, FUN=sd)
-X <- scale(X[,-1], center=TRUE, scale=2*covars.sd) 
+X_scaled <- scale(X[,-1], center=TRUE, scale=2*covars.sd) 
 
 # Recreate intercept column
-intercept_col <- rep(1, nrow(X))
-X <- cbind(intercept_col, X)
+intercept_col <- rep(1, nrow(X_scaled))
+X_scaled <- cbind(intercept_col, X_scaled)
 
-stan_data <- list(N = N, y = y, K = K, X = X)
+######################################################################################################
+# Model 1.1: Using STAN
+
+# If desired, replicate data based on clean_sample_size column:
+# lca_dat_clean <- rep_data(lca_dat_clean)
+
+stan_data <- list(N = N, y = y, K = K, X_scaled = X_scaled)
 # FIX IT - is canonical inverse link more appropriate for categorical variables?
 
 # FIX IT - reparamterize on shape and mean?
@@ -69,8 +79,8 @@ stan_data <- list(N = N, y = y, K = K, X = X)
 stan_one_level <- 'data {
   int N; // number of observations
   real y[N]; // response
-  int K; // number of predictors, i.e., number of columns in the design matrix X
-  matrix [N, K] X; // design matrix X
+  int K; // number of predictors, i.e., number of columns in the design matrix X_scaled
+  matrix [N, K] X_scaled; // design matrix X_scaled
 }
 parameters {
   vector[K] beta; // regression coefficients
@@ -82,7 +92,7 @@ transformed parameters {
   vector[N] rate; // rate parameter for gamma 
   
   // reparameterize shape and rate
-  mu = exp(X * beta); // log-link since shape and rate params are positive
+  mu = exp(X_scaled * beta); // log-link since shape and rate params are positive
   shape = mu .* mu / square(sigma);
   rate = mu / square(sigma);
 }
@@ -118,6 +128,24 @@ fit_simple <- sampling(object = simple_mod, data = stan_data)
 print(fit_simple)
 
 
+
+# Use bayesplot for posterior predictive checks:
+distribution_simple <- as.matrix(fit_simple)
+y_reps <- distribution_simple[,grep(pattern = "y_rep", colnames(distribution_simple))]
+
+color_scheme_set("brightblue")
+# Distributions of y vs yreps (specify number of samples to display from y_rep)
+ppc_dens_overlay(y, y_reps[1:50,])
+# Errors: normally distributed?
+ppc_error_hist(y, y_reps[1:5,])
+ppc_error_scatter_avg(y, y_reps)
+# Errors vs x
+for (i in 2:ncol(X_scaled)){ # skip intercept column
+  col_i <- colnames(X_scaled)[i]
+  p <- ppc_error_scatter_avg_vs_x(y, y_reps, X_scaled[,col_i]) + ggtitle(col_i)
+  print(p)
+}
+
 # Clean up param names:
 fit_simple_clean <- fit_simple
 
@@ -134,7 +162,7 @@ study_index_key <- lca_dat_groups %>%
 #write.csv(sp_index_key, file.path(outdir, "sp_info.csv"), row.names = FALSE)
 
 # Clean up beta parameter names
-beta_index_key <- data.frame(beta_name = colnames(X) %>% str_remove(pattern = "taxa|intensity|system|\\(|\\)")) %>%
+beta_index_key <- data.frame(beta_name = colnames(X_scaled) %>% str_remove(pattern = "taxa|intensity|system|\\(|\\)")) %>%
   mutate(beta_param_name = paste("beta[", beta_name, "]", sep = ""))
 
 # Replace param names
@@ -144,4 +172,126 @@ names(fit_simple_clean)[grep(names(fit_simple_clean), pattern = "shape")] <- stu
 names(fit_simple_clean)[grep(names(fit_simple_clean), pattern = "rate")] <- study_index_key$rate_param_name
 names(fit_simple_clean)[grep(names(fit_simple_clean), pattern = "y_rep")] <- study_index_key$yrep_param_name
 
-# LEFT OFF HERE - visualize parameters, compare y_rep to y
+# FIX IT - continue parsing through outputs:
+
+######################################################################################################
+# Model 1.2: Using brms
+
+library(brms)
+
+# assemble dataframe for brms (no missing data)
+# don't need to include intercept as part of design matrix with brms
+#brms_data <- data.frame(cbind(y, X[,-1]))
+brms_data <- data.frame(cbind(y, X_scaled[,-1]))
+
+# No priors:
+brms_gamma <- brm(y ~ ., data = brms_data, family = Gamma(link = "log"), seed = "11729", cores = 4)
+# equivalent to: 
+brms_gamma <- brm(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + intensitySemi.intensive + systemopen + systemsemi.open,
+                  data = brms_data, family = Gamma(link = "log"), seed = "11729")
+# DEFAULT PRIORS in brm are crap
+
+get_prior(y ~ ., data = brms_data, family = Gamma(link = "log"))
+
+# Set brm priors to be the same as those used by rstanarm (see next section)
+brms_gamma <- brm(y ~ ., data = brms_data, family = Gamma(link = "log"), seed = "11729", cores = 4,
+                  set_prior("normal(0,5)", class = "b"), set_prior("normal(0,2.5", class = "Intercept"), set_prior("exponential(rate = 1)", class = "shape"))
+
+# equivalent:
+brms_gamma <- brm(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + intensitySemi.intensive + systemopen + systemsemi.open,
+                  data = brms_data, family = Gamma(link = "log"), seed = "11729", cores = 4,
+                  set_prior("normal(0,5)", class = "b"), set_prior("normal(0,2.5", class = "Intercept"), set_prior("exponential(rate = 1)", class = "shape"))
+
+
+# Posterior predictive checks
+pp_check(brms_gamma, nsamples = 50) # density plots
+pp_check(brms_gamma, type = "error_hist", nsamples = 5)
+pp_check(brms_gamma, type = "scatter_avg", nsamples = 100)
+pp_check(brms_gamma, type = "stat_2d")
+pp_check(brms_gamma, type = "rootogram") 
+# error message is fixed in the development version of brms: https://discourse.mc-stan.org/t/error-using-pp-check-using-truncated-response-variable-in-brms/7555
+pp_check(brms_gamma, type = "loo_pit")
+pp_check(brms_gamma, type = "xyz") # Gives an overview of all valid types
+######################################################################################################
+# Model 1.3: Using rstanarm
+
+library(rstanarm)
+
+rstanarm_data <- data.frame(cbind(y, X_scaled[,-1]))
+rstanarm_gamma <- stan_glm(y ~ ., data = rstanarm_data, family = Gamma(link = "log"), seed = "11729", cores = 4)
+
+pp_check(rstanarm_gamma, plotfun = "stat", stat = "mean")
+pp_check(rstanarm_gamma, plotfun = "dens_overlay")
+
+# Can extract the stan code with the following:
+stancode <- rstan::get_stancode(rstanarm_gamma$stanfit)
+cat(stancode)
+
+# Get the (specified or default) priors
+prior_summary(rstanarm_gamma)
+
+# Note: adjusted priors are the priors implemented by rstanarm to help stabilize computation
+# See: https://cran.r-project.org/web/packages/rstanarm/vignettes/priors.html
+
+######################################################################################################
+# Model 2: Include NAs in the predictors
+
+# But still remove NA's in FCR (response variable)
+lca_dat_with_na <- lca_dat_clean %>%
+  select(clean_sci_name, FCR, taxa = taxa_group_name, intensity = Intensity, system = Production_system_group) %>%
+  filter(is.na(FCR) == FALSE) %>% 
+  filter(FCR != 0) %>%
+  # drop_na() %>%
+  arrange(clean_sci_name, intensity, system) %>%
+  mutate(taxa = as.factor(taxa),
+         tx = as.numeric(taxa),
+         intensity = as.factor(intensity),
+         its = as.numeric(intensity),
+         system = as.factor(system),
+         ps = as.numeric(system)) %>%
+  select(clean_sci_name, FCR, taxa, tx, intensity, its, system, ps)
+
+# Set data:
+N = nrow(lca_dat_with_na)
+y = lca_dat_with_na$FCR
+K = ncol(X) # number of predictors
+
+# Create model matrix, but keep the NA's
+# First change default options for handling missing data
+options(na.action='na.pass')
+X <- model.matrix(object = ~taxa + intensity + system, 
+                  data = lca_dat_with_na %>% select(taxa, intensity, system)) 
+# Return option back to the default
+options(na.action='na.omit')
+
+# Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+covars.sd<-apply(X[,-1], MARGIN=2, FUN=sd, na.rm=TRUE)
+# First change default options for handling missing data
+options(na.action='na.pass')
+X_scaled <- scale(X[,-1], center=TRUE, scale=2*covars.sd) 
+# Return option back to the default
+options(na.action='na.omit')
+
+# Recreate intercept column
+intercept_col <- rep(1, nrow(X_scaled))
+X_scaled <- cbind(intercept_col, X_scaled)
+
+# Missing data imputation with brms: https://cran.r-project.org/web/packages/brms/vignettes/brms_missings.html
+# Two approaches:
+# Option 1: Imputation before model fitting (more computationally intensive, but might be OK for a simple model)
+
+# Option 2: 
+
+X_where_na <- apply(X_scaled, MARGIN = 2, is.na)
+colSums(X_where_na)
+
+# For reference, here's the no missing data formula with priors
+brms_gamma <- brm(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + intensitySemi.intensive + systemopen + systemsemi.open,
+                  data = brms_data, family = Gamma(link = "log"), seed = "11729", cores = 4,
+                  set_prior("normal(0,5)", class = "b"), set_prior("normal(0,2.5", class = "Intercept"), set_prior("exponential(rate = 1)", class = "shape"))
+
+# Set up brms model formula that explains where there is missing data
+bf(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + intensitySemi.intensive + systemopen + systemsemi.open)
+
+
+# NEXT: try keeping data where FCR is NA
