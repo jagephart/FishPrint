@@ -6,7 +6,6 @@ library(rstan)
 library(data.table)
 library(countrycode) # part of clean.lca
 library(bayesplot) # for mcmc_areas_ridges
-library(rstanarm)
 library(brms)
 
 # Mac
@@ -233,7 +232,7 @@ prior_summary(rstanarm_gamma)
 # See: https://cran.r-project.org/web/packages/rstanarm/vignettes/priors.html
 
 ######################################################################################################
-# Model 2: Include NAs in the predictors
+# Model 2: Include NAs in the predictors using brms and gaussian multivariate model
 
 # But still remove NA's in FCR (response variable)
 lca_dat_with_na <- lca_dat_clean %>%
@@ -251,9 +250,7 @@ lca_dat_with_na <- lca_dat_clean %>%
   select(clean_sci_name, FCR, taxa, tx, intensity, its, system, ps)
 
 # Set data:
-N = nrow(lca_dat_with_na)
 y = lca_dat_with_na$FCR
-K = ncol(X) # number of predictors
 
 # Create model matrix, but keep the NA's
 # First change default options for handling missing data
@@ -290,27 +287,41 @@ colSums(X_where_na)
 #                   data = brms_data, family = Gamma(link = "log"), seed = "11729", cores = 4,
 #                   set_prior("normal(0,5)", class = "b"), set_prior("normal(0,2.5", class = "Intercept"), set_prior("exponential(rate = 1)", class = "shape"))
 
-# Set up brms model formula that explains where there is missing data
-# missing_dat_form <- brmsformula(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + mi(intensitySemi.intensive) + mi(systemopen) + mi(systemsemi.open)) +
-#   brmsformula(intensitySemi.intensive | mi() ~ .) +
-#   brmsformula(systemopen | mi() ~ .) +
-#   brmsformula(systemsemi.open | mi() ~ .) +
-#   set_rescor(FALSE) # FALSE - do not model the residual correlations between the response variables
-# FIX IT try set_rescor(TRUE)
+# First, try a simpler model, remove all columns with missing data from the analysis except systemsemi.open and use Gaussian MV model
+missing_dat_brms <- bf(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + mi(systemsemi.open)) +
+  bf(systemsemi.open | mi() ~ 1 + taxasalmon.char + taxatilapia + taxatrout) +
+  set_rescor(FALSE)
 
-# LEFT OFF HERE: need to specify separate formulas (and how to also specify priors?) for each model before combining into brm function
-# First, try a simpler model, remove all columns with missing data from the analysis except systemsemi.open
-y_brms <- brmsformula(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + mi(systemsemi.open)) + 
-  Gamma(link = "log") + 
-  set_prior("normal(0,5)", class = "b") + 
-  set_prior("normal(0,2.5", class = "Intercept") + 
-  set_prior("exponential(rate = 1)", class = "shape")
+fit_with_missing <- brm(missing_dat_brms, data = brms_data)
 
-semi_open_brms  <- brmsformula(systemsemi.open | mi() ~ .) + 
-  gaussian()
-  
-brms_gamma_with_na <- brm(y_brms + sem_open_brms + set_rescor(FALSE), data = brms_data, family = Gamma(link = "log"), seed = "11729", cores = 4)
+# Model y as Gamma and missing data as normal (since these are scaled to -1 to +1)
+y_brms <- brmsformula(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + mi(systemsemi.open), family = Gamma("log"))
+semi_open_brms  <- brmsformula(systemsemi.open | mi() ~ 1 + taxasalmon.char + taxatilapia + taxatrout, family = gaussian())
 
+# Use "resp = <response_variable>" to specify different priors for different response variables
+all_priors <- c(set_prior("normal(0,5)", class = "b", resp = "y"), 
+                set_prior("normal(0,2.5)", class = "Intercept", resp = "y"), 
+                set_prior("exponential(1)", class = "shape", resp = "y")) # only y variable has shape param
+fit_with_missing <- brm(y_brms + semi_open_brms + set_rescor(FALSE), data = brms_data,
+                          prior = all_priors)
 
+# LEFT OFF HERE: model below doesn't converge, try to simplify the overall model
+# example: doesn't make sense to model missing predictors using predictors from the same category - e.g., don't model systemopen with systemsemi.open
+# Now model all missing data as a function of all the other predictors
+y_brms <- brmsformula(y ~ 1 + taxafreshwater.crustacean + taxamarine.shrimp + taxaother.non.herbivore.marine.finfish + taxasalmon.char + taxatilapia + taxatrout + taxatuna +
+                        mi(intensitySemi.intensive) + mi(systemopen) + mi(systemsemi.open), family = Gamma("log"))
+intensity_semi_mi <- brmsformula(intensitySemi.intensive | mi() ~ 1 + taxafreshwater.crustacean + taxamarine.shrimp + taxaother.non.herbivore.marine.finfish + taxasalmon.char + taxatilapia + taxatrout + taxatuna +
+                                   mi(systemopen) + mi(systemsemi.open), family = gaussian())
+system_open_mi  <- brmsformula(systemopen | mi() ~ 1 + taxafreshwater.crustacean + taxamarine.shrimp + taxaother.non.herbivore.marine.finfish + taxasalmon.char + taxatilapia + taxatrout + taxatuna +
+                                 mi(intensitySemi.intensive) + mi(systemsemi.open), family = gaussian())
+system_semi_mi <- brmsformula(systemsemi.open | mi() ~  1 + taxafreshwater.crustacean + taxamarine.shrimp + taxaother.non.herbivore.marine.finfish + taxasalmon.char + taxatilapia + taxatrout + taxatuna +
+                                mi(intensitySemi.intensive) + mi(systemopen), family = gaussian())
 
-# NEXT: try keeping data where FCR is NA
+# Use "resp = <response_variable>" to specify different priors for different response variables
+all_priors <- c(set_prior("normal(0,5)", class = "b", resp = "y"), 
+                set_prior("normal(0,2.5)", class = "Intercept", resp = "y"), 
+                set_prior("exponential(1)", class = "shape", resp = "y")) # only y variable has shape param
+fit_with_missing <- brm(y_brms + intensity_semi_mi + system_open_mi + system_semi_mi + set_rescor(FALSE), data = brms_data,
+                        prior = all_priors)
+
+# NEXT: try keeping data where FCR is NA (use: y | mi())
