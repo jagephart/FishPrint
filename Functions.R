@@ -40,7 +40,7 @@ clean.lca <- function(LCA_data){
         (Production_system %in% c("Intensive pond", "Extensive pond polyculture", "Semi-intensive pond", "Extensive pond",
                                   "Earthen pond aquaculture", "Integrated pond, high input", "Integrated pond, medium inputs",
                                   "Solid-walled aquaculture system", "Reservoirs", "Earthen pond aquaculture integrated with pigs",
-                                  "Earthern ponds", "Earthern/concrete ponds", "Ponds", "Silvo pond")) ~ "semi-open",
+                                  "Earthern ponds", "Earthern/concrete ponds", "Ponds", "Silvo pond")) ~ "semi",
         (Production_system %in% c("Indoor recirculating", "Flow-through", "Land-based recirculating", "Onshore tanks",
                                   "Saltwater flow-through", "Freshwater flow-through", "Recirculating system", 
                                   "Land-based recirculating system", "Raceway", "Tanks / raceway", 
@@ -50,9 +50,9 @@ clean.lca <- function(LCA_data){
                                   "Ponds / pens")) ~ "not specified"
       ),  # Check groupings (some recirculating not really closed...)
       Intensity = case_when(
-        (Intensity %in% c("Intensive")) ~ "Intensive",
-        (Intensity %in% c("Semi-intensive", "Improved extensive", "Imp. extensive")) ~ "Semi-intensive",
-        (Intensity %in% c("Extensive")) ~ "Extensive"
+        (Intensity %in% c("Intensive")) ~ "intensive",
+        (Intensity %in% c("Semi-intensive", "Improved extensive", "Imp. extensive")) ~ "semi",
+        (Intensity %in% c("Extensive")) ~ "extensive"
       ),
       # Many others can be identified based on the system description
       # Add fed/un-fed categories and replace FCR with 0 for all unfed 
@@ -60,66 +60,220 @@ clean.lca <- function(LCA_data){
     # Convert "not specified" to NA
     mutate(Production_system_group = na_if(Production_system_group, "not specified"))
   
-  # Note: Create column clean_sci_name - use this as the "official" scientific name column
-  # Manually fill in blank scientific names based on Common.Name
-  # Change osteichthyes (technically includes all terapods) to actinopterygii (bony fishes)
-  # Simplify hybrid M. chrysops x M. saxatilis to its genus
-  # Change outdated names (P. vannamei and P hypophthalmus)
+  # Make adjustments to data:
   # Divide tuna FCR by 5
   LCA_data <- LCA_data %>%
-    mutate(clean_sci_name = case_when(Common.Name == "Freshwater prawn" ~ "Dendrobranchiata",
+    mutate(FCR = case_when(str_detect(Scientific.Name, "Thunnus") ~ FCR/5,
+                           TRUE ~ FCR)) 
+    
+  
+  # Create column clean_sci_name - use this as the "official" scientific name column
+  # When no valid sci name exists just use common name
+  # Simplify hybrid M. chrysops x M. saxatilis to its genus
+  # Change outdated names (P. vannamei and P hypophthalmus)
+  LCA_data <- LCA_data %>%
+    mutate(Scientific.Name = case_when(str_detect(Scientific.Name, "spp") ~ str_replace(Scientific.Name, pattern = " spp\\.| spp", replacement = ""),
+                                       TRUE ~ Scientific.Name)) %>%
+    mutate(clean_sci_name = case_when(Common.Name == "Freshwater prawn" ~ "Freshwater prawn",
                                       Common.Name == "Indo-Pacific swamp crab" ~ "Brachyura",
-                                      Common.Name == "Red crayfish" ~ "Astacidea", # crayfish are split into two superfamilies, so go to the next higher-classification, infraorder = Astacidea
+                                      Common.Name == "Red crayfish" ~ "Red crayfish", # crayfish are split into two superfamilies, so go to the next higher-classification, infraorder = Astacidea
+                                      Common.Name == "River eels nei" ~ "Freshwater eels",
                                       Common.Name == "Salmonids nei" ~ "Salmonidae",
                                       Common.Name == "Striped bass" ~ "Morone saxatilis",
                                       Common.Name == "Yellowtail_Seriola_Almaco jack" ~ "Seriola rivoliana",
                                       TRUE ~ Scientific.Name)) %>%
-    mutate(clean_sci_name = case_when(str_detect(Scientific.Name, "spp") ~ str_replace(Scientific.Name, pattern = " spp\\.| spp", replacement = ""),
-                                      Scientific.Name == "Morone chrysops x M. saxatilis" ~ "Morone",
-                                      Scientific.Name == "Labeo rohita and Catla Catla" ~ "Labeo rohita and Catla catla",
-                                      Scientific.Name == "Osteichthyes" ~ "Actinopterygii",
+    mutate(clean_sci_name = case_when(Scientific.Name == "Morone chrysops x M. saxatilis" ~ "Morone",
+                                      Scientific.Name == "Labeo rohita and Catla Catla" ~ "Mixed carps",
+                                      Scientific.Name == "Osteichthyes" ~ "Freshwater fishes",
                                       Scientific.Name == "Penaeus vannamei" ~ "Litopenaeus vannamei",
-                                      Scientific.Name == "Pangasius hypophthalmus" ~ "Pangasianodon hypophthalmus", 
-                                      TRUE ~ clean_sci_name)) %>%
-    mutate(FCR = case_when(str_detect(Scientific.Name, "Thunnus") ~ FCR/5,
-                           TRUE ~ FCR)) 
+                                      Scientific.Name == "Pangasius hypophthalmus" ~ "Pangasianodon hypophthalmus",
+                                      TRUE ~ clean_sci_name))
   
-  # sort(unique(LCA_data$clean_sci_name))
-  # [1] "Acipenseridae"               "Actinopterygii"              "Anguilla"                    "Anoplopoma fimbria"          "Astacidea"                   "Brachyura"                   "Chanos chanos"              
-  # [8] "Clarias batrachus"           "Clarias gariepinus"          "Cynoscion"                   "Cyprinus carpio"             "Dendrobranchiata"            "Dicentrarchus labrax"        "Epinephelus"                
-  # [15] "Gadus morhua"                "Lates calcarifer"            "Litopenaeus vannamei"        "Macrobrachium"               "Macrobrachium amazonicum"    "Macrobrachium rosenbergii"   "Morone"                     
-  # [22] "Mytilus edulis"              "Mytilus galloprovincialis"   "Oncorhynchus kisutch"        "Oncorhynchus mykiss"         "Oncorhynchus tshawytscha"    "Oreochromis niloticus"       "Pangasianodon hypophthalmus"
-  # [29] "Pangasius"                   "Penaeus"                     "Penaeus monodon"             "Rachycentron canadum"        "Salmo salar"                 "Salmonidae"                  "Salvelinus alpinus"         
-  # [36] "Sciaenops ocellatus"         "Scophthalmidae"              "Seriola rivoliana"           "Sparus aurata"               "Thunnus orientalis"          "Thunnus thynnus"   
-  
-  # Use Column clean_sci_name and common.name to create taxa groupings
-  # CREATE "unassigned" category for: things that are not species-level Acipenseridae, Actinopterygii, Brachyura, Cynoscion spp, "Penaeus" can be fresh or marine
-  # "Dicentrarchus labrax", "Lates calcarifer", "Morone" are migratory - i.e., including oceans, estuaries, and rivers - all categorized as other non-herbivore fin fish for now
-  # Chanos chanos - mostly algae (but also inverts) - categorized as herbivore fin fish for now
+  # Remove Sturgeons since these are farmed for caviar
+  # Remove eels
   LCA_data <- LCA_data %>%
-    mutate(taxa_group_name = case_when(#clean_sci_name %in% c("") ~ "algae", # none
-                                  # clean_sci_name %in% c("") ~ "gastropods", # none
-                                  clean_sci_name %in% c("Mytilus galloprovincialis", "Mytilus edulis") ~ "bivalves",
-                                  clean_sci_name %in% c("Chanos chanos") ~ "herbivore marine finfish",
-                                  clean_sci_name %in% c("Litopenaeus vannamei", "Penaeus monodon", "Penaeus") ~ "marine shrimp",
-                                  # clean_sci_name %in% c("") ~ "other marine crustacean",
-                                  Common.Name %in% c("Red crayfish", "Freshwater prawn", "Indo-Pacific swamp crab") ~ "freshwater crustacean",
-                                  clean_sci_name %in% c("Macrobrachium", "Macrobrachium amazonicum", "Macrobrachium rosenbergii") ~ "freshwater crustacean", # note: freshwater crustacean assigned by sciname and commonnames
-                                  clean_sci_name %in% c("Thunnus orientalis", "Thunnus thynnus") ~ "tuna",
-                                  clean_sci_name %in% c("Oncorhynchus kisutch", "Oncorhynchus tshawytscha", "Salmo salar", "Salmonidae", "Salvelinus alpinus") ~ "salmon/char",
-                                  clean_sci_name %in% c("Acipenseridae", "Anoplopoma fimbria", "Cynoscion", "Dicentrarchus labrax", "Epinephelus", "Gadus morhua", "Lates calcarifer", "Morone", "Morone saxatilis", "Rachycentron canadum", "Sciaenops ocellatus", "Scophthalmidae", "Seriola rivoliana", "Sparus aurata") ~ "other non-herbivore marine finfish",
-                                  clean_sci_name %in% c("Cyprinus carpio", "Labeo rohita and Catla catla") ~ "carp",
-                                  clean_sci_name %in% c("Oreochromis niloticus") ~ "tilapia",
-                                  clean_sci_name %in% c("Clarias batrachus", "Clarias gariepinus", "Pangasianodon hypophthalmus", "Pangasius") ~ "catfish",
-                                  clean_sci_name %in% c("Anguilla") ~ "eel",
-                                  clean_sci_name %in% c("Actinopterygii") ~ "other freshwater finfishes",
-                                  clean_sci_name %in% c("Oncorhynchus mykiss") ~ "trout",
-                                  # clean_sci_name %in% c("") ~ "amphibians and reptiles", # none
-                                  TRUE ~ "unassigned"
-                                  )) %>%
-    arrange(clean_sci_name) # LAST STEP arrange by sciname
+    filter(Scientific.Name != "Acipenseridae") %>%
+    filter(Scientific.Name != "Anguilla")
+  
+
+}
+
+#_____________________________________________________________________________________________________#
+# Rebuild FAO fish from zip file
+#_____________________________________________________________________________________________________#
+
+rebuild_fish <- function(path_to_zipfile) {
+  require(tools) # needed for file_path_sans_ext
+  require(dplyr)
+  require(purrr)
+  require(readxl) # part of tidyverse but still need to load readxl explicitly, because it is not a core tidyverse package
+  
+  # The following ensures unzipped folder is created in the same directory as the zip file (can be different from the working directory)
+  # set outdir
+  if (file.exists(basename(path_to_zipfile))) { # if file is in current directory and only file name was given
+    outdir <- getwd()
+  } else if (file.exists(path_to_zipfile)) { # if file path was given
+    outdir <- dirname(path_to_zipfile)
+  } else {
+    stop("Check path_to_zipfile")
+  }
+  
+  foldername <- file_path_sans_ext(basename(path_to_zipfile))
+  outfolder <- paste(outdir, foldername, sep = "/")
+  unzip(path_to_zipfile, exdir = outfolder) # Problem: if unable to unzip folder, still creates outfolder how to supress this?
+  # setwd(outfolder)
+  # list files
+  fish_files <- list.files(outfolder)
+  
+  # read .xlsx file (explains data structure of time series)
+  # IMPORTANT: column ORDER (ABCDEF) in DS file should match columns ABCDEF in time series for looping to work below
+  # each row gives info for how this time series column should be merged with a code list (CL) file
+  ds_file <- fish_files[grep("DSD", fish_files)]
+  path_to_ds <- paste(outfolder, ds_file, sep = "/")
+  
+  # skip removes title row
+  ds <- read_excel(path_to_ds, skip=1)
+  
+  # manually correct ds file's codelist ID column:
+  ds <- ds %>%
+    mutate(Codelist_Code_id = case_when(
+      Concept_id == "SOURCE" ~ "IDENTIFIER",
+      Concept_id == "SYMBOL" ~ "SYMBOL",
+      Concept_id != "SYMBOL|SOURCE" ~ Codelist_Code_id
+    ))
+  
+  # Multiple CL files have the following column names in common: "Identifier" and "Code"
+  # Which means after merge, below, you get "Identifier.x" and "Identifier.y", etc.
+  # To disambiguate, Append Codelist with Concept_id
+  code_ids_to_change<-ds$Codelist_Code_id[grep("IDENTIFIER|CODE", ds$Codelist_Code_id)]
+  concept_ids_to_append<-ds$Concept_id[grep("IDENTIFIER|CODE", ds$Codelist_Code_id)]
+  new_code_ids <- paste(concept_ids_to_append, code_ids_to_change, sep = "_")
+  ds$Codelist_Code_id[grep("IDENTIFIER|CODE", ds$Codelist_Code_id)]<-new_code_ids
+  
+  # remove non CSVs (do this to ignore "CL_History.txt" file)
+  fish_files <- fish_files[grep(".csv", fish_files)]
+  
+  # read in time series.csv
+  time_files <- fish_files[grep("TS", fish_files)]
+  path_to_ts <- paste(outfolder, time_files, sep = "/")
+  time_series <- read.csv(path_to_ts)
+  names(time_series) <- tolower(names(time_series))
+  time_series_join <- time_series
+  
+  for (i in 1:nrow(ds)) {
+    # TRUE/FALSE: is there a filename listed in Codelist_id?
+    if (!is.na(ds$Codelist_id[i])) {
+      # Use ds file to generate path_to_cl individually
+      code_file_i <- paste(ds$Codelist_id[i], ".csv", sep = "")
+      path_to_cl <- paste(outfolder, code_file_i, sep = "/")
+      cl_i <- read.csv(path_to_cl, check.names = FALSE) # check.names = FALSE to prevent R from adding "X" in front of column "3Alpha_Code" - creates problems because this is the matching column for merging with time series
+      
+      # Many CL files have "Name" as a column, also Name_En, Name_Fr, Name_Es, etc
+      # Also, "Identifier", "Major Group", and "Code" are common across some CL files
+      # To disambiguate, append "Concept_ID" from DS file to all columns in CL that contain these terms
+      concept_names <- paste(ds$Concept_id[i], names(cl_i)[grep("Name|Major_Group|Identifier|Code", names(cl_i))], sep = "_")
+      names(cl_i)[grep("Name|Major_Group|Identifier|Code", names(cl_i))] <- concept_names
+      
+      
+      names(cl_i) <- tolower(names(cl_i)) # convert all cl headers to lowercase
+      merge_col <- tolower(ds$Codelist_Code_id[i]) # do the same to DS file's code ID so it matches with cl
+      
+      
+      # If factor...
+      #if (is.factor(cl_i[[merge_col]])) {
+      # ...Test if factor levels need to be merged?
+      #if (!nlevels(cl_i[[merge_col]]) == nlevels(time_series_join[[names(time_series_join)[i]]])) {
+      # combined <- sort(union(time_series_join[[names(time_series_join)[i]]], levels(cl_i[[merge_col]])))
+      #    levels(time_series_join[[names(time_series_join)[i]]]) <- levels(cl_i[[merge_col]])
+      #  }
+      #}
+      # This avoids warnings about unequal factor levels below
+      
+      # Try converting to character first instead
+      if (is.factor(cl_i[[merge_col]])){
+        cl_i[[merge_col]]<-as.character(cl_i[[merge_col]])
+        time_series_join[[names(time_series_join)[i]]]<-as.character(time_series_join[[names(time_series_join)[i]]])
+      }
+      
+      
+      # Can't just merge by column number:
+      # In Time Series, column COUNTRY, AREA, SOURCE, SPECIES, and UNIT correspond to column 1 in their respective CL files
+      # but in Time Series, column SYMBOL corresponds to column 2
+      
+      # Note: the following code does not work: #time_series_join<-left_join(time_series, cl_i, by = c(names(time_series)[i] = merge_col))
+      # the argument "by" needs to take on the form of join_cols as shown below
+      firstname <- names(time_series_join)[i]
+      join_cols <- merge_col
+      names(join_cols) <- firstname
+      
+      
+      time_series_join <- left_join(time_series_join, cl_i, by = join_cols)
+      
+      # Convert back to factor
+      if (is.character(time_series_join[[names(time_series_join)[i]]])){
+        time_series_join[[names(time_series_join)[i]]]<-as.factor(time_series_join[[names(time_series_join)[i]]])
+      }
+    }
+    # Expected warning: Coerces from factor to character because time_series$SPECIES (nlevels=2341) and CL_FI_SPECIES_GROUPS.csv column "3alpha_code" (nlevels = 12751) have different number of factor levels
+    # Expected warning: Coerces from factor to chracter because time_series$UNIT and CL_FILE_UNIT.csv column "code" have different number of factor levels
+    # Expected warning: Coerces from factor to character because time_series$SYMBOL and CL_FI_SYMBOL.csv column "symbol" have diff number of factors
+  }
+  
+  return(time_series_join)
+}
+
+#_____________________________________________________________________________________________________#
+# Add taxa grouping
+#_____________________________________________________________________________________________________#
+
+add_taxa_group <- function(lca_dat_clean, fishstat_dat){
+  isscaap_lookup <- fishstat_dat %>%
+    select(species_scientific_name, isscaap_group) %>%
+    unique()
+  
+  lca_dat_out <- lca_dat_clean %>%
+    left_join(isscaap_lookup, by = c("clean_sci_name" = "species_scientific_name")) 
+  
+  #setdiff(lca_dat_clean$clean_sci_name, unique(fishstat_dat$species_scientific_name))
+  #sort(unique(fishstat_dat$isscaap_group))
+  #sort(unique(lca_dat_out$isscaap_group))
+
+  lca_dat_out <- lca_dat_out %>% 
+    # First pass is to deal with NAs in ISSCAAP group
+    mutate(isscaap_group = case_when(clean_sci_name %in% c("Cynoscion", "Epinephelus") ~ "Miscellaneous marine fishes",
+                                     clean_sci_name %in% c("Freshwater fishes", "Pangasius") ~ "Miscellaneous freshwater fishes",
+                                     clean_sci_name %in% c("Red crayfish") ~ "Freshwater crustaceans",
+                                     clean_sci_name %in% c("Freshwater prawn") ~ "Shrimps, prawns",
+                                     clean_sci_name %in% c("Litopenaeus vannamei", "Macrobrachium", "Macrobrachium amazonicum", "Macrobrachium rosenbergii", "Penaeus") ~ "Shrimps, prawns",
+                                     clean_sci_name %in% c("Mixed carps") ~ "Carps, barbels and other cyprinids",
+                                     TRUE ~ isscaap_group)) 
+  
+  # Create taxa groups
+  lca_dat_out <- lca_dat_out %>%
+    # Split up carps
+    mutate(taxa_group_name = case_when(clean_sci_name == "Cyprinus carpio" ~ "Common carp",
+                                       clean_sci_name == "Mixed carps" ~ "Other Carps, barbels and cyprinids",
+                                       # Split salmons and trouts
+                                       str_detect(Common.Name, "salmon|Salmonids") ~ "Salmon",
+                                       str_detect(Common.Name, "trout") ~ "Trout",
+                                       str_detect(Common.Name, "char") ~ "Miscellaneous diadromous fishes",
+                                       # Remove milkfish from misc diadromous fishes
+                                       clean_sci_name == "Chanos chanos" ~ "Miscellaneous diadromous fishes",
+                                       # Combine groups into misc marine fishes
+                                       isscaap_group %in% c("Miscellaneous coastal fishes", "Miscellaneous demersal fishes", "Miscellaneous pelagic fishes", "Flounders, halibuts, soles") ~ "Miscellaneous marine fishes",
+                                       TRUE ~ isscaap_group))
+                                                                          
+  # TEST:
+  # lca_dat_out%>%
+  #   #filter(isscaap_group == "Salmons, trouts, smelts") %>%
+  #   #filter(str_detect(Common.Name, "char")) %>%
+  #   #filter(isscaap_group == "Miscellaneous diadromous fishes") %>%
+  #   select(clean_sci_name, isscaap_group, taxa_group_name) %>%
+  #   unique() %>%
+  #   arrange(taxa_group_name)
   
 }
+
 
 #_____________________________________________________________________________________________________#
 # Replicate data based on Sample_size column
