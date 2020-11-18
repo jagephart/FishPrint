@@ -251,40 +251,115 @@ prior_summary(rstanarm_gaus)
 ######################################################################################################
 # Model 2: Model FCR, including NAs in the predictors, and predict missing FCR values
 
-# LEFT OFF HERE: Keep NA's in FCR (filtering out non-zeroes also removes NAs)
-# Keep NA's in FCR (response variable), but remove FCR == 0 (species that aren't fed)
-lca_dat_with_na <- lca_dat_clean %>%
+# clean up taxa_group_name
+lca_categories <- lca_dat_clean %>%
   select(clean_sci_name, FCR, taxa_group_name, intensity = Intensity, system = Production_system_group) %>%
-  filter(FCR != 0)  %>%
-  arrange(clean_sci_name, intensity, system)
-
-# Clean up taxa_group_names
-lca_dat_with_na <- lca_dat_with_na %>%
-  mutate(taxa = case_when(taxa_group_name == "Miscellaneous marine fishes" ~ "misc_marine",
-                          taxa_group_name == "Shrimps, prawns" ~ "shrimp",
-                          taxa_group_name == "Miscellaneous diadromous fishes" ~ "misc_diad",
-                          taxa_group_name == "Trout" ~ "trout",
-                          taxa_group_name == "Tilapias and other cichlids" ~ "tilapia",
-                          taxa_group_name == "Miscellaneous freshwater fishes" ~ "misc_fresh",
+  mutate(taxa = case_when(taxa_group_name == "Cods, hakes, haddocks" ~ "cod",
+                          taxa_group_name == "Common carp" ~ "com_carp",
+                          taxa_group_name == "Crabs, sea-spiders" ~ "crab",
                           taxa_group_name == "Freshwater crustaceans" ~ "fresh_crust",
+                          taxa_group_name == "Milkfish" ~ "milkfish",
+                          taxa_group_name == "Miscellaneous diadromous fishes" ~ "misc_diad",
+                          taxa_group_name == "Miscellaneous freshwater fishes" ~ "misc_fresh",
+                          taxa_group_name == "Miscellaneous marine fishes" ~ "misc_marine",
+                          taxa_group_name == "Mussels" ~ "mussel",
+                          taxa_group_name == "Other carps, barbels and cyprinids" ~ "oth_carp",
+                          taxa_group_name == "Salmon" ~ "salmon",
+                          taxa_group_name == "Shrimps, prawns" ~ "shrimp",
+                          taxa_group_name == "Tilapias and other cichlids" ~ "tilapia",
+                          taxa_group_name == "Trout" ~ "trout",
                           taxa_group_name == "Tunas, bonitos, billfishes" ~ "tuna",
                           TRUE ~ "unassigned")) %>%
-  mutate(taxa = as.factor(taxa),
-         tx = as.numeric(taxa),
-         intensity = as.factor(intensity),
-         its = as.numeric(intensity),
-         system = as.factor(system),
-         ps = as.numeric(system)) %>%
-  select(clean_sci_name, FCR, taxa, tx, intensity, its, system, ps)
+  select(FCR, clean_sci_name, taxa, intensity, system) %>%
+  arrange(clean_sci_name, taxa, intensity, system)
+
+
+######################################################################################################
+  
+# Model 2.1
+# Keep NA's in FCR (response variable), but ONLY if they have a complete set of predictors (no NAs)
+# remove FCR == 0 (species that aren't fed)
+lca_complete_predictors <- lca_categories %>%
+  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>%
+  arrange(clean_sci_name, intensity, system)
 
 # Set data:
-y = lca_dat_with_na$FCR
+y = lca_complete_predictors$FCR
 
 # Create model matrix, but keep the NA's
 # First change default options for handling missing data
 options(na.action='na.pass')
 X <- model.matrix(object = ~taxa + intensity + system, 
-                  data = lca_dat_with_na %>% select(taxa, intensity, system)) 
+                  data = lca_complete_predictors %>% select(taxa, intensity, system)) 
+# Return option back to the default
+options(na.action='na.omit')
+
+# Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+covars.sd<-apply(X[,-1], MARGIN=2, FUN=sd, na.rm=TRUE)
+# First change default options for handling missing data
+options(na.action='na.pass')
+X_scaled <- scale(X[,-1], center=TRUE, scale=2*covars.sd) 
+# Return option back to the default
+options(na.action='na.omit')
+
+# Note: don't need to create an intercept column for brms
+brms_data <- data.frame(cbind(y, X_scaled))
+
+
+# Use mi() to explicitly include NAs among the predictors
+# Which predictors have missing data:
+# X_where_na <- apply(brms_data, MARGIN = 2, is.na)
+# colSums(X_where_na)
+# including mi() on the right hand side of the formula means you want to model NA's in the predictors, i.e., not drop them which means you have to specify how they should be modeled to (next section)
+# y_brms <- brmsformula(y | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh + taxamisc_marine + 
+#                         taxamussel + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna + 
+#                         mi(intensityintensive) + mi(intensitysemi) + mi(systemopen) + mi(systemsemi), family = Gamma("log"))
+
+y_brms <- brmsformula(y | mi() ~ ., family = Gamma("log"))
+
+all_priors <- c(set_prior("normal(0,5)", class = "b"), 
+                set_prior("normal(0,2.5)", class = "Intercept"), 
+                set_prior("exponential(1)", class = "shape"))
+
+# Get model to converge by increasing the adapt_delta and iterations from default values
+fit_complete_predictors <- brm(y_brms, data = brms_data,
+                   prior = all_priors, cores = 4, seed = "11729", control = list(adapt_delta = 0.99), iter = 10000)
+
+summary(fit_complete_predictors) # Number of observations = 103 - i.e., default is to drop NA's
+prior_summary(fit_complete_predictors)
+
+plot(conditional_effects(fit_complete_predictors), ask = FALSE)
+
+# Posterior predictive checks
+pp_check(fit_complete_predictors, nsamples = 50) # density plots
+pp_check(fit_complete_predictors, type = "error_hist", nsamples = 5)
+pp_check(fit_complete_predictors, type = "scatter_avg", nsamples = 100)
+pp_check(fit_complete_predictors, type = "stat_2d")
+pp_check(fit_complete_predictors, type = "rootogram") 
+# error message is fixed in the development version of brms: https://discourse.mc-stan.org/t/error-using-pp-check-using-truncated-response-variable-in-brms/7555
+pp_check(fit_complete_predictors, type = "loo_pit")
+pp_check(fit_complete_predictors, type = "xyz") # Gives an overview of all valid
+
+# Get the predicted responses:
+predict(fit_complete_predictors)
+
+######################################################################################################
+# Model 2.2: Model FCR's with NA while imputing NA's in the predictors
+
+# LEFT OFF HERE: won't converge
+lca_with_na <- lca_categories %>%
+  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+  arrange(clean_sci_name, intensity, system)
+
+# Set data:
+y = lca_with_na$FCR
+
+# Create model matrix, but keep the NA's
+# First change default options for handling missing data
+options(na.action='na.pass')
+X <- model.matrix(object = ~taxa + intensity + system, 
+                  data = lca_with_na %>% select(taxa, intensity, system)) 
 # Return option back to the default
 options(na.action='na.omit')
 
@@ -300,92 +375,78 @@ options(na.action='na.omit')
 brms_data <- data.frame(cbind(y, X_scaled))
 
 ######################################################################################################
-# Model 3: Try imputing NAs in the predictors
+# Model 2.2a: model the missing predictors with just an intercept (give it the mean value across all values): https://cran.r-project.org/web/packages/brms/vignettes/brms_missings.html
 
-# TABLE THIS SECTION:
-# But still remove NA's in FCR (response variable)
-lca_dat_with_na <- lca_dat_clean %>%
-  select(clean_sci_name, FCR, taxa = taxa_group_name, intensity = Intensity, system = Production_system_group) %>%
-  filter(is.na(FCR) == FALSE) %>% 
-  filter(FCR != 0) %>%
-  # drop_na() %>%
-  arrange(clean_sci_name, intensity, system) %>%
-  mutate(taxa = as.factor(taxa),
-         tx = as.numeric(taxa),
-         intensity = as.factor(intensity),
-         its = as.numeric(intensity),
-         system = as.factor(system),
-         ps = as.numeric(system)) %>%
-  select(clean_sci_name, FCR, taxa, tx, intensity, its, system, ps)
-
-# Set data:
-y = lca_dat_with_na$FCR
-
-# Create model matrix, but keep the NA's
-# First change default options for handling missing data
-options(na.action='na.pass')
-X <- model.matrix(object = ~taxa + intensity + system, 
-                  data = lca_dat_with_na %>% select(taxa, intensity, system)) 
-# Return option back to the default
-options(na.action='na.omit')
-
-# Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
-covars.sd<-apply(X[,-1], MARGIN=2, FUN=sd, na.rm=TRUE)
-# First change default options for handling missing data
-options(na.action='na.pass')
-X_scaled <- scale(X[,-1], center=TRUE, scale=2*covars.sd) 
-# Return option back to the default
-options(na.action='na.omit')
-
-# Note: don't need to create an intercept column for brms
-brms_data <- data.frame(cbind(y, X_scaled))
-
-# Two approaches to Missing data imputation with brms: https://cran.r-project.org/web/packages/brms/vignettes/brms_missings.html
-
-# Option 1: Imputation before model fitting (more computationally intensive, but might be OK for a simple model)
-# FIX IT - try option 1
-# Option 2: Imputation while model fitting:
-
+# LEFT OFF HERE: won't converge
 # Which predictors have missing data:
 X_where_na <- apply(brms_data, MARGIN = 2, is.na)
 colSums(X_where_na)
 
-# First, try a simple model, remove all columns with missing data from the analysis except systemsemi.open and use Gaussian MV model
-# Model y as Gamma and missing data as normal (since these are scaled to -1 to +1)
-y_brms <- brmsformula(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + mi(systemsemi.open), family = Gamma("log"))
-semi_open_brms  <- brmsformula(systemsemi.open | mi() ~ 1 + taxasalmon.char + taxatilapia + taxatrout, family = gaussian())
+y_brms <- brmsformula(y | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh + 
+                        taxamisc_marine + taxamussel + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna + 
+                        mi(intensityintensive) + mi(intensitysemi) + mi(systemopen) + mi(systemsemi), family = Gamma("log"))
 
-# Use "resp = <response_variable>" to specify different priors for different response variables
-all_priors <- c(set_prior("normal(0,5)", class = "b", resp = "y"), 
-                set_prior("normal(0,2.5)", class = "Intercept", resp = "y"), 
-                set_prior("exponential(1)", class = "shape", resp = "y")) # only y variable has shape param
-fit_with_missing <- brm(y_brms + semi_open_brms + set_rescor(FALSE), data = brms_data,
-                          prior = all_priors)
-prior_summary(fit_with_missing)
+intensity_intensive_mi <- brmsformula(intensityintensive | mi() ~ 1,
+                                      family = gaussian())
 
-# The following doesn't converge
-# done: doesn't make sense to model missing predictors using predictors from the same category - e.g., don't model systemopen with systemsemi.open
-# done: don't model missing data with other missing data
-# Now model all missing data as a function of all the other predictors
-y_brms <- brmsformula(y ~ 1 + taxafreshwater.crustacean + taxamarine.shrimp + taxaother.non.herbivore.marine.finfish + taxasalmon.char + taxatilapia + taxatrout + taxatuna +
-                        mi(intensitySemi.intensive) + mi(systemopen) + mi(systemsemi.open), family = Gamma("log"))
-intensity_semi_mi <- brmsformula(intensitySemi.intensive | mi() ~ 1 + taxafreshwater.crustacean + taxamarine.shrimp + taxaother.non.herbivore.marine.finfish + taxasalmon.char + taxatilapia + taxatrout + taxatuna,
+intensity_semi_mi <- brmsformula(intensitysemi | mi() ~ 1,
                                  family = gaussian())
-system_open_mi  <- brmsformula(systemopen | mi() ~ 1 + taxafreshwater.crustacean + taxamarine.shrimp + taxaother.non.herbivore.marine.finfish + taxasalmon.char + taxatilapia + taxatrout + taxatuna,
-                               family = gaussian())
-system_semi_mi <- brmsformula(systemsemi.open | mi() ~  1 + taxafreshwater.crustacean + taxamarine.shrimp + taxaother.non.herbivore.marine.finfish + taxasalmon.char + taxatilapia + taxatrout + taxatuna,
-                              family = gaussian())
 
-# Instead of modeling the missing data, just predict the missing response values
-y_brms <- brmsformula(y ~ 1 + taxafreshwater.crustacean + taxamarine.shrimp + taxaother.non.herbivore.marine.finfish + taxasalmon.char + taxatilapia + taxatrout + taxatuna +
-                        mi(intensitySemi.intensive) + mi(systemopen) + mi(systemsemi.open), family = Gamma("log"))
+system_open_mi  <- brmsformula(systemopen | mi() ~ 1,
+                               family = gaussian())
+
+system_semi_mi <- brmsformula(systemsemi | mi() ~ 1,
+                              family = gaussian())
 
 # Use "resp = <response_variable>" to specify different priors for different response variables
 all_priors <- c(set_prior("normal(0,5)", class = "b", resp = "y"), # priors for y response variables
                 set_prior("normal(0,2.5)", class = "Intercept", resp = "y"), 
                 set_prior("exponential(1)", class = "shape", resp = "y"),
-                set_prior("normal(0,2.5)", class = "Intercept", resp = c("intensitySemi.intensive", "systemopen", "systemsemi.open")),
-                set_prior("normal(0,2.5)", class = "b", resp = c("intensitySemi.intensive", "systemopen", "systemsemi.open")),
-                set_prior("exponential(2)", class = "sigma", resp = c("intensitySemi.intensive", "systemopen", "systemsemi.open")))
-fit_with_missing <- brm(y_brms + intensity_semi_mi + system_open_mi + system_semi_mi + set_rescor(FALSE), data = brms_data,
-                        prior = all_priors, cores = 4, seed = "11729")
+                set_prior("normal(0,2.5)", class = "Intercept", resp = c("intensityintensive", "intensitysemi", "systemopen", "systemsemi")),
+                set_prior("exponential(2)", class = "sigma", resp = c("intensityintensive", "intensitysemi", "systemopen", "systemsemi")))
+fit_with_na <- brm(y_brms + intensity_intensive_mi + intensity_semi_mi + system_open_mi + system_semi_mi + set_rescor(FALSE), data = brms_data,
+                   prior = all_priors, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
+
+######################################################################################################
+# Model 2.2b: The following doesn't converge
+
+# Which predictors have missing data:
+X_where_na <- apply(brms_data, MARGIN = 2, is.na)
+colSums(X_where_na)
+
+# done: doesn't make sense to model missing predictors using predictors from the same category - e.g., don't model systemopen with systemsemi.open
+# done: don't model missing data with other missing data
+# Now model all missing data as a function of all the other predictors
+y_brms <- brmsformula(y | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh + 
+                        taxamisc_marine + taxamussel + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna + 
+                        mi(intensityintensive) + mi(intensitysemi) + mi(systemopen) + mi(systemsemi), family = Gamma("log"))
+
+intensity_intensive_mi <- brmsformula(intensityintensive | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh + 
+                                        taxamisc_marine + taxamussel + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna + 
+                                        mi(systemopen) + mi(systemsemi),
+                                      family = gaussian())
+
+intensity_semi_mi <- brmsformula(intensitysemi | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh + 
+                                   taxamisc_marine + taxamussel + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna + 
+                                   mi(systemopen) + mi(systemsemi),
+                                 family = gaussian())
+
+system_open_mi  <- brmsformula(systemopen | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh + 
+                                 taxamisc_marine + taxamussel + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna + 
+                                 mi(intensityintensive) + mi(intensitysemi),
+                               family = gaussian())
+
+system_semi_mi <- brmsformula(systemsemi | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh + 
+                                taxamisc_marine + taxamussel + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna + 
+                                mi(intensityintensive) + mi(intensitysemi),
+                              family = gaussian())
+
+# Use "resp = <response_variable>" to specify different priors for different response variables
+all_priors <- c(set_prior("normal(0,5)", class = "b", resp = "y"), # priors for y response variables
+                set_prior("normal(0,2.5)", class = "Intercept", resp = "y"), 
+                set_prior("exponential(1)", class = "shape", resp = "y"),
+                set_prior("normal(0,2.5)", class = "Intercept", resp = c("intensityintensive", "intensitysemi", "systemopen", "systemsemi")),
+                set_prior("normal(0,2.5)", class = "b", resp = c("intensityintensive", "intensitysemi", "systemopen", "systemsemi")),
+                set_prior("exponential(2)", class = "sigma", resp = c("intensityintensive", "intensitysemi", "systemopen", "systemsemi")))
+fit_with_na <- brm(y_brms + intensity_intensive_mi + intensity_semi_mi + system_open_mi + system_semi_mi + set_rescor(FALSE), data = brms_data,
+                   prior = all_priors, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
