@@ -252,13 +252,13 @@ add_taxa_group <- function(lca_dat_clean, fishstat_dat){
   lca_dat_out <- lca_dat_out %>%
     # Split up carps
     mutate(taxa_group_name = case_when(clean_sci_name == "Cyprinus carpio" ~ "Common carp",
-                                       clean_sci_name == "Mixed carps" ~ "Other Carps, barbels and cyprinids",
+                                       clean_sci_name == "Mixed carps" ~ "Other carps, barbels and cyprinids",
                                        # Split salmons and trouts
                                        str_detect(Common.Name, "salmon|Salmonids") ~ "Salmon",
                                        str_detect(Common.Name, "trout") ~ "Trout",
                                        str_detect(Common.Name, "char") ~ "Miscellaneous diadromous fishes",
                                        # Remove milkfish from misc diadromous fishes
-                                       clean_sci_name == "Chanos chanos" ~ "Miscellaneous diadromous fishes",
+                                       clean_sci_name == "Chanos chanos" ~ "Milkfish",
                                        # Combine groups into misc marine fishes
                                        isscaap_group %in% c("Miscellaneous coastal fishes", "Miscellaneous demersal fishes", "Miscellaneous pelagic fishes", "Flounders, halibuts, soles") ~ "Miscellaneous marine fishes",
                                        TRUE ~ isscaap_group))
