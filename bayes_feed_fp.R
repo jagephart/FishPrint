@@ -1,6 +1,6 @@
 # Combine bayes_prop_feed and bayes_fcr to calculate footprint
 
-rm(list=ls())
+#rm(list=ls())
 library(tidyverse)
 library(rstan)
 library(taxize)
