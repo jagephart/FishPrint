@@ -343,7 +343,6 @@ pp_check(fit_complete_predictors, type = "xyz") # Gives an overview of all valid
 predict(fit_complete_predictors)
 
 # Use the fit_complete_predictors model to predict FCRs with incomplete predictors (setting NA to 0)
-
 lca_incomplete_predictors <- lca_categories %>%
   filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
   filter(is.na(intensity)==TRUE | is.na(system)==TRUE) %>% # incomplete predictors - i.e., either intensity OR system are NA
@@ -353,53 +352,33 @@ lca_incomplete_predictors <- lca_categories %>%
 ######################################################################################################
 # Model 2.2: Model FCR's with NA while imputing NA's in the predictors
 
+######################################################################################################
+# Model 2.2a: model the missing predictors with just an intercept (give it the mean value across all values): https://cran.r-project.org/web/packages/brms/vignettes/brms_missings.html
+
 lca_with_na <- lca_categories %>%
   filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
   arrange(clean_sci_name, taxa, intensity, system)
 
-# Set data:
+# Model matrix version 1: intensity and system are categorical 
+options(na.action='na.pass') # First change default options for handling missing data
+X <- model.matrix(object = ~taxa + intensity + system,
+                  data = lca_with_na %>% select(taxa, intensity, system))
+options(na.action='na.omit') # Return option back to the default
+covars.sd<-apply(X[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+options(na.action='na.pass') # First change default options for handling missing data
+X_scaled <- scale(X[,-1], center=TRUE, scale=2*covars.sd)
+options(na.action='na.omit') # Return option back to the default
 y = lca_with_na$FCR
-
-# Create model matrix, but keep the NA's
-# First change default options for handling missing data
-options(na.action='na.pass')
-X <- model.matrix(object = ~taxa + intensity + system, 
-                  data = lca_with_na %>% select(taxa, intensity, system)) 
-# Return option back to the default
-options(na.action='na.omit')
-
-# Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
-covars.sd<-apply(X[,-1], MARGIN=2, FUN=sd, na.rm=TRUE)
-# First change default options for handling missing data
-options(na.action='na.pass')
-X_scaled <- scale(X[,-1], center=TRUE, scale=2*covars.sd) 
-# Return option back to the default
-options(na.action='na.omit')
-
-# Note: don't need to create an intercept column for brms
-brms_data <- data.frame(cbind(y, X_scaled))
-
-######################################################################################################
-# Model 2.2a: model the missing predictors with just an intercept (give it the mean value across all values): https://cran.r-project.org/web/packages/brms/vignettes/brms_missings.html
+brms_data <- data.frame(cbind(y, X_scaled)) # Note: don't need to create an intercept column for brms
 
 # Which predictors have missing data:
 X_where_na <- apply(brms_data, MARGIN = 2, is.na)
 colSums(X_where_na)
 
-y_brms <- brmsformula(y | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh + 
-                        taxamisc_marine + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna + 
+# Set model formulas:
+y_brms <- brmsformula(y | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh +
+                        taxamisc_marine + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna +
                         mi(intensityintensive) + mi(intensitysemi) + mi(systemopen) + mi(systemsemi), family = Gamma("log"))
-
-# Check the priors used by rstanarm for the gaussian portion of the model
-# Note: this automatically drops missing data
-# library(rstanarm)
-# rstanarm_gaus <- stan_glm(systemsemi ~ 1, data = brms_data, family = gaussian(), seed = "11729", cores = 4)
-# summary(rstanarm_gaus)
-# prior_summary(rstanarm_gaus)
-
-# Notes: Same rstanarm priors for all variables: intensityintensive, intensitysemi, systemopen, systemsemi:
-# intercept ~ normal(0, 1.2)
-# sigma ~ exponential(2)
 
 intensity_intensive_mi <- brmsformula(intensityintensive | mi() ~ 1,
                                       family = gaussian())
@@ -412,6 +391,17 @@ system_open_mi  <- brmsformula(systemopen | mi() ~ 1,
 
 system_semi_mi <- brmsformula(systemsemi | mi() ~ 1,
                               family = gaussian())
+
+# Check the priors used by rstanarm for the gaussian portion of the model
+# Note: this automatically drops missing data
+# library(rstanarm)
+# rstanarm_gaus <- stan_glm(systemsemi ~ 1, data = brms_data, family = gaussian(), seed = "11729", cores = 4)
+# summary(rstanarm_gaus)
+# prior_summary(rstanarm_gaus)
+
+# Notes: Same rstanarm priors for all variables: intensityintensive, intensitysemi, systemopen, systemsemi:
+# intercept ~ normal(0, 1.2)
+# sigma ~ exponential(2)
 
 # Use "resp = <response_variable>" to specify different priors for different response variables
 all_priors <- c(set_prior("normal(0,5)", class = "b", resp = "y"), # priors for y response variables
@@ -429,11 +419,152 @@ fit_with_na <- brm(y_brms + intensity_intensive_mi + intensity_semi_mi + system_
 # Bulk ESS for y_intensityintensive still < 400; try increasing iterto 50000?
 stancode(fit_with_na)
 
-# Get posterior predictions of responses and missing data
-pp_with_na <- predict(fit_with_na)
 
 ######################################################################################################
-# Model 2.2b: Model the missing predictors with just an intercept (same as 2.2a) but first combine rare taxa into an "other taxa" category
+# Model 2.2a: model the missing predictors with just an intercept (give it the mean value across all values): https://cran.r-project.org/web/packages/brms/vignettes/brms_missings.html
+# Model matrix version 2: intensity and system are ordinal
+
+lca_with_na <- lca_categories %>%
+  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+  arrange(clean_sci_name, taxa, intensity, system)
+
+# Model matrix version 2: intensity and system are ordinal
+lca_with_na <- lca_with_na %>%
+  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = as.numeric(intensity)) %>%
+  mutate(system = as.numeric(system))
+
+options(na.action='na.pass') # First change default options for handling missing data
+X <- model.matrix(object = ~taxa, 
+                  data = lca_with_na %>% select(taxa)) 
+options(na.action='na.omit') # Return option back to the default
+X_ordinal <- cbind(X, intensity = lca_with_na$intensity, system = lca_with_na$system)
+covars.sd<-apply(X_ordinal[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+options(na.action='na.pass') # First change default options for handling missing data
+X_scaled <- scale(X_ordinal[,-1], center=TRUE, scale=2*covars.sd)
+options(na.action='na.omit') # Return option back to the default
+y = lca_with_na$FCR
+brms_data <- data.frame(cbind(y, X_scaled))
+
+# Which predictors have missing data:
+X_where_na <- apply(brms_data, MARGIN = 2, is.na)
+colSums(X_where_na)
+
+# Set model formulas
+y_brms <- brmsformula(y | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh +
+                        taxamisc_marine + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna +
+                        mi(intensity) + mi(system), family = Gamma("log"))
+
+intensity_mi <- brmsformula(intensity | mi() ~ 1,
+                            family = gaussian())
+
+system_mi  <- brmsformula(system | mi() ~ 1,
+                          family = gaussian())
+
+# Use "resp = <response_variable>" to specify different priors for different response variables
+all_priors <- c(set_prior("normal(0,5)", class = "b", resp = "y"), # priors for y response variables
+                set_prior("normal(0,2.5)", class = "Intercept", resp = "y"), 
+                set_prior("exponential(1)", class = "shape", resp = "y"),
+                set_prior("normal(0,1.2)", class = "Intercept", resp = c("intensity", "system")),
+                set_prior("exponential(2)", class = "sigma", resp = c("intensity", "system")))
+
+# Model converges after increasing the adapt_delta and iterations from default values
+# Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
+# increasing max_treedepth is more about efficiency (instead of validity)
+# See: https://mc-stan.org/misc/warnings.html
+fit_with_na <- brm(y_brms + intensity_mi + system_mi + set_rescor(FALSE), data = brms_data,
+                   prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+
+# Bulk ESS for y_intensityintensive still < 400; try increasing iterto 50000?
+
+# Get stan code
+stancode(fit_with_na)
+
+######################################################################################################
+# Model 3: model the missing predictors with just the taxa predictors: https://cran.r-project.org/web/packages/brms/vignettes/brms_missings.html
+# Note when modeling the missing predictors with other missing predictors, model doesn't not converge
+# Stick with model matrix version 2
+
+lca_with_na <- lca_categories %>%
+  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+  arrange(clean_sci_name, taxa, intensity, system)
+
+# Model matrix version 2: intensity and system are ordinal
+lca_with_na <- lca_with_na %>%
+  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = as.numeric(intensity)) %>%
+  mutate(system = as.numeric(system))
+
+options(na.action='na.pass') # First change default options for handling missing data
+X <- model.matrix(object = ~taxa, 
+                  data = lca_with_na %>% select(taxa))
+options(na.action='na.omit') # Return option back to the default
+X_ordinal <- cbind(X, intensity = lca_with_na$intensity, system = lca_with_na$system)
+covars.sd<-apply(X_ordinal[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+options(na.action='na.pass') # First change default options for handling missing data
+X_scaled <- scale(X_ordinal[,-1], center=TRUE, scale=2*covars.sd)
+options(na.action='na.omit') # Return option back to the default
+y = lca_with_na$FCR
+brms_data <- data.frame(cbind(y, X_scaled))
+
+# Which predictors have missing data:
+X_where_na <- apply(brms_data, MARGIN = 2, is.na)
+colSums(X_where_na)
+
+# Set model formulas
+y_brms <- brmsformula(y | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh +
+                        taxamisc_marine + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna +
+                        mi(intensity) + mi(system), family = Gamma("log"))
+
+intensity_mi <- brmsformula(intensity | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh +
+                              taxamisc_marine + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna,
+                            family = gaussian())
+
+system_mi  <- brmsformula(system | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh +
+                            taxamisc_marine + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna,
+                          family = gaussian())
+
+# Check the priors used by rstanarm for the gaussian portion of the model
+# Note: this automatically drops missing data
+# library(rstanarm)
+# rstanarm_gaus <- stan_glm(intensity ~ 1, data = brms_data, family = gaussian(), seed = "11729", cores = 4)
+# summary(rstanarm_gaus)
+# prior_summary(rstanarm_gaus)
+
+# Notes: Same rstanarm priors for all variables: intensityintensive, intensitysemi, systemopen, systemsemi:
+# intercept ~ normal(0, 1.2)
+# sigma ~ exponential(2)
+
+# Use "resp = <response_variable>" to specify different priors for different response variables
+all_priors <- c(set_prior("normal(0,5)", class = "b", resp = "y"), # priors for y response variables
+                set_prior("normal(0,2.5)", class = "Intercept", resp = "y"), 
+                set_prior("exponential(1)", class = "shape", resp = "y"),
+                set_prior("normal(0,1.2)", class = "Intercept", resp = c("intensity", "system")),
+                set_prior("exponential(2)", class = "sigma", resp = c("intensity", "system")))
+
+# Run individual gaussian models: doesn't converge if just taxa, next try taxa + system
+fit_intensity <- brm(intensity | mi() ~ 1 + taxacom_carp + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh +
+                       taxamisc_marine + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna + system,
+                     family = gaussian(), data = brms_data,
+                     set_prior("normal(0,1.2)", class = "Intercept"), set_prior("exponential(2)", class = "sigma", resp = c("intensity", "system")),
+                     cores = 4, seed = "11729")
+
+# Model converges after increasing the adapt_delta and iterations from default values
+# Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
+# increasing max_treedepth is more about efficiency (instead of validity)
+# See: https://mc-stan.org/misc/warnings.html
+fit_with_na <- brm(y_brms + intensity_mi + system_mi + set_rescor(FALSE), data = brms_data,
+                   prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+
+# Bulk ESS for y_intensityintensive still < 400; try increasing iterto 50000?
+
+# Get stan code
+stancode(fit_with_na)
+
+######################################################################################################
+# Model 2.2d: Model the missing predictors with just an intercept (same as 2.2a) but first combine rare taxa into an "other taxa" category
 
 lca_with_na <- lca_categories %>%
   filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
@@ -512,3 +643,6 @@ all_priors <- c(set_prior("normal(0,5)", class = "b", resp = "y"), # priors for 
 # See: https://mc-stan.org/misc/warnings.html
 fit_simplified_taxa <- brm(y_brms + intensity_intensive_mi + intensity_semi_mi + system_open_mi + system_semi_mi + set_rescor(FALSE), data = brms_data,
                    prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+
+
+

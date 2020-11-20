@@ -505,6 +505,8 @@ transformed parameters {
     tx_rate[n_tx] = tx_mu[n_tx] ./ square(tx_sigma);
   }
   
+  // tx_mu = sum(sci_mu * weight_production) // possibly how to do weighting by production
+  
   // sci name level
   for (n_sci in 1:N_SCI){
     sci_shape[n_sci] = square(sci_mu[n_sci]) ./ square(sci_sigma);

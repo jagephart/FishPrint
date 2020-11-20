@@ -72,8 +72,8 @@ full_dat <- dat_combine %>%
 
 # plot predictions of missing responses
 p <- ggplot() +
-  geom_pointinterval(aes(y = y_na, x = Ymi_y, xmin = .lower, xmax = .upper, color = !!sym(study_dat_p)), size = 0.5, data = full_dat) +
-  geom_point(aes(y = y_na, x = Ymi_y, color = data), data = full_dat) +
+  geom_pointinterval(aes(y = y_na, x = Ymi_y, xmin = .lower, xmax = .upper), size = 0.5, data = full_dat) +
+  geom_point(aes(y = y_na, x = Ymi_y, color = data_type), data = full_dat) +
   coord_cartesian(xlim = c(0, 10)) +
   theme_classic() +
   labs(x = "FCR", y = "LCA study") +
