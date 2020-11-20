@@ -17,6 +17,10 @@ clean.lca <- function(LCA_data){
   # Add country codes
   LCA_data$iso3c <- countrycode(LCA_data$Country, origin = "country.name", destination = "iso3c")
   
+  # Remove experimental studies
+  LCA_data <- LCA_data %>%
+    filter(Experimental != "Y")
+  
   # Scale feed percents to sum to 100%
   LCA_data <- LCA_data %>%
     mutate(sum_percent = Feed_soy_percent+Feed_othercrops_percent+Feed_FMFO_percent+Feed_animal_percent) %>%
@@ -62,9 +66,11 @@ clean.lca <- function(LCA_data){
   
   # Make adjustments to data:
   # Divide tuna FCR by 5
+  # Divide any feed_type moist pellet by 5 (e.g., Salmonids nei)
   LCA_data <- LCA_data %>%
     mutate(FCR = case_when(str_detect(Scientific.Name, "Thunnus") ~ FCR/5,
-                           TRUE ~ FCR)) 
+                           Feed_type == "Moist pellet" ~ FCR/5,
+                           TRUE ~ FCR))
     
   
   # Create column clean_sci_name - use this as the "official" scientific name column
