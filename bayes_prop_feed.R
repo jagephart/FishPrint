@@ -21,18 +21,6 @@ source("Functions.R")
 
 # Set the FINAL value to be no less than 0.01
 lca_dat_no_zeroes <- clean.lca(LCA_data = lca_dat) %>%
-  select(clean_sci_name, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent, taxa_group_name) %>%
-  # NOTE multinomial-dirchlet model requires all elements > 0 (change some to 0.001 for now?)
-  mutate(feed_soy_new = if_else(Feed_soy_percent == 0, true = 0.0105, false = Feed_soy_percent),
-         feed_crops_new = if_else(Feed_othercrops_percent == 0, true = 0.0105, false = Feed_othercrops_percent),
-         feed_fmfo_new = if_else(Feed_FMFO_percent == 0, true = 0.0105, false = Feed_FMFO_percent),
-         feed_animal_new = if_else(Feed_animal_percent == 0, true = 0.0105, false = Feed_animal_percent)) %>%
-  # Renomoralize values so they sum to 1
-  mutate(sum = rowSums(select(., contains("new")))) %>%
-  mutate(feed_soy_new = feed_soy_new / sum,
-         feed_crops_new = feed_crops_new / sum,
-         feed_fmfo_new = feed_fmfo_new / sum,
-         feed_animal_new = feed_animal_new / sum) %>%
   select(clean_sci_name, taxa_group_name, contains("new"))
 
 ######################################################################################################

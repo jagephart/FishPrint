@@ -64,15 +64,6 @@ clean.lca <- function(LCA_data){
     # Convert "not specified" to NA
     mutate(Production_system_group = na_if(Production_system_group, "not specified"))
   
-  # Make adjustments to data:
-  # Divide tuna FCR by 5
-  # Divide any feed_type moist pellet by 5 (e.g., Salmonids nei)
-  LCA_data <- LCA_data %>%
-    mutate(FCR = case_when(str_detect(Scientific.Name, "Thunnus") ~ FCR/5,
-                           Feed_type == "Moist pellet" ~ FCR/5,
-                           TRUE ~ FCR))
-    
-  
   # Create column clean_sci_name - use this as the "official" scientific name column
   # When no valid sci name exists just use common name
   # Simplify hybrid M. chrysops x M. saxatilis to its genus
@@ -101,7 +92,24 @@ clean.lca <- function(LCA_data){
     filter(Scientific.Name != "Acipenseridae") %>%
     filter(Scientific.Name != "Anguilla")
   
-
+  # Make adjustments to data:
+  # Divide tuna FCR by 5
+  # Divide any feed_type moist pellet by 5 (e.g., Salmonids nei)
+  # Renormalize the FINAL feed proportion values to be greater than 0 and no less than 0.01
+  LCA_data <- LCA_data %>%
+    mutate(FCR = case_when(str_detect(Scientific.Name, "Thunnus") ~ FCR/5,
+                           Feed_type == "Moist pellet" ~ FCR/5,
+                           TRUE ~ FCR)) %>%
+    mutate(feed_soy_new = if_else(Feed_soy_percent == 0, true = 0.0105, false = Feed_soy_percent),
+           feed_crops_new = if_else(Feed_othercrops_percent == 0, true = 0.0105, false = Feed_othercrops_percent),
+           feed_fmfo_new = if_else(Feed_FMFO_percent == 0, true = 0.0105, false = Feed_FMFO_percent),
+           feed_animal_new = if_else(Feed_animal_percent == 0, true = 0.0105, false = Feed_animal_percent)) %>%
+    # Renomoralize values so they sum to 1
+    mutate(sum_for_rescaling_feed = rowSums(select(., contains("new")))) %>%
+    mutate(feed_soy_new = feed_soy_new / sum_for_rescaling_feed,
+           feed_crops_new = feed_crops_new / sum_for_rescaling_feed,
+           feed_fmfo_new = feed_fmfo_new / sum_for_rescaling_feed,
+           feed_animal_new = feed_animal_new / sum_for_rescaling_feed)
 }
 
 #_____________________________________________________________________________________________________#
@@ -254,7 +262,7 @@ add_taxa_group <- function(lca_dat_clean, fishstat_dat){
                                      clean_sci_name %in% c("Mixed carps") ~ "Carps, barbels and other cyprinids",
                                      TRUE ~ isscaap_group)) 
   
-  # Create taxa groups
+  # Create taxa groups either manually or from isscaap_group
   lca_dat_out <- lca_dat_out %>%
     # Split up carps
     mutate(taxa_group_name = case_when(clean_sci_name == "Cyprinus carpio" ~ "Common carp",
@@ -268,7 +276,26 @@ add_taxa_group <- function(lca_dat_clean, fishstat_dat){
                                        # Combine groups into misc marine fishes
                                        isscaap_group %in% c("Miscellaneous coastal fishes", "Miscellaneous demersal fishes", "Miscellaneous pelagic fishes", "Flounders, halibuts, soles") ~ "Miscellaneous marine fishes",
                                        TRUE ~ isscaap_group))
-                                                                          
+  
+  # Clean up taxa_group_names
+  lca_dat_out <- lca_dat_out %>%
+    mutate(taxa = case_when(taxa_group_name == "Cods, hakes, haddocks" ~ "cod",
+                            taxa_group_name == "Common carp" ~ "com_carp",
+                            taxa_group_name == "Crabs, sea-spiders" ~ "crab",
+                            taxa_group_name == "Freshwater crustaceans" ~ "fresh_crust",
+                            taxa_group_name == "Milkfish" ~ "milkfish",
+                            taxa_group_name == "Miscellaneous diadromous fishes" ~ "misc_diad",
+                            taxa_group_name == "Miscellaneous freshwater fishes" ~ "misc_fresh",
+                            taxa_group_name == "Miscellaneous marine fishes" ~ "misc_marine",
+                            taxa_group_name == "Mussels" ~ "mussel",
+                            taxa_group_name == "Other carps, barbels and cyprinids" ~ "oth_carp",
+                            taxa_group_name == "Salmon" ~ "salmon",
+                            taxa_group_name == "Shrimps, prawns" ~ "shrimp",
+                            taxa_group_name == "Tilapias and other cichlids" ~ "tilapia",
+                            taxa_group_name == "Trout" ~ "trout",
+                            taxa_group_name == "Tunas, bonitos, billfishes" ~ "tuna",
+                            TRUE ~ "unassigned"))
+  
   # TEST:
   # lca_dat_out%>%
   #   #filter(isscaap_group == "Salmons, trouts, smelts") %>%

@@ -1,4 +1,4 @@
-# Bayesian regression to estimate variables based on taxa-group, intensity, and production system
+# Bayesian gamma regression to estimate variables based on taxa-group, intensity, and production system
 
 rm(list=ls())
 library(tidyverse)
@@ -249,26 +249,9 @@ prior_summary(rstanarm_gaus)
 ######################################################################################################
 # Model 2: Model FCR, including NAs in the predictors, and predict missing FCR values
 
-# clean up taxa_group_name
+# select and arrange by categorical info
 lca_categories <- lca_dat_clean %>%
-  select(clean_sci_name, FCR, taxa_group_name, intensity = Intensity, system = Production_system_group) %>%
-  mutate(taxa = case_when(taxa_group_name == "Cods, hakes, haddocks" ~ "cod",
-                          taxa_group_name == "Common carp" ~ "com_carp",
-                          taxa_group_name == "Crabs, sea-spiders" ~ "crab",
-                          taxa_group_name == "Freshwater crustaceans" ~ "fresh_crust",
-                          taxa_group_name == "Milkfish" ~ "milkfish",
-                          taxa_group_name == "Miscellaneous diadromous fishes" ~ "misc_diad",
-                          taxa_group_name == "Miscellaneous freshwater fishes" ~ "misc_fresh",
-                          taxa_group_name == "Miscellaneous marine fishes" ~ "misc_marine",
-                          taxa_group_name == "Mussels" ~ "mussel",
-                          taxa_group_name == "Other carps, barbels and cyprinids" ~ "oth_carp",
-                          taxa_group_name == "Salmon" ~ "salmon",
-                          taxa_group_name == "Shrimps, prawns" ~ "shrimp",
-                          taxa_group_name == "Tilapias and other cichlids" ~ "tilapia",
-                          taxa_group_name == "Trout" ~ "trout",
-                          taxa_group_name == "Tunas, bonitos, billfishes" ~ "tuna",
-                          TRUE ~ "unassigned")) %>%
-  select(FCR, clean_sci_name, taxa, intensity, system) %>%
+  select(FCR, clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
   arrange(clean_sci_name, taxa, intensity, system) %>%
   filter(taxa %in% c("mussel")==FALSE) # Remove taxa that don't belong in FCR/feed analysis mussels
 
@@ -341,13 +324,6 @@ pp_check(fit_complete_predictors, type = "xyz") # Gives an overview of all valid
 
 # Get the predicted responses:
 predict(fit_complete_predictors)
-
-# Use the fit_complete_predictors model to predict FCRs with incomplete predictors (setting NA to 0)
-lca_incomplete_predictors <- lca_categories %>%
-  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
-  filter(is.na(intensity)==TRUE | is.na(system)==TRUE) %>% # incomplete predictors - i.e., either intensity OR system are NA
-  arrange(clean_sci_name, intensity, system)
-
 
 ######################################################################################################
 # Model 2.2: Model FCR's with NA while imputing NA's in the predictors
