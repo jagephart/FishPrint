@@ -27,8 +27,6 @@ fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global
 # Classify species into taxa groupings
 # Use ISSCAAP grouping (in FAO data) to help with classification
 lca_dat_clean <- add_taxa_group(lca_dat_clean, fishstat_dat)
-######################################################################################################
-# Model 1: 
 
 # select relevant data columns and arrange by categorical info
 # Need FCR to identify which species aren't fed (FCR == 0)
@@ -38,13 +36,16 @@ lca_categories <- lca_dat_clean %>%
   filter(taxa %in% c("mussel")==FALSE) # Remove taxa that don't belong in FCR/feed analysis mussels
 
 ######################################################################################################
-# Model 1.1
-# No Missing data
+# Model 1: No Missing data
 # Remove FCR == 0 (species that aren't fed)
 lca_no_na <- lca_categories %>%
-  filter(FCR != 0)  %>% 
+  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
-  filter(is.na(feed_soy_new)==FALSE)
+  filter(is.na(feed_soy_new)==FALSE) %>%
+  rename(feed_soy = feed_soy_new,
+         feed_crops = feed_crops_new,
+         feed_fmfo = feed_fmfo_new,
+         feed_animal = feed_animal_new)
 
 # Set data for model:
 
@@ -59,7 +60,6 @@ taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-int
 options(na.action='na.pass') # First change default options for handling missing data
 X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
 options(na.action='na.omit') # Return option back to the default
-
 
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal <- lca_no_na %>%
@@ -76,16 +76,17 @@ X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
 options(na.action='na.omit') # Return option back to the default
 
 # Create dataframe for brms and rename feed variables
-brms_data <- data.frame(cbind(lca_no_na %>% select(contains("feed")), X_taxa_scaled, X_ordinal_scaled)) %>%
-  rename(feed_soy = feed_soy_new,
-         feed_crops = feed_crops_new,
-         feed_fmfo = feed_fmfo_new,
-         feed_animal = feed_animal_new)
+brms_data <- data.frame(cbind(lca_no_na %>% select(contains("feed")), X_taxa_scaled, X_ordinal_scaled)) 
 
 # Response variable must be a matrix, create function bind since cbind within the brm function is reserved for specifying multivariate models
 bind <- function(...) cbind(...)
 
-# When BOTH intensity and system are included, model does not converge, just try system for now (more variation in this vs intensity)
+# When BOTH intensity and system are included, model does not converge, 
+# CHOOSE ONE:
+# For TAXA + INTENSITY 
+y_brms <- brmsformula(bind(feed_soy, feed_crops, feed_fmfo, feed_animal) ~ taxamisc_marine + taxasalmon + taxatilapia + taxatrout + intensity, family = dirichlet())
+
+# For TAXA + SYSTEM
 y_brms <- brmsformula(bind(feed_soy, feed_crops, feed_fmfo, feed_animal) ~ taxamisc_marine + taxasalmon + taxatilapia + taxatrout + system, family = dirichlet())
 
 # Model converges after increasing the adapt_delta and iterations from default values
@@ -95,18 +96,31 @@ fit_no_na <- brm(y_brms, data = brms_data,
 summary(fit_no_na) 
 
 ######################################################################################################
-# Use model to predict NA feeds for studies with complete taxa, intensity, system data
-lca_complete_predictors <- lca_categories %>%
-  filter(FCR != 0)  %>% 
-  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
-  filter(is.na(feed_soy_new)) %>%
-  mutate(taxa = as.factor(taxa))
+# Use model to predict NA feeds for studies 
 
-# assign levels manually - having trouble automating this
-levels(lca_complete_predictors$taxa) <- list(misc_diad = "misc_diad", misc_marine = "misc_marine", salmon = "salmon", tilapia = "tilapia", trout = "trout")
+# CHOOSE ONE: with complete taxa + INTENSITY DATA
+lca_complete_predictors <- lca_categories %>%
+  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+  filter(is.na(intensity)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
+  filter(is.na(feed_soy_new))
+
+# CHOOSE ONE: with complete taxa + SYSTEM DATA
+lca_complete_predictors <- lca_categories %>%
+  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+  filter(is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
+  filter(is.na(feed_soy_new))
+
+# PROBLEM: lca_complete predictors has more taxa than originally model:
+taxa_not_modeled <- setdiff(unique(lca_complete_predictors$taxa), unique(lca_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
+
+# DROP THESE FOR NOW:
+lca_complete_predictors <- lca_complete_predictors %>%
+  filter(taxa %in% taxa_not_modeled == FALSE)
+
+# If lca_complete predictors has fewer taxa than originally model, need to convert to factor and expand/assign levels manually - having trouble automating this
+# levels(lca_complete_predictors$taxa) <- list(misc_diad = "misc_diad", misc_marine = "misc_marine", salmon = "salmon", tilapia = "tilapia", trout = "trout")
 
 # Create NEW taxa model matrix for the studies whose feeds need to be predicted
-
 # Taxa categories:
 options(na.action='na.pass') # First change default options for handling missing data
 X_taxa_new <- model.matrix(object = ~ 1 + taxa, 
@@ -137,6 +151,6 @@ options(na.action='na.omit') # Return option back to the default
 brms_new_data <- data.frame(cbind(X_taxa_new_scaled, X_ordinal_new_scaled)) 
 
 # Make predictions
-tmp <- predict(fit_no_na, newdata = brms_new_data)
-
-# LEFT OFF HERE:
+#predicted_feed_dat <- predict(fit_no_na, newdata = brms_new_data)
+# Use tidybayes instead:
+predicted_feed_dat <- add_predicted_draws(newdata = brms_new_data, model = fit_no_na)

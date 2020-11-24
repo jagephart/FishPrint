@@ -31,6 +31,93 @@ lca_dat_clean <- add_taxa_group(lca_dat_clean, fishstat_dat)
 # Output taxa groupings and sample sizes:
 #data.frame(table(lca_dat_clean$taxa_group_name))
 #write.csv(lca_dat_clean %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name), "taxa_group_update.csv")
+
+# select and arrange by categorical info
+lca_categories <- lca_dat_clean %>%
+  select(FCR, clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
+  arrange(clean_sci_name, taxa, intensity, system) %>%
+  filter(taxa %in% c("mussel")==FALSE) # Remove taxa that don't belong in FCR/feed analysis mussels
+
+######################################################################################################
+# Model FCR, imputing NAs in the predictors (with just the intercept - equivalent to setting this to the mean), and predict missing FCR values
+
+# Remove species that are not fed (FCR == 0), format intensity and system variables as ordinal
+lca_with_na <- lca_categories %>%
+  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+  arrange(clean_sci_name, taxa, intensity, system)
+
+# Create model matrix from taxa data, then center and scale
+options(na.action='na.pass') # If needed, change default options for handling missing data 
+X_taxa <- model.matrix(object = ~taxa, 
+                  data = lca_with_na %>% select(taxa)) 
+options(na.action='na.omit') # Return option back to the default
+taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Calculate standard deviation across all vars
+# Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+options(na.action='na.pass') # If needed, change default options for handling missing data
+X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
+options(na.action='na.omit') # Return option back to the default
+
+# Format intensity and system as ordinal variables, then center and scale
+X_ordinal <- lca_with_na %>%
+  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = as.numeric(intensity)) %>%
+  mutate(system = as.numeric(system)) %>%
+  select(intensity, system) %>%
+  as.matrix()
+ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Calculate standard deviation across all vars
+# Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+options(na.action='na.pass') # First change default options for handling missing data
+X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
+options(na.action='na.omit') # Return option back to the default
+
+# Create dataframe for brms and rename feed variables
+brms_data <- data.frame(y = lca_with_na$FCR, X_taxa_scaled, X_ordinal_scaled)
+
+# Which predictors have missing data:
+X_where_na <- apply(brms_data, MARGIN = 2, is.na)
+colSums(X_where_na)
+
+# Set model formulas
+y_brms <- brmsformula(y | mi() ~ 1 + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh +
+                        taxamisc_marine + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna +
+                        mi(intensity) + mi(system), family = Gamma("log"))
+
+intensity_mi <- brmsformula(intensity | mi() ~ 1,
+                            family = gaussian())
+
+system_mi  <- brmsformula(system | mi() ~ 1,
+                          family = gaussian())
+
+# Use "resp = <response_variable>" to specify different priors for different response variables
+all_priors <- c(set_prior("normal(0,5)", class = "b", resp = "y"), # priors for y response variables
+                set_prior("normal(0,2.5)", class = "Intercept", resp = "y"), 
+                set_prior("exponential(1)", class = "shape", resp = "y"),
+                set_prior("normal(0,1.2)", class = "Intercept", resp = c("intensity", "system")),
+                set_prior("exponential(2)", class = "sigma", resp = c("intensity", "system")))
+
+# Model converges after increasing the adapt_delta and iterations from default values
+# Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
+# increasing max_treedepth is more about efficiency (instead of validity)
+# See: https://mc-stan.org/misc/warnings.html
+fit_with_na <- brm(y_brms + intensity_mi + system_mi + set_rescor(FALSE), data = brms_data,
+                   prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+
+# Bulk ESS for y_intensityintensive still < 400; try increasing iterto 50000?
+
+# Get stan code
+stancode(fit_with_na)
+
+# NEXT: open extract_brms_outputs.R to produce figures
+
+
+
+
+
+
+
+
+# Remaining code below was for initial testing/model building:
 ######################################################################################################
 # Model 1: Remove ALL NA's (predictors and response), and estimate feed conversion ratio for all scientific names, non-hierarchical
 
@@ -215,7 +302,7 @@ brms_gamma <- brm(y ~ 1 + taxasalmon.char + taxatilapia + taxatrout + intensityS
 # Posterior predictive checks
 pp_check(brms_gamma, nsamples = 50) # density plots
 pp_check(brms_gamma, type = "error_hist", nsamples = 5)
-pp_check(brms_gamma, type = "scatter_avg", nsamples = 100)
+pp_check(brms_gamma, type = "scatter_avg", nsamples = 200)
 pp_check(brms_gamma, type = "stat_2d")
 pp_check(brms_gamma, type = "rootogram") 
 # error message is fixed in the development version of brms: https://discourse.mc-stan.org/t/error-using-pp-check-using-truncated-response-variable-in-brms/7555
@@ -540,7 +627,7 @@ fit_with_na <- brm(y_brms + intensity_mi + system_mi + set_rescor(FALSE), data =
 stancode(fit_with_na)
 
 ######################################################################################################
-# Model 2.2d: Model the missing predictors with just an intercept (same as 2.2a) but first combine rare taxa into an "other taxa" category
+# Model the missing predictors but first combine rare taxa into an "other taxa" category
 
 lca_with_na <- lca_categories %>%
   filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0

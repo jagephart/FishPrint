@@ -19,6 +19,13 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201109.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
 source("Functions.R")
 
+
+
+
+
+# Remaining code below was for initial testing/model building:
+######################################################################################################
+
 # Set the FINAL value to be no less than 0.01
 lca_dat_no_zeroes <- clean.lca(LCA_data = lca_dat) %>%
   select(clean_sci_name, taxa_group_name, contains("new"))
