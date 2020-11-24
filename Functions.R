@@ -248,17 +248,18 @@ add_taxa_group <- function(lca_dat_clean, fishstat_dat){
   lca_dat_out <- lca_dat_clean %>%
     left_join(isscaap_lookup, by = c("clean_sci_name" = "species_scientific_name")) 
   
-  #setdiff(lca_dat_clean$clean_sci_name, unique(fishstat_dat$species_scientific_name))
-  #sort(unique(fishstat_dat$isscaap_group))
-  #sort(unique(lca_dat_out$isscaap_group))
+  # Which sci_names have NA for isscaap_group after joining
+  lca_dat_out %>%
+    filter(is.na(isscaap_group)) %>%
+    select(clean_sci_name, isscaap_group) %>%
+    unique()
 
   lca_dat_out <- lca_dat_out %>% 
     # First pass is to deal with NAs in ISSCAAP group
     mutate(isscaap_group = case_when(clean_sci_name %in% c("Cynoscion", "Epinephelus") ~ "Miscellaneous marine fishes",
                                      clean_sci_name %in% c("Freshwater fishes", "Pangasius") ~ "Miscellaneous freshwater fishes",
-                                     clean_sci_name %in% c("Red crayfish") ~ "Freshwater crustaceans",
-                                     clean_sci_name %in% c("Freshwater prawn") ~ "Shrimps, prawns",
-                                     clean_sci_name %in% c("Litopenaeus vannamei", "Macrobrachium", "Macrobrachium amazonicum", "Macrobrachium rosenbergii", "Penaeus") ~ "Shrimps, prawns",
+                                     clean_sci_name %in% c("Red crayfish", "Freshwater prawn", "Macrobrachium amazonicum") ~ "Freshwater crustaceans",
+                                     clean_sci_name %in% c("Litopenaeus vannamei") ~ "Shrimps, prawns",
                                      clean_sci_name %in% c("Mixed carps") ~ "Carps, barbels and other cyprinids",
                                      TRUE ~ isscaap_group)) 
   
@@ -276,6 +277,12 @@ add_taxa_group <- function(lca_dat_clean, fishstat_dat){
                                        # Combine groups into misc marine fishes
                                        isscaap_group %in% c("Miscellaneous coastal fishes", "Miscellaneous demersal fishes", "Miscellaneous pelagic fishes", "Flounders, halibuts, soles") ~ "Miscellaneous marine fishes",
                                        TRUE ~ isscaap_group))
+  
+  # Inspect assignment of taxa_group_name
+  # lca_dat_out %>%
+  #   select(clean_sci_name, isscaap_group, taxa_group_name) %>%
+  #   unique() %>%
+  #   arrange(taxa_group_name)
   
   # Clean up taxa_group_names
   lca_dat_out <- lca_dat_out %>%
@@ -295,15 +302,7 @@ add_taxa_group <- function(lca_dat_clean, fishstat_dat){
                             taxa_group_name == "Trout" ~ "trout",
                             taxa_group_name == "Tunas, bonitos, billfishes" ~ "tuna",
                             TRUE ~ "unassigned"))
-  
-  # TEST:
-  # lca_dat_out%>%
-  #   #filter(isscaap_group == "Salmons, trouts, smelts") %>%
-  #   #filter(str_detect(Common.Name, "char")) %>%
-  #   #filter(isscaap_group == "Miscellaneous diadromous fishes") %>%
-  #   select(clean_sci_name, isscaap_group, taxa_group_name) %>%
-  #   unique() %>%
-  #   arrange(taxa_group_name)
+
   
 }
 

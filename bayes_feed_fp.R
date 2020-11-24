@@ -3,11 +3,12 @@
 #rm(list=ls())
 library(tidyverse)
 library(rstan)
-library(taxize)
 library(data.table)
 library(countrycode) # part of clean.lca
 library(bayesplot) # for mcmc_areas_ridges
 library(shinystan)
+library(brms)
+library(tidybayes)
 
 # Mac
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
@@ -19,6 +20,488 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201109.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
 source("Functions.R")
 
+# Clean LCA data
+lca_dat_clean <- clean.lca(LCA_data = lca_dat)
+
+# Rebuild FAO fish production from zip file
+fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
+
+# Classify species into taxa groupings
+# Use ISSCAAP grouping (in FAO data) to help with classification
+lca_dat_clean_groups <- add_taxa_group(lca_dat_clean, fishstat_dat)
+
+# Output taxa groupings and sample sizes:
+#data.frame(table(lca_dat_clean_groups$taxa_group_name))
+#data.frame(table(lca_dat_clean_groups$taxa)) # abbreviated version of taxa_group_name for writing models
+#lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name)
+#write.csv(data.frame(table(lca_dat_clean_groups$taxa_group_name)), file.path(outdir, "taxa_group_sample_size.csv"))
+#write.csv(lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name), file.path(outdir, "taxa_group_composition.csv"))
+
+# select relevant data columns and arrange by categorical info
+# Need FCR to identify which species aren't fed (FCR == 0)
+lca_categories <- lca_dat_clean_groups %>%
+  select(FCR, contains("new"), clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
+  arrange(clean_sci_name, taxa, intensity, system) %>%
+  filter(taxa %in% c("mussel")==FALSE) # Remove taxa that don't belong in FCR/feed analysis - mussels
+
+# Get footprint data
+fp_dat <- read.csv(file.path(datadir, "Feed_FP_raw.csv"))
+fp_clean <- clean.feedFP(fp_dat)
+
+######################################################################################################
+# Step 1: Model FCR, imputing NAs in the predictors (with just the intercept - equivalent to setting this to the mean), and predict missing FCR values
+
+# Remove species that are not fed (FCR == 0), format intensity and system variables as ordinal
+# lca_with_na <- lca_categories %>%
+#   filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+#   arrange(clean_sci_name, taxa, intensity, system)
+# 
+# # Create model matrix from taxa data, then center and scale
+# options(na.action='na.pass') # If needed, change default options for handling missing data 
+# X_taxa <- model.matrix(object = ~taxa, 
+#                        data = lca_with_na %>% select(taxa)) 
+# options(na.action='na.omit') # Return option back to the default
+# taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Calculate standard deviation across all vars
+# # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+# options(na.action='na.pass') # If needed, change default options for handling missing data
+# X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
+# options(na.action='na.omit') # Return option back to the default
+# 
+# # Format intensity and system as ordinal variables, then center and scale
+# X_ordinal <- lca_with_na %>%
+#   mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+#   mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+#   mutate(intensity = as.numeric(intensity)) %>%
+#   mutate(system = as.numeric(system)) %>%
+#   select(intensity, system) %>%
+#   as.matrix()
+# ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Calculate standard deviation across all vars
+# # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+# options(na.action='na.pass') # First change default options for handling missing data
+# X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
+# options(na.action='na.omit') # Return option back to the default
+# 
+# # Create dataframe for brms and rename feed variables
+# gamma_brms_data <- data.frame(y = lca_with_na$FCR, X_taxa_scaled, X_ordinal_scaled)
+# 
+# # Which predictors have missing data:
+# X_where_na <- apply(gamma_brms_data, MARGIN = 2, is.na)
+# colSums(X_where_na)
+# 
+# # Set model formulas
+# y_brms <- brmsformula(y | mi() ~ 1 + taxacrab + taxafresh_crust + taxamilkfish + taxamisc_diad + taxamisc_fresh +
+#                         taxamisc_marine + taxaoth_carp + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna +
+#                         mi(intensity) + mi(system), family = Gamma("log"))
+# 
+# intensity_mi <- brmsformula(intensity | mi() ~ 1,
+#                             family = gaussian())
+# 
+# system_mi  <- brmsformula(system | mi() ~ 1,
+#                           family = gaussian())
+# 
+# # Use "resp = <response_variable>" to specify different priors for different response variables
+# all_priors <- c(set_prior("normal(0,5)", class = "b", resp = "y"), # priors for y response variables
+#                 set_prior("normal(0,2.5)", class = "Intercept", resp = "y"), 
+#                 set_prior("exponential(1)", class = "shape", resp = "y"),
+#                 set_prior("normal(0,1.2)", class = "Intercept", resp = c("intensity", "system")),
+#                 set_prior("exponential(2)", class = "sigma", resp = c("intensity", "system")))
+# 
+# # Model converges after increasing the adapt_delta and iterations from default values
+# # Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
+# # increasing max_treedepth is more about efficiency (instead of validity)
+# # See: https://mc-stan.org/misc/warnings.html
+# fit_fcr_with_na <- brm(y_brms + intensity_mi + system_mi + set_rescor(FALSE), data = gamma_brms_data,
+#                    prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+# 
+# # Bulk ESS for y_intensityintensive still < 400; try increasing iterto 50000?
+# 
+# # Get stan code
+# stancode(fit_fcr_with_na)
+# 
+# # NEXT: open extract_brms_outputs.R to produce figures
+# 
+# # Missing FCRs are predicted by the model and listed as part of the outputed variables
+# na_predictions <- fit_fcr_with_na %>%
+#   spread_draws(Ymi_y[y_row]) %>%
+#   median_qi() %>% # median values of all missing predicted responses
+#   rename(FCR = Ymi_y)
+# 
+# #Get all the non-NAs in gamma_brms_data
+# brms_non_na <- gamma_brms_data %>%
+#   mutate(y_row = row_number()) %>%
+#   filter(is.na(y)==FALSE) %>%
+#   select(FCR = y, y_row)
+# 
+# # combine FCR data with predictions of missing FCRs
+# dat_combine <- na_predictions %>%
+#   bind_rows(brms_non_na) %>%
+#   arrange(y_row) %>%
+#   mutate(data_type = if_else(is.na(.point), true = "data", false = "prediction"))
+# 
+# # combine with original lca data to get meta data
+# full_fcr_dat <- dat_combine %>%
+#   left_join(lca_with_na %>% mutate(y_row = row_number()), by = "y_row")
+
+######################################################################################################
+# Step 1b: Model FCR but mirror dirichlet regression which doesn't imput missing predictors
+# ie, remove all NAs and model these data, then use the model to predict FCR for those data with a complete set of predictors
+# Remove FCR == 0 (species that aren't fed)
+fcr_no_na <- lca_categories %>%
+  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
+  filter(is.na(FCR)==FALSE) %>%
+  select(FCR, clean_sci_name, taxa, intensity, system)
+
+# Set data for model:
+
+# Create model matrix for taxa info, then center and scale
+options(na.action='na.pass') # First change default options for handling missing data
+X_taxa <- model.matrix(object = ~ 1 + taxa, 
+                       data = fcr_no_na %>% select(taxa)) 
+options(na.action='na.omit') # Return option back to the default
+
+taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+options(na.action='na.pass') # First change default options for handling missing data
+X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
+options(na.action='na.omit') # Return option back to the default
+
+# Format intensity and system as ordinal variables, then center and scale
+X_ordinal <- fcr_no_na %>%
+  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = as.numeric(intensity)) %>%
+  mutate(system = as.numeric(system)) %>%
+  select(intensity, system) %>%
+  as.matrix()
+ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+
+options(na.action='na.pass') # First change default options for handling missing data
+X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
+options(na.action='na.omit') # Return option back to the default
+
+# Create dataframe for brms and rename feed variables
+
+# Create dataframe for brms and rename feed variables
+gamma_brms_data <- data.frame(y = fcr_no_na$FCR, X_taxa_scaled, X_ordinal_scaled)
+
+# Set model formula
+y_brms <- brmsformula(y ~ 1 + taxamisc_diad + taxamisc_fresh +
+                        taxamisc_marine + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna +
+                        intensity + system, family = Gamma("log"))
+
+
+# Use "resp = <response_variable>" to specify different priors for different response variables
+all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
+                set_prior("normal(0,2.5)", class = "Intercept"), 
+                set_prior("exponential(1)", class = "shape"))
+
+# Model converges after increasing the adapt_delta and iterations from default values
+# Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
+# increasing max_treedepth is more about efficiency (instead of validity)
+# See: https://mc-stan.org/misc/warnings.html
+fit_fcr_no_na <- brm(y_brms, data = gamma_brms_data,
+                       prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+
+# Bulk ESS for y_intensityintensive still < 400; try increasing iterto 50000?
+
+# Get stan code
+stancode(fit_fcr_no_na)
+
+######################################################################################################
+# Use FCR model to predict NA FCRs for studies with complete set of predictors
+# Both intensity AND system are non-NA
+fcr_complete_predictors <- lca_categories %>%
+  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+  filter(is.na(intensity)==FALSE & is.na(system)== FALSE) %>%
+  filter(is.na(FCR))
+
+# PROBLEM: lca_complete predictors has more taxa than originally model:
+taxa_not_modeled <- setdiff(unique(fcr_complete_predictors$taxa), unique(fcr_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
+
+# DROP THESE FOR NOW:
+fcr_complete_predictors <- fcr_complete_predictors %>%
+  filter(taxa %in% taxa_not_modeled == FALSE)
+
+# Now check the other way, which taxa were in the original model but not a part of the data that needs to be predicted:
+setdiff(unique(fcr_no_na$taxa), unique(fcr_complete_predictors$taxa))
+
+# If original model has taxa that are not part of fcr_complete_predictors, need to convert to factor and expand/assign levels manually - having trouble automating this
+# See list of unique taxa in fcr_no_na - remember the first level is part of the "contrasts" in design matrix
+sort(unique(fcr_no_na$taxa))
+fcr_complete_predictors <- fcr_complete_predictors %>%
+  mutate(taxa = as.factor(taxa))
+levels(fcr_complete_predictors$taxa) <- list(fresh_crust = "fresh_crust", misc_diad = "misc_diad", misc_fresh = "misc_fresh", misc_marine = "misc_marine", salmon = "salmon", shrimp = "shrimp", tilapia = "tilapia", trout = "trout", tuna = "tuna")
+
+# Create NEW taxa model matrix for the studies whose feeds need to be predicted
+# Taxa categories:
+options(na.action='na.pass') # First change default options for handling missing data
+X_taxa_new <- model.matrix(object = ~ 1 + taxa, 
+                           data = fcr_complete_predictors %>% select(taxa)) 
+options(na.action='na.omit') # Return option back to the default
+
+# Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
+options(na.action='na.pass') # First change default options for handling missing data
+X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(X_taxa[,-1], MARGIN = 2, FUN = mean), scale=2*taxa_sd)
+options(na.action='na.omit') # Return option back to the default
+
+# System and Intensity variables:
+# Format intensity and system as ordinal variables, then center and scale
+X_ordinal_new <- fcr_complete_predictors %>%
+  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = as.numeric(intensity)) %>%
+  mutate(system = as.numeric(system)) %>%
+  select(intensity, system) %>%
+  as.matrix()
+
+# Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
+options(na.action='na.pass') # First change default options for handling missing data
+X_ordinal_new_scaled <- scale(X_ordinal_new, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
+options(na.action='na.omit') # Return option back to the default
+
+# Create dataframe for brms and rename feed variables
+brms_new_fcr_data <- data.frame(cbind(X_taxa_new_scaled, X_ordinal_new_scaled)) 
+
+# Make predictions
+#predicted_fcr_dat <- predict(fit_no_na, newdata = brms_new_fcr_data)
+# Use tidybayes instead:
+predicted_fcr_dat <- add_predicted_draws(newdata = brms_new_fcr_data, model = fit_fcr_no_na)
+
+# Get point and interval estimates from predicted data
+# Select just the prediction columns
+# Join these with the original lca data (fcr_complete_predictors) to get metadata on taxa/intensity/syste,
+fcr_dat_intervals <- predicted_fcr_dat %>%
+  median_qi(.value = .prediction) %>% # Rename prediction to value
+  ungroup() %>%
+  select(contains("."))
+
+# .row is equivalent to the row number in the original dataset (fcr_complete_predictors) - create a join column for this
+fcr_metadat<- fcr_complete_predictors %>%
+  select(clean_sci_name, taxa, intensity, system) %>%
+  mutate(.row = row_number())
+
+fcr_predictions <- fcr_dat_intervals %>%
+  left_join(fcr_metadat, by = ".row") %>%
+  rename(FCR = .value)
+
+# Bind
+full_fcr_dat <- fcr_predictions %>%
+  bind_rows(fcr_no_na) %>%
+  mutate(data_type = if_else(is.na(.point), true = "data", false = "prediction")) %>%
+  arrange(taxa, intensity, system, clean_sci_name) %>%
+  rownames_to_column() # Arrange by taxa first, then create dummy column for plotting 
+
+# NEXT: use extract_brms_gamma_no_imputation to produce figures for SI
+
+######################################################################################################
+# Step 2: Model feed proportions
+# Brms dirichlet regression doesn't support missing data, so strategy here is to remove all NAs and model these data
+# Then use the model to predict missing feed proportion data for those data that have a complete set of predictors
+
+# Remove FCR == 0 (species that aren't fed)
+feed_no_na <- lca_categories %>%
+  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
+  filter(is.na(feed_soy_new)==FALSE) %>%
+  rename(feed_soy = feed_soy_new,
+         feed_crops = feed_crops_new,
+         feed_fmfo = feed_fmfo_new,
+         feed_animal = feed_animal_new) %>%
+  select(clean_sci_name, taxa, intensity, system, contains("feed"))
+
+# Set data for model:
+
+# Create model matrix for taxa info, then center and scale
+options(na.action='na.pass') # First change default options for handling missing data
+X_taxa <- model.matrix(object = ~ 1 + taxa, 
+                       data = feed_no_na %>% select(taxa)) 
+options(na.action='na.omit') # Return option back to the default
+
+taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+options(na.action='na.pass') # First change default options for handling missing data
+X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
+options(na.action='na.omit') # Return option back to the default
+
+# Format intensity and system as ordinal variables, then center and scale
+X_ordinal <- feed_no_na %>%
+  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = as.numeric(intensity)) %>%
+  mutate(system = as.numeric(system)) %>%
+  select(intensity, system) %>%
+  as.matrix()
+ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+
+options(na.action='na.pass') # First change default options for handling missing data
+X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
+options(na.action='na.omit') # Return option back to the default
+
+# Create dataframe for brms and rename feed variables
+brms_data <- data.frame(cbind(feed_no_na %>% select(contains("feed")), X_taxa_scaled, X_ordinal_scaled)) 
+
+# Response variable must be a matrix, create function bind since cbind within the brm function is reserved for specifying multivariate models
+bind <- function(...) cbind(...)
+
+# CHOOSE ONE:
+# Option1: For TAXA + INTENSITY + SYSTEM
+y_brms <- brmsformula(bind(feed_soy, feed_crops, feed_fmfo, feed_animal) ~ 
+                        taxamisc_diad + taxamisc_fresh + taxamisc_marine + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna + 
+                        intensity + system, family = dirichlet())
+# Option2: For TAXA + INTENSITY 
+# y_brms <- brmsformula(bind(feed_soy, feed_crops, feed_fmfo, feed_animal) ~ taxamisc_marine + taxasalmon + taxatilapia + taxatrout + intensity, family = dirichlet())
+# Option3: For TAXA + SYSTEM
+# y_brms <- brmsformula(bind(feed_soy, feed_crops, feed_fmfo, feed_animal) ~ taxamisc_marine + taxasalmon + taxatilapia + taxatrout + system, family = dirichlet())
+
+# Model converges after increasing the adapt_delta and iterations from default values
+fit_feed_no_na <- brm(y_brms, data = brms_data,
+                 cores = 4, seed = "11729", iter = 10000)
+
+summary(fit_feed_no_na) 
+
+######################################################################################################
+# Use feed proportion model to predict NA feeds for studies with complete set of predictors
+
+# Both intensity AND system are non-NA
+feed_complete_predictors <- lca_categories %>%
+  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+  filter(is.na(intensity)==FALSE & is.na(system)== FALSE) %>%
+  filter(is.na(feed_soy_new))
+
+# PROBLEM: lca_complete predictors has more taxa than originally model:
+taxa_not_modeled <- setdiff(unique(feed_complete_predictors$taxa), unique(feed_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
+
+# DROP THESE FOR NOW:
+feed_complete_predictors <- feed_complete_predictors %>%
+  filter(taxa %in% taxa_not_modeled == FALSE)
+
+# Now check the other way, which taxa were in the original model but not a part of the data that needs to be predicted:
+setdiff(unique(feed_no_na$taxa), unique(feed_complete_predictors$taxa))
+
+# If original model has taxa that are not part of feed_complete_predictors, need to convert to factor and expand/assign levels manually - having trouble automating this
+# See list of unique taxa in feed_no_na - remember the first level is part of the "contrasts" in design matrix
+sort(unique(feed_no_na$taxa))
+feed_complete_predictors <- feed_complete_predictors %>%
+  mutate(taxa = as.factor(taxa))
+levels(feed_complete_predictors$taxa) <- list(fresh_crust = "fresh_crust", misc_diad = "misc_diad", misc_fresh = "misc_fresh", misc_marine = "misc_marine", salmon = "salmon", shrimp = "shrimp", tilapia = "tilapia", trout = "trout", tuna = "tuna")
+
+# Create NEW taxa model matrix for the studies whose feeds need to be predicted
+# Taxa categories:
+options(na.action='na.pass') # First change default options for handling missing data
+X_taxa_new <- model.matrix(object = ~ 1 + taxa, 
+                           data = feed_complete_predictors %>% select(taxa)) 
+options(na.action='na.omit') # Return option back to the default
+
+# Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
+options(na.action='na.pass') # First change default options for handling missing data
+X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(X_taxa[,-1], MARGIN = 2, FUN = mean), scale=2*taxa_sd)
+options(na.action='na.omit') # Return option back to the default
+
+# System and Intensity variables:
+# Format intensity and system as ordinal variables, then center and scale
+X_ordinal_new <- feed_complete_predictors %>%
+  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = as.numeric(intensity)) %>%
+  mutate(system = as.numeric(system)) %>%
+  select(intensity, system) %>%
+  as.matrix()
+
+# Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
+options(na.action='na.pass') # First change default options for handling missing data
+X_ordinal_new_scaled <- scale(X_ordinal_new, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
+options(na.action='na.omit') # Return option back to the default
+
+# Create dataframe for brms and rename feed variables
+brms_new_data <- data.frame(cbind(X_taxa_new_scaled, X_ordinal_new_scaled)) 
+
+# Make predictions
+#predicted_feed_dat <- predict(fit_no_na, newdata = brms_new_data)
+# Use tidybayes instead:
+predicted_feed_dat <- add_predicted_draws(newdata = brms_new_data, model = fit_feed_no_na)
+
+# Get point and interval estimates from predicted data
+# Select just the prediction columns
+# Join these with the original lca data (feed_complete_predictors) to get metadata on taxa/intensity/syste,
+feed_dat_intervals <- predicted_feed_dat %>%
+  median_qi(.value = .prediction) %>% # Rename prediction to value
+  ungroup() %>%
+  select(contains("."))
+
+# .row is equivalent to the row number in the original dataset (feed_complete_predictors) - create a join column for this
+feed_metadat<- feed_complete_predictors %>%
+  select(clean_sci_name, taxa, intensity, system) %>%
+  mutate(.row = row_number())
+
+feed_predictions <- feed_dat_intervals %>%
+  left_join(feed_metadat, by = ".row") %>%
+  rename(feed_proportion = .value)
+
+# Reformat data so it can row-bind with predictions
+feed_no_na_long <- feed_no_na %>%
+  pivot_longer(cols = c("feed_soy", "feed_crops", "feed_fmfo", "feed_animal"), names_to = ".category", values_to = "feed_proportion")
+
+# Bind and pivot wide again to match original data format
+full_feed_dat <- feed_predictions %>%
+  bind_rows(feed_no_na_long) %>%
+  mutate(data_type = if_else(is.na(.point), true = "data", false = "prediction"))
+
+# NEXT: use extract_brms_dirichlet_output and produce figures for SI
+
+##### LEFT OFF HERE: next need to combine full_feed_dat and full_fcr_dat - how to match these?
+## Need to create a study ID column at the very beginning and keep this throughougt so they can be joined here
+
+
+######################################################################################################
+# BOX PLOTS OF DATA:
+# Theme for ALL PLOTS (including mcmc plots)
+plot_theme <- theme(axis.text=element_text(size=14, color = "black"))
+
+# FCR:
+plot_fcr <- lca_dat_no_na %>%
+  select(clean_sci_name, FCR) %>%
+  #mutate(clean_sci_name = paste(clean_sci_name, row_number(), sep = "")) %>%
+  pivot_longer(cols = FCR)
+ggplot(data = plot_fcr, aes(x = clean_sci_name, y = value)) +
+  geom_boxplot() +
+  theme_classic() +
+  plot_theme +
+  labs(title = "Boxplots of FCRs",
+       x = "",
+       y = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+#ggsave(file.path(outdir, "boxplot_fcr_no_na.png"), height = 8, width = 11.5)
+
+
+# feed proportion:
+plot_feed_prop <- lca_dat_no_na %>%
+  select(clean_sci_name, soy = feed_soy_new, crops = feed_crops_new, fmfo = feed_fmfo_new, animal = feed_animal_new) %>%
+  pivot_longer(cols = soy:animal)
+
+
+
+feed_vars <- c("soy", "crops", "fmfo", "animal")
+for (i in 1:length(feed_vars)) {
+  p <- ggplot(data = plot_feed_prop %>% filter(name == feed_vars[i]), aes(x = clean_sci_name, y = value)) +
+    geom_boxplot() +
+    theme_classic() +
+    plot_theme +
+    labs(title = paste("Boxplots of ", feed_vars[i], " feed proportions", sep = ""),
+         x = "",
+         y = "")  +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  print(p)
+  #ggsave(file.path(outdir, "boxplot_feed-prop_no_na.png"), height = 8, width = 11.5)
+}
+
+
+
+
+
+
+
+
+# Remaining code below was for initial testing/model building:
+######################################################################################################
 lca_dat_no_zeroes <- clean.lca(LCA_data = lca_dat) %>%
   #select(clean_sci_name, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent, taxa_group_name) %>%
   # NOTE multinomial-dirchlet model requires all elements > 0 (change some to 0.001 for now?)

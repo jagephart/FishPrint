@@ -29,8 +29,8 @@ fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global
 lca_dat_clean <- add_taxa_group(lca_dat_clean, fishstat_dat)
 
 # Output taxa groupings and sample sizes:
-#data.frame(table(lca_dat_clean$taxa_group_name))
-#write.csv(lca_dat_clean %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name), "taxa_group_update.csv")
+#write.csv(data.frame(table(lca_dat_clean$taxa_group_name)), file.path(outdir, "taxa_group_sample_size.csv"))
+#write.csv(lca_dat_clean %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name), file.path(outdir, "taxa_group_composition.csv"))
 
 # select and arrange by categorical info
 lca_categories <- lca_dat_clean %>%

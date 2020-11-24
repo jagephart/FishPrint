@@ -18,9 +18,13 @@ library(RColorBrewer)
 
 # After running brms regressions (e.g., bayes_gamma_regression.R)
 
-# identify model output to be used for visualizations
-name_of_fit <- "fit_no_na" 
+# identify model and data output and data variable to be used for visualizations
+name_of_fit <- "fit_feed_no_na" 
 brms_output <- get(name_of_fit)
+name_of_data <- "full_feed_dat"
+full_dat <- get(name_of_data)
+name_of_var <- "feed_proportion"
+
 
 summary(brms_output)
 
@@ -56,30 +60,6 @@ for (i in 1:length(feed_coeffs)){
 }
 
 
-# Get point and interval estimates from predicted data
-# Select jsut the prediction columns
-# Join these with the original lca data (lca_complete_predictors) to get metadata on taxa/intensity/syste,
-feed_dat_intervals <- predicted_feed_dat %>%
-  median_qi(.value = .prediction) %>% # Rename prediction to value
-  ungroup() %>%
-  select(contains("."))
-
-# .row is equivalent to the row number in the original dataset (lca_complete_predictors) - create a join column for this
-predicted_metadat<- lca_complete_predictors %>%
-  select(clean_sci_name, taxa, intensity, system) %>%
-  mutate(.row = row_number())
-
-na_predictions <- feed_dat_intervals %>%
-  left_join(predicted_metadat, by = ".row")
-  
-# Reformat data so it can row-bind with predictions
-lca_no_na_long <- lca_no_na %>%
-  pivot_longer(cols = c("feed_soy", "feed_crops", "feed_fmfo", "feed_animal"), names_to = ".category", values_to = ".value")
-
-full_dat <- na_predictions %>%
-  bind_rows(lca_no_na_long)
-
-# ONLY MODELED USING INTENSITY, but display both?
 # Make separate plot of data and predictions for each taxa group
 # feed_cols <- c("feed_soy", "feed_crops", "feed_fmfo", "feed_animal")
 for (i in 1:length(unique(full_dat$taxa))){
@@ -91,13 +71,13 @@ for (i in 1:length(unique(full_dat$taxa))){
     mutate(y = row_number()) %>%
     replace_na(replace = list(taxa = "unknown", intensity = "unknown", system = "unknown"))
   p <- ggplot() +
-    geom_pointinterval(aes(y = y, x = .value, xmin = .lower, xmax = .upper, shape = system, point_color = intensity), size = 2, data = dat_taxa_i) +
-    geom_point(aes(y = y, x = .value, shape = system, color = intensity), data = dat_taxa_i, size = 3) +
+    geom_pointinterval(aes(y = y, x = feed_proportion, xmin = .lower, xmax = .upper, shape = system, point_color = intensity), size = 2, data = dat_taxa_i) +
+    geom_point(aes(y = y, x = feed_proportion, shape = system, color = intensity), data = dat_taxa_i, size = 3) +
     #scale_interval_shape(drop = FALSE) +
     scale_shape_discrete(drop = FALSE) +
     #coord_cartesian(xlim = c(0, 10)) +
     theme_classic() +
-    labs(x = "FCR", y = "", title = taxa_i) +
+    labs(x = "Feed proportion", y = "", title = taxa_i) +
     theme(axis.text = element_text(size = 16),
           axis.title = element_text(size = 20),
           axis.text.y = element_blank()) +
