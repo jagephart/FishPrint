@@ -1,4 +1,4 @@
-# Create visualizations of brms outputs
+# Create visualizations of brms gamma regression outputs
 # Do not clear workspace at start
 
 # Mac
@@ -25,9 +25,18 @@ brms_output <- get(name_of_fit)
 
 summary(brms_output)
 
-pp_check(brms_output, resp = "y", nsamples = 50) + # density plots
+# Default posterior predictive check is a density plot:
+# Specify response variable in resp
+pp_check(brms_output, resp = "y", nsamples = 50) + 
 ggtitle("Posterior predictive check")
-ggsave(filename = file.path(outdir, "plot_gamma-regression_post-pred-checks.png"), width  = 11.5, height = 8)
+ggsave(filename = file.path(outdir, "plot_gamma-regression_post-pred-checks_density.png"), width  = 11.5, height = 8)
+
+# Other posterior predictive checks
+pp_check(brms_output, type = "error_hist", nsamples = 5, resp = "y")
+pp_check(brms_output, type = "scatter_avg", nsamples = 1000, resp = "y")
+ggsave(filename = file.path(outdir, "plot_gamma-regression_post-pred-checks_scatter.png"), width  = 11.5, height = 8)
+pp_check(brms_output, type = "stat_2d", resp = "y")
+pp_check(brms_output, type = "stat", resp = "y")
 
 get_variables(brms_output)
 
@@ -129,17 +138,18 @@ for (i in 1:length(unique(full_dat$taxa))){
     mutate(y_na = row_number()) %>%
     replace_na(replace = list(taxa = "unknown", intensity = "unknown", system = "unknown"))
   p <- ggplot() +
-    geom_pointinterval(aes(y = y_na, x = Ymi_y, xmin = .lower, xmax = .upper, interval_color = system), size = 2, data = dat_taxa_i) +
-    geom_point(aes(y = y_na, x = Ymi_y, color = intensity), data = dat_taxa_i, size = 3) +
-    scale_interval_color_discrete(drop = FALSE) +
-    scale_color_discrete(drop = FALSE) +
+    geom_pointinterval(aes(y = y_na, x = Ymi_y, xmin = .lower, xmax = .upper, shape = system, point_color = intensity), size = 2, data = dat_taxa_i) +
+    geom_point(aes(y = y_na, x = Ymi_y, shape = system, color = intensity), data = dat_taxa_i, size = 3) +
+    #scale_interval_shape(drop = FALSE) +
+    scale_shape_discrete(drop = FALSE) +
     coord_cartesian(xlim = c(0, 10)) +
     theme_classic() +
     labs(x = "FCR", y = "", title = taxa_i) +
     theme(axis.text = element_text(size = 16),
-          axis.title = element_text(size = 20))
+          axis.title = element_text(size = 20),
+          axis.text.y = element_blank())
   plot(p)
-  file_i <- paste("plot_gamma-regression_missing-dat-predictions_", taxa_i, ".png", sep = "")
+  file_i <- paste("plot_gamma-regression_missing-dat-predictions_taxa-", taxa_i, ".png", sep = "")
   ggsave(filename = file.path(outdir, file_i), width = 11.5, height = 8)
 }
 
