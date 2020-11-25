@@ -37,12 +37,14 @@ lca_dat_clean_groups <- add_taxa_group(lca_dat_clean, fishstat_dat)
 #write.csv(data.frame(table(lca_dat_clean_groups$taxa_group_name)), file.path(outdir, "taxa_group_sample_size.csv"))
 #write.csv(lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name), file.path(outdir, "taxa_group_composition.csv"))
 
-# select relevant data columns and arrange by categorical info
+# CREATE STUDY ID COLUMN - use this for rejoining outputs from multiple regression models back together
+# Select relevant data columns and arrange by categorical info
 # Need FCR to identify which species aren't fed (FCR == 0)
 lca_categories <- lca_dat_clean_groups %>%
   select(FCR, contains("new"), clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
   arrange(clean_sci_name, taxa, intensity, system) %>%
-  filter(taxa %in% c("mussel")==FALSE) # Remove taxa that don't belong in FCR/feed analysis - mussels
+  filter(taxa %in% c("mussel")==FALSE) %>% # Remove taxa that don't belong in FCR/feed analysis - mussels
+  mutate(study_id = row_number())
 
 # Get footprint data
 fp_dat <- read.csv(file.path(datadir, "Feed_FP_raw.csv"))
@@ -150,7 +152,7 @@ fcr_no_na <- lca_categories %>%
   filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
   filter(is.na(FCR)==FALSE) %>%
-  select(FCR, clean_sci_name, taxa, intensity, system)
+  select(study_id, FCR, clean_sci_name, taxa, intensity, system)
 
 # Set data for model:
 
@@ -269,15 +271,15 @@ predicted_fcr_dat <- add_predicted_draws(newdata = brms_new_fcr_data, model = fi
 
 # Get point and interval estimates from predicted data
 # Select just the prediction columns
-# Join these with the original lca data (fcr_complete_predictors) to get metadata on taxa/intensity/syste,
+# Join these with the modeled data (fcr_complete_predictors) to get metadata on taxa/intensity/syste,
 fcr_dat_intervals <- predicted_fcr_dat %>%
   median_qi(.value = .prediction) %>% # Rename prediction to value
   ungroup() %>%
   select(contains("."))
 
-# .row is equivalent to the row number in the original dataset (fcr_complete_predictors) - create a join column for this
+# .row is equivalent to the row number in the modeled dataset (fcr_complete_predictors) - create a join column for this
 fcr_metadat<- fcr_complete_predictors %>%
-  select(clean_sci_name, taxa, intensity, system) %>%
+  select(study_id, clean_sci_name, taxa, intensity, system) %>%
   mutate(.row = row_number())
 
 fcr_predictions <- fcr_dat_intervals %>%
@@ -307,7 +309,7 @@ feed_no_na <- lca_categories %>%
          feed_crops = feed_crops_new,
          feed_fmfo = feed_fmfo_new,
          feed_animal = feed_animal_new) %>%
-  select(clean_sci_name, taxa, intensity, system, contains("feed"))
+  select(study_id, clean_sci_name, taxa, intensity, system, contains("feed"))
 
 # Set data for model:
 
@@ -429,7 +431,7 @@ feed_dat_intervals <- predicted_feed_dat %>%
 
 # .row is equivalent to the row number in the original dataset (feed_complete_predictors) - create a join column for this
 feed_metadat<- feed_complete_predictors %>%
-  select(clean_sci_name, taxa, intensity, system) %>%
+  select(study_id, clean_sci_name, taxa, intensity, system) %>%
   mutate(.row = row_number())
 
 feed_predictions <- feed_dat_intervals %>%
@@ -447,53 +449,328 @@ full_feed_dat <- feed_predictions %>%
 
 # NEXT: use extract_brms_dirichlet_output and produce figures for SI
 
-##### LEFT OFF HERE: next need to combine full_feed_dat and full_fcr_dat - how to match these?
-## Need to create a study ID column at the very beginning and keep this throughougt so they can be joined here
-
-
 ######################################################################################################
 # BOX PLOTS OF DATA:
 # Theme for ALL PLOTS (including mcmc plots)
 plot_theme <- theme(axis.text=element_text(size=14, color = "black"))
 
 # FCR:
-plot_fcr <- lca_dat_no_na %>%
-  select(clean_sci_name, FCR) %>%
-  #mutate(clean_sci_name = paste(clean_sci_name, row_number(), sep = "")) %>%
-  pivot_longer(cols = FCR)
-ggplot(data = plot_fcr, aes(x = clean_sci_name, y = value)) +
-  geom_boxplot() +
+# plot_fcr <- full_fcr_dat %>%
+#   select(clean_sci_name, FCR) 
+#   #mutate(clean_sci_name = paste(clean_sci_name, row_number(), sep = ""))
+ggplot(data = full_fcr_dat %>% 
+         mutate(clean_sci_name = as.factor(clean_sci_name)) %>%
+         mutate(clean_sci_name = fct_reorder(clean_sci_name, taxa, min)), 
+       aes(y = clean_sci_name, x = FCR)) +
+  #geom_boxplot(aes(color = taxa)) +
+  geom_violin(aes(color = taxa), scale = "width") +
+  geom_jitter(aes(color = taxa, shape = data_type), size = 3) +
   theme_classic() +
   plot_theme +
   labs(title = "Boxplots of FCRs",
        x = "",
        y = "") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-#ggsave(file.path(outdir, "boxplot_fcr_no_na.png"), height = 8, width = 11.5)
+  theme(axis.text.x = element_text(hjust = 1))
+ggsave(file.path(outdir, "boxplot_fcr.png"), height = 8, width = 11.5)
 
 
-# feed proportion:
-plot_feed_prop <- lca_dat_no_na %>%
-  select(clean_sci_name, soy = feed_soy_new, crops = feed_crops_new, fmfo = feed_fmfo_new, animal = feed_animal_new) %>%
-  pivot_longer(cols = soy:animal)
-
-
-
+# feed proportion all taxa
 feed_vars <- c("soy", "crops", "fmfo", "animal")
 for (i in 1:length(feed_vars)) {
-  p <- ggplot(data = plot_feed_prop %>% filter(name == feed_vars[i]), aes(x = clean_sci_name, y = value)) +
-    geom_boxplot() +
+  p <- ggplot(data = full_feed_dat %>% 
+                filter(str_detect(.category, feed_vars[i])) %>%
+                mutate(clean_sci_name = as.factor(clean_sci_name)) %>%
+                mutate(clean_sci_name = fct_reorder(clean_sci_name, taxa, min)), aes(y = clean_sci_name, x = feed_proportion)) +
+    #geom_boxplot() +
+    geom_violin(aes(color = taxa), scale = "width") +
+    geom_jitter(aes(color = taxa, shape = data_type), size = 3) +
     theme_classic() +
     plot_theme +
     labs(title = paste("Boxplots of ", feed_vars[i], " feed proportions", sep = ""),
          x = "",
          y = "")  +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme(axis.text.x = element_text(hjust = 1))
   print(p)
-  #ggsave(file.path(outdir, "boxplot_feed-prop_no_na.png"), height = 8, width = 11.5)
+  ggsave(file.path(outdir, paste("boxplot_feed-prop_", feed_vars[i], ".png", sep = "")), height = 8, width = 11.5)
 }
 
+# Feed proportions with facet_wrap
+p <- ggplot(data = full_feed_dat %>% 
+              #filter(str_detect(.category, feed_vars[i])) %>%
+              mutate(clean_sci_name = as.factor(clean_sci_name)) %>%
+              mutate(clean_sci_name = fct_reorder(clean_sci_name, taxa, min)), aes(y = clean_sci_name, x = feed_proportion)) +
+  #geom_boxplot() +
+  geom_violin(aes(color = taxa), scale = "width") +
+  geom_jitter(aes(color = taxa, shape = data_type), size = 3) +
+  theme_classic() +
+  plot_theme +
+  labs(title = paste("Boxplots of all feed proportions", sep = ""),
+       x = "",
+       y = "")  +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),) +
+  facet_wrap(~.category, nrow = 1)
+print(p)
+ggsave(file.path(outdir, "boxplot_feed-prop_all-feeds.png"), height = 8, width = 11.5)
 
+######################################################################################################
+# STEP 3 - aggregate up to taxa level and estimate total feed footprint
+# Set data for model
+
+# Merge fcr and feed datasets by study_id, remove interval info, only use medians for rest of analysis
+# rename data_type to keep track of both feed vs fcr data types
+feed_dat_merge <- full_feed_dat %>%
+  select(study_id, clean_sci_name, taxa, intensity, system, feed_data_type = data_type, .category, contains("feed")) %>%
+  pivot_wider(names_from = .category, values_from = feed_proportion)
+
+fcr_dat_merge <- full_fcr_dat %>%
+  select(study_id, clean_sci_name, taxa, intensity, system, fcr_data_type = data_type, FCR)
+
+feed_footprint_dat <- feed_dat_merge %>%
+  left_join(fcr_dat_merge, by = intersect(names(feed_dat_merge), names(fcr_dat_merge))) %>%
+  arrange(clean_sci_name)
+
+### LEFT OFF HERE:
+# overall model:
+N = nrow(lca_dat_no_na)
+N_SCI <- length(unique(lca_dat_no_na$sci))
+sci <- lca_dat_no_na$sci
+N_TX <- length(unique(lca_dat_no_na$tx))
+tx <- lca_dat_no_na$tx
+
+# for FCR model:
+x <- lca_dat_no_na$FCR
+
+# for Feed proportion model:
+K = 4
+feed_weights <- lca_dat_no_na %>%
+  select(contains("new")) %>%
+  as.matrix()
+
+# Get counts per sci name and counts per taxa group (also included as data in the model):
+sci_kappa <- lca_dat_no_na %>% 
+  select(contains(c("new", "sci", "obs"))) %>%
+  group_by(sci) %>% 
+  summarise(n_obs = n()) %>%
+  ungroup() %>%
+  arrange(sci) %>%
+  pull(n_obs)
+
+tx_kappa <- lca_dat_no_na %>% 
+  select(contains(c("new", "tx", "obs"))) %>%
+  group_by(tx) %>% 
+  summarise(n_obs = n()) %>%
+  ungroup() %>%
+  arrange(tx) %>%
+  pull(n_obs)
+
+# data (constants) for final foot print calculation 
+fp_dat <- fp_clean %>%
+  filter(Category != "Energy") %>%
+  select(FP, Category, FP_val) 
+
+# ORDER: Animal, crop, FMFO, soy
+fp_carbon_dat <- fp_dat %>%
+  filter(FP == "Carbon") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+fp_nitrogen_dat <- fp_dat %>%
+  filter(FP == "Nitrogen") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+fp_phosphorus_dat <- fp_dat %>%
+  filter(FP == "Phosphorus") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+fp_land_dat <- fp_dat %>%
+  filter(FP == "Land") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+fp_water_dat <- fp_dat %>%
+  filter(FP == "Water") %>%
+  select(-FP) %>%
+  pivot_wider(names_from = Category, values_from = FP_val) %>%
+  as.matrix() %>%
+  c()
+
+# Prior information
+# Mean feed proportions per sci-name
+sci_phi_mean <- lca_dat_no_na %>% 
+  select(contains(c("new", "sci", "clean_sci_name"))) %>%
+  group_by(clean_sci_name, sci) %>% 
+  summarise(across(contains("new"), mean)) %>%
+  ungroup() %>%
+  arrange(sci)
+
+# Mean feed proportions per taxa group
+tx_phi_mean <- lca_dat_no_na %>% 
+  select(contains(c("new", "tx", "taxa_group_name"))) %>%
+  group_by(taxa_group_name, tx) %>% 
+  summarise(across(contains("new"), mean)) %>%
+  ungroup() %>%
+  arrange(tx)
+
+
+stan_data <- list(N = N,
+                  N_SCI = N_SCI, 
+                  sci = sci,
+                  N_TX = N_TX,
+                  tx = tx,
+                  x = x,
+                  K = K,
+                  feed_weights = feed_weights,
+                  sci_kappa = sci_kappa,
+                  tx_kappa = tx_kappa,
+                  fp_carbon_dat = fp_carbon_dat,
+                  fp_nitrogen_dat = fp_nitrogen_dat,
+                  fp_phosphorus_dat = fp_phosphorus_dat,
+                  fp_land_dat = fp_land_dat,
+                  fp_water_dat = fp_water_dat)
+
+# Estimate foot print for all scientific names without NAs
+stan_no_na <- 'data {
+  // data for gamma model for FCR
+  int<lower=0> N;  // number of observations
+  vector<lower=0>[N] x; // data
+  int N_TX; // number of taxa groups
+  int tx[N]; // taxa group index (ordered by unique sci index)
+  int N_SCI; // number of scientific names
+  int sci[N]; // sciname index
+  
+  // data for dirichlet model for feed
+  int K; // number of feed types
+  simplex[K] feed_weights[N]; // array of observed feed weights simplexes
+  int sci_kappa[N_SCI]; // number of observations per sci-name
+  int tx_kappa[N_TX]; // number of observations per taxa group
+  
+  // constants for generated quantities
+  vector[K] fp_carbon_dat;
+  vector[K] fp_nitrogen_dat;
+  vector[K] fp_phosphorus_dat;
+  vector[K] fp_land_dat;
+  vector[K] fp_water_dat;
+}
+parameters {
+  // FCR model:
+  real<lower=0> mu;
+  real<lower=0> sigma;
+  vector<lower=0>[N_TX] tx_mu;
+  real<lower=0> tx_sigma;
+  vector<lower=0>[N_SCI] sci_mu;
+  real<lower=0> sci_sigma;
+  
+  // Feed proportion model:
+  simplex[K] sci_phi[N_SCI];
+  simplex[K] sci_theta[N_SCI]; // vectors of estimated sci-level feed weight simplexes
+  simplex[K] tx_phi[N_TX];
+  simplex[K] tx_theta[N_TX];
+  simplex[K] phi;
+  simplex[K] theta;
+  
+  // Params for the dirichlet priors:
+  // real<lower=0> sigma_1;
+  // real<lower=0> sigma_2;
+}
+transformed parameters {
+  // define transofrmed params for gamma model for FCRs
+  real shape;
+  real rate; 
+  vector[N_SCI] sci_shape;
+  vector[N_SCI] sci_rate;
+  vector[N_TX] tx_shape;
+  vector[N_TX] tx_rate;
+  
+  // define params for dirichlet model for feed proportions
+  vector<lower=0>[K] sci_alpha[N_SCI];
+  vector<lower=0>[K] tx_alpha[N_TX];
+  vector<lower=0>[K] alpha;
+  
+  // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+  // global-level
+  shape = square(mu) / square(sigma);
+  rate = mu / square(sigma);
+  // sci name and taxa group levels
+  for (n in 1:N){
+    tx_shape[tx[n]] = square(tx_mu[tx[n]]) ./ square(tx_sigma);
+    tx_rate[tx[n]] = tx_mu[tx[n]] ./ square(tx_sigma);
+    sci_shape[sci[n]] = square(sci_mu[sci[n]]) ./ square(sci_sigma);
+    sci_rate[sci[n]] = sci_mu[sci[n]] ./ square(sci_sigma);
+  }
+  
+  // reparameterize alphas as a vector of means (phi) and counts (kappas)
+  // phi is expected value of theta (mean feed weights)
+  // kappa is strength of the prior measured in number of prior observations (minus K)
+  alpha = N * phi;
+  for (n_tx in 1:N_TX) {
+    tx_alpha[n_tx] = tx_kappa[n_tx] * tx_phi[n_tx];
+  }    
+  
+  for (n_sci in 1:N_SCI) {
+    sci_alpha[n_sci] = sci_kappa[n_sci] * sci_phi[n_sci];
+  }
+}
+model {
+  // define priors for gamma model for FCRs
+  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+  mu ~ uniform(0, 10); // note: uniform(0,100) for all of these doesnt help much with convergence
+  sigma ~ uniform(0, 10);
+  tx_mu ~ uniform(0, 10);
+  tx_sigma ~ uniform(0, 10);
+  sci_mu ~ uniform(0, 10);
+  sci_sigma ~ uniform(0, 10);
+  
+  // define priors for dirichlet model for feed proportions
+  // sci_phi defined as sci_phi[sci][K]
+  
+  // option 1: define feed proportion priors as lower upper bounds
+  // sci_phi[2][1] ~ uniform(0.1, 0.2); // hypothetical lower and upper bounds for Oncorhynchus mykiss soy 
+  // sci_phi[6][1] ~ uniform(0.05, 0.2); // lower upper bounds fo Salmo salar soy
+  
+  // option 2: define feed proportions as means (need to define sigmas in parameters block: real<lower=0> sigma_1, sigma_2 etc;)
+  // sci_phi[2][1] ~ normal(0.13, sigma_1); // mean for Oncorhynhchus mykiss soy feed 
+  // sci_phi[6][1] ~ normal(0.7, sigma_2); // mean for Salmo salar soy feed
+  // tx_phi[6][1] ~ normal(0.13, sigma_1); // mean for taxa-level trout soy feed 
+  // tx_phi[4][1] ~ normal(0.7, sigma_2); // mean for taxa-level salmon/char soy feed
+  
+  // likelihood
+  
+  // global-level for dirichlet
+  tx_mu ~ gamma(shape, rate);
+  
+  for (n in 1:N){
+    // gamma model sci-name and taxa-level (global level is part of transformed params)
+    sci_mu[sci[n]] ~ gamma(tx_shape[tx[n]], tx_rate[tx[n]]);
+    x[n] ~ gamma(sci_shape[sci[n]], sci_rate[sci[n]]);
+    
+    // dirichlet model sci-name and taxa-level
+    tx_phi[tx[n]] ~ dirichlet(alpha);
+    sci_phi[sci[n]] ~ dirichlet(to_vector(tx_alpha[tx[n]]));
+    feed_weights[n] ~ dirichlet(to_vector(sci_alpha[sci[n]])); 
+  }
+
+  // dirichlet model - estimate feed weights based on estimated alphas
+  // global level estimates
+  theta ~ dirichlet(to_vector(alpha));
+  // taxa level estimates
+  for (n_tx in 1:N_TX) {
+    tx_theta[n_tx] ~ dirichlet(to_vector(tx_alpha[n_tx]));
+  }
+  // sci-name level estimates
+  for (n_sci in 1:N_SCI) {
+    sci_theta[n_sci] ~ dirichlet(to_vector(sci_alpha[n_sci]));
+  }
+}'
 
 
 
