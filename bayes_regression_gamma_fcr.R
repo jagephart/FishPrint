@@ -101,7 +101,8 @@ all_priors <- c(set_prior("normal(0,5)", class = "b", resp = "y"), # priors for 
 # increasing max_treedepth is more about efficiency (instead of validity)
 # See: https://mc-stan.org/misc/warnings.html
 fit_with_na <- brm(y_brms + intensity_mi + system_mi + set_rescor(FALSE), data = brms_data,
-                   prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+                   prior = all_priors, cores = 4, seed = "11729")
+#, iter = 20000, control = list(adapt_delta = 0.99))
 
 # Bulk ESS for y_intensityintensive still < 400; try increasing iterto 50000?
 

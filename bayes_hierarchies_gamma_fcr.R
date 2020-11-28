@@ -15,14 +15,34 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # datadir <- "K:/BFA Environment 2/Data"
 # outdir <- "K:BFA Environment 2/Outputs"
 
-lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201006.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201109.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
 source("Functions.R")
 
 lca_dat_clean <- clean.lca(LCA_data = lca_dat)
 
-# Remove bivalves from FCR analysis
-lca_dat_clean <- lca_dat_clean %>%
-  filter(taxa_group_name != "bivalves")
+# Rebuild FAO fish production from zip file
+fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
+
+# Classify species into taxa groupings
+# Use ISSCAAP grouping (in FAO data) to help with classification
+lca_dat_clean_groups <- add_taxa_group(lca_dat_clean, fishstat_dat)
+
+# Output taxa groupings and sample sizes:
+#data.frame(table(lca_dat_clean_groups$taxa_group_name))
+#data.frame(table(lca_dat_clean_groups$taxa)) # abbreviated version of taxa_group_name for writing models
+#lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name)
+#write.csv(data.frame(table(lca_dat_clean_groups$taxa_group_name)), file.path(outdir, "taxa_group_sample_size.csv"))
+#write.csv(lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name), file.path(outdir, "taxa_group_composition.csv"))
+
+# CREATE STUDY ID COLUMN - use this for rejoining outputs from multiple regression models back together
+# Select relevant data columns and arrange by categorical info
+# Need FCR to identify which species aren't fed (FCR == 0)
+lca_categories <- lca_dat_clean_groups %>%
+  select(FCR, contains("new"), clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
+  arrange(clean_sci_name, taxa, intensity, system) %>%
+  filter(taxa %in% c("mussel")==FALSE) %>% # Remove taxa that don't belong in FCR/feed analysis - mussels
+  mutate(study_id = row_number())
+
 
 ######################################################################################################
 # Model 1: Remove NA's, and estimate group-level feed conversion ratio for Nile tilapia, Oreochromis niloticus (species with the most FCR data)
@@ -410,30 +430,20 @@ print(fit_grouped)
 # lca_dat_clean <- rep_data(lca_dat_clean)
 # IMPORTANT for convergence: filter out FCR == 0
 
+
+
 # Test on smaller subset
-lca_dat_groups <- lca_dat_clean %>%
+lca_dat_groups <- lca_categories %>%
   #filter(taxa_group_name %in% c("salmon/char")) %>%
-  filter(taxa_group_name %in% c("salmon/char", "marine shrimp")) %>%
+  filter(taxa %in% c("salmon", "shrimp")) %>%
   filter(is.na(FCR) == FALSE) %>% 
   filter(FCR != 0) %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sci = as.numeric(clean_sci_name),
-         taxa_group_name = as.factor(taxa_group_name),
-         tx = as.numeric(taxa_group_name)) %>%
-  select(clean_sci_name, sci, taxa_group_name, tx, FCR) %>%
+         taxa = as.factor(taxa),
+         tx = as.numeric(taxa)) %>%
+  select(clean_sci_name, sci, taxa, tx, FCR) %>%
   arrange(sci)
-
-# Run analysis on all non-NA data
-lca_dat_groups <- lca_dat_clean %>%
-  filter(clean_sci_name %in% c("Salmonidae")==FALSE) %>%
-  filter(is.na(FCR) == FALSE) %>%
-  filter(FCR != 0) %>%
-  mutate(clean_sci_name = as.factor(clean_sci_name),
-         sci = as.numeric(clean_sci_name),
-         taxa_group_name = as.factor(taxa_group_name),
-         tx = as.numeric(taxa_group_name)) %>%
-  select(clean_sci_name, sci, taxa_group_name, tx, FCR) %>%
-arrange(sci)
 
 # Boxplot of data
 ggplot(data = lca_dat_groups, aes(x = clean_sci_name, y = FCR)) +
@@ -443,7 +453,7 @@ ggplot(data = lca_dat_groups, aes(x = clean_sci_name, y = FCR)) +
   labs(title = "Boxplots of FCR by scientific name")
 #ggsave(file.path(outdir, "plot_boxplot_FCR-by-species.png"), height = 8, width = 11.5)
 
-ggplot(data = lca_dat_groups, aes(x = taxa_group_name, y = FCR)) +
+ggplot(data = lca_dat_groups, aes(x = taxa, y = FCR)) +
   geom_boxplot() +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 16)) + 
@@ -453,7 +463,7 @@ groupings_and_sample_size_key <- lca_dat_groups %>%
   group_by(clean_sci_name) %>%
   mutate(n = n()) %>%
   ungroup() %>%
-  select(clean_sci_name, taxa_group_name, n) %>%
+  select(clean_sci_name, taxa, n) %>%
   unique()
 
 x <- lca_dat_groups$FCR
@@ -545,62 +555,8 @@ model {
 }'
 
 
-# OLD CODE: combined loop
-# stan_grouped <- 'data {
-#   int<lower=0> N;  // number of observations
-#   vector<lower=0>[N] x; // data
-#   int N_TX; // number of taxa groups
-#   int tx[N]; // taxa group index (ordered by unique sci index)
-#   int N_SCI; // number of scientific names
-#   int sci[N]; // sciname index
-# }
-# parameters {
-#   real<lower=0> mu;
-#   real<lower=0> sigma;
-#   vector<lower=0>[N_TX] tx_mu;
-#   real<lower=0> tx_sigma;
-#   vector<lower=0>[N_SCI] sci_mu;
-#   real<lower=0> sci_sigma;
-# }
-# transformed parameters {
-#   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
-#   real shape;
-#   real rate; 
-#   vector[N_SCI] sci_shape;
-#   vector[N_SCI] sci_rate;
-#   vector[N_TX] tx_shape;
-#   vector[N_TX] tx_rate;
-#   
-#   // global-level
-#   shape = square(mu) / square(sigma);
-#   rate = mu / square(sigma);
-#   // sci name and taxa group levels
-#   for (j in 1:N){
-#     tx_shape[tx[j]] = square(tx_mu[tx[j]]) ./ square(tx_sigma);
-#     tx_rate[tx[j]] = tx_mu[tx[j]] ./ square(tx_sigma);
-#     sci_shape[sci[j]] = square(sci_mu[sci[j]]) ./ square(sci_sigma);
-#     sci_rate[sci[j]] = sci_mu[sci[j]] ./ square(sci_sigma);
-#   }
-# }
-# model {
-#   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-#   //mu ~ uniform(0.05, 100);
-#   //sigma ~ uniform(0, 100);
-#   //sci_sigma ~ uniform(0, 100);
-#   
-#   // Specific prior for Salmonidae
-#   // sci_mu[19] ~ uniform(6, 10);
-#   
-#   // likelihood
-#   tx_mu ~ gamma(shape, rate);
-#   for (i in 1:N){
-#     sci_mu[sci[i]] ~ gamma(tx_shape[tx[i]], tx_rate[tx[i]]);
-#     x[i] ~ gamma(sci_shape[sci[i]], sci_rate[sci[i]]); // equivalent notation to target += but faster
-#   }
-# }'
-
 # Compile
-no_missing_mod <- stan_model(model_code = stan_grouped, verbose = TRUE)
+no_missing_mod <- stan_model(model_code = stan_grouped)
 # Note: For Windows, apparently OK to ignore this warning message:
 # Warning message:
 #   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :

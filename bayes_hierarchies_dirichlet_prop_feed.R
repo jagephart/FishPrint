@@ -595,7 +595,7 @@ transformed parameters {
   vector<lower=0>[K] alpha;
 
   // reparameterize alphas as a vector of means (theta) and counts (kappas)
-  // theta is expected value of theta (mean feed weights)
+  // theta is expected value of mean feed weights
   // kappa is strength of the prior measured in number of prior observations (minus K)
   alpha = N * theta;
   for (n_tx in 1:N_TX) {
@@ -816,7 +816,7 @@ transformed parameters {
   vector<lower=0>[K] alpha;
 
   // reparameterize alphas as a vector of means (theta) and counts (kappas)
-  // theta is expected value of theta (mean feed weights)
+  // theta is expected value of mean feed weights
   // kappa is strength of the prior measured in number of prior observations (minus K)
   alpha = N * theta;
   for (n_tx in 1:N_TX) {
