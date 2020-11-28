@@ -517,73 +517,97 @@ ggsave(file.path(outdir, "boxplot_feed-prop_all-feeds.png"), height = 8, width =
 # Set data for model
 
 # Merge fcr and feed datasets by study_id, remove interval info, only use medians for rest of analysis
-# rename data_type to keep track of both feed vs fcr data types
+
+
+# Format feed_dat
+# Standardize number of significant digits (round to digist = 3)
+# Re-scale so rowsums equals 1
 feed_dat_merge <- full_feed_dat %>%
   select(study_id, clean_sci_name, taxa, intensity, system, feed_data_type = data_type, .category, contains("feed")) %>%
-  pivot_wider(names_from = .category, values_from = feed_proportion)
+  pivot_wider(names_from = .category, values_from = feed_proportion) %>%
+  mutate(feed_soy = round(feed_soy, digits = 3),
+         feed_crops = round(feed_crops, digits = 3),
+         feed_fmfo = round(feed_fmfo, digits = 3),
+         feed_anima = round(feed_animal, digits = 3)) %>%
+  mutate(new_scale = feed_soy + feed_crops + feed_fmfo + feed_animal) %>%
+  mutate(feed_soy = feed_soy / new_scale,
+         feed_crops = feed_crops / new_scale,
+         feed_fmfo = feed_fmfo / new_scale,
+         feed_animal = feed_animal / new_scale)
 
+# Format FCR dat
+# Rename data_type to keep track of both feed vs fcr data types
 fcr_dat_merge <- full_fcr_dat %>%
   select(study_id, clean_sci_name, taxa, intensity, system, fcr_data_type = data_type, FCR)
 
+# FIX IT - use a smaller dataset for testing purposes: just 2 taxa
 feed_footprint_dat <- feed_dat_merge %>%
   left_join(fcr_dat_merge, by = intersect(names(feed_dat_merge), names(fcr_dat_merge))) %>%
-  arrange(clean_sci_name)
+  arrange(clean_sci_name, taxa) %>%
+  # FILTER TO SMALLER DATASET
+  filter(taxa %in% c("fresh_crust", "misc_diad")) %>%
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sci = as.numeric(clean_sci_name),
+         taxa = as.factor(taxa),
+         tx = as.numeric(taxa))
 
-### LEFT OFF HERE:
+
+# Set data
 # overall model:
-N = nrow(lca_dat_no_na)
-N_SCI <- length(unique(lca_dat_no_na$sci))
-sci <- lca_dat_no_na$sci
-N_TX <- length(unique(lca_dat_no_na$tx))
-tx <- lca_dat_no_na$tx
+N = nrow(feed_footprint_dat)
+N_SCI <- length(unique(feed_footprint_dat$sci))
+sci <- feed_footprint_dat$sci
+N_TX <- length(unique(feed_footprint_dat$tx))
+tx <- feed_footprint_dat$tx
 
 # for FCR model:
-x <- lca_dat_no_na$FCR
+x <- feed_footprint_dat$FCR
 
 # for Feed proportion model:
 K = 4
-feed_weights <- lca_dat_no_na %>%
-  select(contains("new")) %>%
+feed_weights <- feed_footprint_dat %>%
+  select(feed_soy, feed_crops, feed_fmfo, feed_animal) %>%
   as.matrix()
 
 # Get counts per sci name and counts per taxa group (also included as data in the model):
-sci_kappa <- lca_dat_no_na %>% 
-  select(contains(c("new", "sci", "obs"))) %>%
+sci_kappa <- feed_footprint_dat %>% 
   group_by(sci) %>% 
   summarise(n_obs = n()) %>%
   ungroup() %>%
   arrange(sci) %>%
   pull(n_obs)
 
-tx_kappa <- lca_dat_no_na %>% 
-  select(contains(c("new", "tx", "obs"))) %>%
+tx_kappa <- feed_footprint_dat %>% 
   group_by(tx) %>% 
   summarise(n_obs = n()) %>%
   ungroup() %>%
   arrange(tx) %>%
   pull(n_obs)
 
-# data (constants) for final foot print calculation 
+# Data (constants) for final foot print calculation 
+# FIX IT - need updated footprint data (for now just average across all allocation methods)
 fp_dat <- fp_clean %>%
   filter(Category != "Energy") %>%
-  select(FP, Category, FP_val) 
+  group_by(FP, Category) %>%
+  summarise(FP_val = mean(FP_val)) %>% 
+  ungroup()
 
 # ORDER: Animal, crop, FMFO, soy
-fp_carbon_dat <- fp_dat %>%
+fp_c_dat <- fp_dat %>%
   filter(FP == "Carbon") %>%
   select(-FP) %>%
   pivot_wider(names_from = Category, values_from = FP_val) %>%
   as.matrix() %>%
   c()
 
-fp_nitrogen_dat <- fp_dat %>%
+fp_n_dat <- fp_dat %>%
   filter(FP == "Nitrogen") %>%
   select(-FP) %>%
   pivot_wider(names_from = Category, values_from = FP_val) %>%
   as.matrix() %>%
   c()
 
-fp_phosphorus_dat <- fp_dat %>%
+fp_p_dat <- fp_dat %>%
   filter(FP == "Phosphorus") %>%
   select(-FP) %>%
   pivot_wider(names_from = Category, values_from = FP_val) %>%
@@ -606,18 +630,18 @@ fp_water_dat <- fp_dat %>%
 
 # Prior information
 # Mean feed proportions per sci-name
-sci_phi_mean <- lca_dat_no_na %>% 
-  select(contains(c("new", "sci", "clean_sci_name"))) %>%
+sci_phi_mean <- feed_footprint_dat %>% 
+  select(contains(c("soy", "crops", "fmfo", "animal", "sci", "clean_sci_name"))) %>%
   group_by(clean_sci_name, sci) %>% 
-  summarise(across(contains("new"), mean)) %>%
+  summarise(across(contains(c("soy", "crops", "fmfo", "animal")), mean)) %>%
   ungroup() %>%
   arrange(sci)
 
 # Mean feed proportions per taxa group
-tx_phi_mean <- lca_dat_no_na %>% 
-  select(contains(c("new", "tx", "taxa_group_name"))) %>%
-  group_by(taxa_group_name, tx) %>% 
-  summarise(across(contains("new"), mean)) %>%
+tx_phi_mean <- feed_footprint_dat %>% 
+  select(contains(c("soy", "crops", "fmfo", "animal", "tx", "taxa"))) %>%
+  group_by(taxa, tx) %>% 
+  summarise(across(contains(c("soy", "crops", "fmfo", "animal")), mean)) %>%
   ungroup() %>%
   arrange(tx)
 
@@ -632,13 +656,14 @@ stan_data <- list(N = N,
                   feed_weights = feed_weights,
                   sci_kappa = sci_kappa,
                   tx_kappa = tx_kappa,
-                  fp_carbon_dat = fp_carbon_dat,
-                  fp_nitrogen_dat = fp_nitrogen_dat,
-                  fp_phosphorus_dat = fp_phosphorus_dat,
+                  fp_c_dat = fp_c_dat,
+                  fp_n_dat = fp_n_dat,
+                  fp_p_dat = fp_p_dat,
                   fp_land_dat = fp_land_dat,
                   fp_water_dat = fp_water_dat)
 
-# Estimate foot print for all scientific names without NAs
+## LEFT OFF HERE: FIX TAXA LEVEL DIRICHLET should be for (n_sci in 1:N_SCI), may need to create taxa lookup (e.g., sci_to_tx) based on sci and not n?
+# Estimate foot print for all scientific names and taxa groups (removed the "all-seafood" level for simplicity)
 stan_no_na <- 'data {
   // data for gamma model for FCR
   int<lower=0> N;  // number of observations
@@ -655,16 +680,14 @@ stan_no_na <- 'data {
   int tx_kappa[N_TX]; // number of observations per taxa group
   
   // constants for generated quantities
-  vector[K] fp_carbon_dat;
-  vector[K] fp_nitrogen_dat;
-  vector[K] fp_phosphorus_dat;
+  vector[K] fp_c_dat;
+  vector[K] fp_n_dat;
+  vector[K] fp_p_dat;
   vector[K] fp_land_dat;
   vector[K] fp_water_dat;
 }
 parameters {
   // FCR model:
-  real<lower=0> mu;
-  real<lower=0> sigma;
   vector<lower=0>[N_TX] tx_mu;
   real<lower=0> tx_sigma;
   vector<lower=0>[N_SCI] sci_mu;
@@ -675,17 +698,13 @@ parameters {
   simplex[K] sci_theta[N_SCI]; // vectors of estimated sci-level feed weight simplexes
   simplex[K] tx_phi[N_TX];
   simplex[K] tx_theta[N_TX];
-  simplex[K] phi;
-  simplex[K] theta;
-  
+
   // Params for the dirichlet priors:
   // real<lower=0> sigma_1;
   // real<lower=0> sigma_2;
 }
 transformed parameters {
   // define transofrmed params for gamma model for FCRs
-  real shape;
-  real rate; 
   vector[N_SCI] sci_shape;
   vector[N_SCI] sci_rate;
   vector[N_TX] tx_shape;
@@ -694,12 +713,8 @@ transformed parameters {
   // define params for dirichlet model for feed proportions
   vector<lower=0>[K] sci_alpha[N_SCI];
   vector<lower=0>[K] tx_alpha[N_TX];
-  vector<lower=0>[K] alpha;
   
   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
-  // global-level
-  shape = square(mu) / square(sigma);
-  rate = mu / square(sigma);
   // sci name and taxa group levels
   for (n in 1:N){
     tx_shape[tx[n]] = square(tx_mu[tx[n]]) ./ square(tx_sigma);
@@ -711,7 +726,6 @@ transformed parameters {
   // reparameterize alphas as a vector of means (phi) and counts (kappas)
   // phi is expected value of theta (mean feed weights)
   // kappa is strength of the prior measured in number of prior observations (minus K)
-  alpha = N * phi;
   for (n_tx in 1:N_TX) {
     tx_alpha[n_tx] = tx_kappa[n_tx] * tx_phi[n_tx];
   }    
@@ -723,9 +737,7 @@ transformed parameters {
 model {
   // define priors for gamma model for FCRs
   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-  mu ~ uniform(0, 10); // note: uniform(0,100) for all of these doesnt help much with convergence
-  sigma ~ uniform(0, 10);
-  tx_mu ~ uniform(0, 10);
+  tx_mu ~ uniform(0, 10); // note: uniform(0,100) for all of these doesnt help much with convergence
   tx_sigma ~ uniform(0, 10);
   sci_mu ~ uniform(0, 10);
   sci_sigma ~ uniform(0, 10);
@@ -744,33 +756,83 @@ model {
   // tx_phi[4][1] ~ normal(0.7, sigma_2); // mean for taxa-level salmon/char soy feed
   
   // likelihood
-  
-  // global-level for dirichlet
-  tx_mu ~ gamma(shape, rate);
-  
+  // gamma model sci-name and taxa-level
   for (n in 1:N){
-    // gamma model sci-name and taxa-level (global level is part of transformed params)
     sci_mu[sci[n]] ~ gamma(tx_shape[tx[n]], tx_rate[tx[n]]);
     x[n] ~ gamma(sci_shape[sci[n]], sci_rate[sci[n]]);
-    
-    // dirichlet model sci-name and taxa-level
-    tx_phi[tx[n]] ~ dirichlet(alpha);
-    sci_phi[sci[n]] ~ dirichlet(to_vector(tx_alpha[tx[n]]));
+  }
+  
+  // dirichlet model 
+  // sci level
+  for (n in 1:N) {
     feed_weights[n] ~ dirichlet(to_vector(sci_alpha[sci[n]])); 
   }
-
-  // dirichlet model - estimate feed weights based on estimated alphas
-  // global level estimates
-  theta ~ dirichlet(to_vector(alpha));
-  // taxa level estimates
-  for (n_tx in 1:N_TX) {
-    tx_theta[n_tx] ~ dirichlet(to_vector(tx_alpha[n_tx]));
-  }
-  // sci-name level estimates
+  // estimate sci-level feed weights based on estimated alphas
   for (n_sci in 1:N_SCI) {
     sci_theta[n_sci] ~ dirichlet(to_vector(sci_alpha[n_sci]));
   }
+  
+  // taxa level
+  for (n in 1:N){
+    sci_theta[sci[n]] ~ dirichlet(tx_alpha[tx[n]]);
+  }
+  // estimate taxa-level feed weights based on estimated alphas
+  for (n_tx in 1:N_TX) {
+    tx_theta[n_tx] ~ dirichlet(to_vector(tx_alpha[n_tx]));
+  }
+}
+generated quantities {
+  // Carbon
+  vector[N_TX] tx_c_fp;
+  vector[K] tx_feed_c_fp[N_TX]; // array of k feeds and N_TX taxa groups
+  vector[N_TX] tx_sum_feed_c_fp;
+  vector[N_SCI] sci_c_fp;
+  vector[K] sci_feed_c_fp[N_SCI];
+  vector[N_SCI] sci_sum_feed_c_fp;
+  // Nitrogen
+
+  // Phosphorus
+
+  // Land
+
+  // Water
+  
+  // Calculations
+  for (n_tx in 1:N_TX) {
+    tx_feed_c_fp[n_tx] = fp_c_dat .* tx_theta[n_tx];
+    tx_sum_feed_c_fp[n_tx] = sum(tx_feed_c_fp[n_tx]);
+    tx_c_fp[n_tx] = tx_mu[n_tx] * tx_sum_feed_c_fp[n_tx];
+  }
+  for (n_sci in 1:N_SCI) {
+    sci_feed_c_fp[n_sci] = fp_c_dat .* sci_theta[n_sci];
+    sci_sum_feed_c_fp[n_sci] = sum(sci_feed_c_fp[n_sci]);
+    sci_c_fp[n_sci] = sci_mu[n_sci] * sci_sum_feed_c_fp[n_sci];
+  }
 }'
+
+no_na_mod <- stan_model(model_code = stan_no_na, verbose = TRUE)
+# Note: For Windows, apparently OK to ignore this warning message:
+# Warning message:
+#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
+#   'C:/rtools40/usr/mingw_/bin/g++' not found
+
+# Fit model:
+# Set seed while testing
+fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 10000,
+                      control = list(adapt_delta = 0.99))
+#control = list(adapt_delta = 0.99))
+print(fit_no_na)
+
+# Check diagnostics: https://betanalpha.github.io/assets/case_studies/rstan_workflow.html
+# check_n_eff(fit_no_na)
+# check_rhat(fit_no_na)
+# check_treedepth(fit_no_na) # if needed, re-run with larger treedepth
+# check_div(fit_no_na) # if needed, re-run with larger adapt
+check_all_diagnostics(fit_no_na)
+
+launch_shinystan(fit_no_na)
+
+
 
 
 
@@ -778,6 +840,12 @@ model {
 
 
 # Remaining code below was for initial testing/model building:
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
 ######################################################################################################
 lca_dat_no_zeroes <- clean.lca(LCA_data = lca_dat) %>%
   #select(clean_sci_name, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent, taxa_group_name) %>%
@@ -1088,7 +1156,7 @@ model {
   tx_mu ~ gamma(shape, rate);
   
   for (n in 1:N){
-    // gamma model sci-name and taxa-level (global level is part of transformed params)
+    // gamma model sci-name and taxa-level
     sci_mu[sci[n]] ~ gamma(tx_shape[tx[n]], tx_rate[tx[n]]);
     x[n] ~ gamma(sci_shape[sci[n]], sci_rate[sci[n]]);
     
