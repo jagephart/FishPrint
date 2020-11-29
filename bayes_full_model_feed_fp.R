@@ -9,6 +9,7 @@ library(bayesplot) # for mcmc_areas_ridges
 library(shinystan)
 library(brms)
 library(tidybayes)
+library(gtable) # for arranging multiple plots
 
 # Mac
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
@@ -29,6 +30,7 @@ fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global
 # Classify species into taxa groupings
 # Use ISSCAAP grouping (in FAO data) to help with classification
 lca_dat_clean_groups <- add_taxa_group(lca_dat_clean, fishstat_dat)
+rm(fishstat_dat)
 
 # Output taxa groupings and sample sizes:
 #data.frame(table(lca_dat_clean_groups$taxa_group_name))
@@ -447,12 +449,14 @@ full_feed_dat <- feed_predictions %>%
   bind_rows(feed_no_na_long) %>%
   mutate(data_type = if_else(is.na(.point), true = "data", false = "prediction"))
 
-# NEXT: use extract_brms_dirichlet_output and produce figures for SI
+# NEXT: use plot_brms_output and produce figures for SI
 
 ######################################################################################################
 # BOX PLOTS OF DATA:
 # Theme for ALL PLOTS (including mcmc plots)
-plot_theme <- theme(axis.text=element_text(size=14, color = "black"))
+plot_theme <- theme(title = element_text(size = 18),
+                    axis.title.x = element_text(size = 16),
+                    axis.text=element_text(size=14, color = "black"))
 
 # FCR:
 # plot_fcr <- full_fcr_dat %>%
@@ -550,11 +554,11 @@ feed_footprint_dat <- feed_dat_merge %>%
   # FILTER OUTLIER DATA
   #filter(FCR < 2 & FCR > 1) %>%
   # FILTER TO ONLY INCLUDE sci-names with 3 or more observations
-  group_by(clean_sci_name) %>%
-  mutate(n_obs = n(),
-         sci_mean = mean(FCR)) %>%
-  ungroup() %>% 
-  filter(n_obs > 2) %>%
+  # group_by(clean_sci_name) %>%
+  # mutate(n_obs = n(),
+  #        sci_mean = mean(FCR)) %>%
+  # ungroup() %>% 
+  # filter(n_obs > 2) %>%
   # Model doesn't converge once taxa level is included - Get taxa means to use for priors
   #group_by(taxa) %>%
   #mutate(taxa_mean = mean(FCR)) %>%
@@ -923,29 +927,38 @@ model {
 generated quantities {
   // Carbon
   vector[N_TX] tx_c_fp;
-  vector[K] tx_feed_c_fp[N_TX]; // array of k feeds and N_TX taxa groups
-  vector[N_TX] tx_sum_feed_c_fp;
   vector[N_SCI] sci_c_fp;
-  vector[K] sci_feed_c_fp[N_SCI];
-  vector[N_SCI] sci_sum_feed_c_fp;
+
   // Nitrogen
+  vector[N_TX] tx_n_fp;
+  vector[N_SCI] sci_n_fp;
 
   // Phosphorus
-
+  vector[N_TX] tx_p_fp;
+  vector[N_SCI] sci_p_fp;
+  
   // Land
+  vector[N_TX] tx_land_fp;
+  vector[N_SCI] sci_land_fp;
 
   // Water
+  vector[N_TX] tx_water_fp;
+  vector[N_SCI] sci_water_fp;
   
   // Calculations
   for (n_tx in 1:N_TX) {
-    tx_feed_c_fp[n_tx] = fp_c_dat .* tx_theta[n_tx];
-    tx_sum_feed_c_fp[n_tx] = sum(tx_feed_c_fp[n_tx]);
-    tx_c_fp[n_tx] = tx_mu[n_tx] * tx_sum_feed_c_fp[n_tx];
+    tx_c_fp[n_tx] = tx_mu[n_tx] * sum(fp_c_dat .* tx_theta[n_tx]);
+    tx_n_fp[n_tx] = tx_mu[n_tx] * sum(fp_n_dat .* tx_theta[n_tx]);
+    tx_p_fp[n_tx] = tx_mu[n_tx] * sum(fp_p_dat .* tx_theta[n_tx]);
+    tx_land_fp[n_tx] = tx_mu[n_tx] * sum(fp_land_dat .* tx_theta[n_tx]);
+    tx_water_fp[n_tx] = tx_mu[n_tx] * sum(fp_water_dat .* tx_theta[n_tx]);
   }
   for (n_sci in 1:N_SCI) {
-    sci_feed_c_fp[n_sci] = fp_c_dat .* sci_theta[n_sci];
-    sci_sum_feed_c_fp[n_sci] = sum(sci_feed_c_fp[n_sci]);
-    sci_c_fp[n_sci] = sci_mu[n_sci] * sci_sum_feed_c_fp[n_sci];
+    sci_c_fp[n_sci] = sci_mu[n_sci] * sum(fp_c_dat .* sci_theta[n_sci]);
+    sci_n_fp[n_sci] = sci_mu[n_sci] * sum(fp_n_dat .* sci_theta[n_sci]);
+    sci_p_fp[n_sci] = sci_mu[n_sci] * sum(fp_p_dat .* sci_theta[n_sci]);
+    sci_land_fp[n_sci] = sci_mu[n_sci] * sum(fp_land_dat .* sci_theta[n_sci]);
+    sci_water_fp[n_sci] = sci_mu[n_sci] * sum(fp_water_dat .* sci_theta[n_sci]);
   }
 }'
 
@@ -961,104 +974,163 @@ no_na_mod <- stan_model(model_code = stan_no_na)
 fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
 summary(fit_no_na)
 
-launch_shinystan(fit_no_na)
+#launch_shinystan(fit_no_na)
 
-# Check diagnostics: https://betanalpha.github.io/assets/case_studies/rstan_workflow.html
-# check_n_eff(fit_no_na)
-# check_rhat(fit_no_na)
-# check_treedepth(fit_no_na) # if needed, re-run with larger treedepth
-# check_div(fit_no_na) # if needed, re-run with larger adapt
+# Key for naming sci and taxa levels
+# Get full taxa group names back
+index_key <- feed_footprint_dat %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_obs = n()) %>%
+  ungroup() %>%
+  select(clean_sci_name, sci, taxa, tx, n_obs) %>%
+  unique() %>%
+  arrange(taxa) %>%
+  mutate(taxa = as.character(taxa),
+         full_taxa_name = case_when(taxa == "misc_marine" ~ "misc marine fishes",
+                                    taxa == "misc_fresh" ~ "misc freshwater fishes",
+                                    taxa == "misc_diad" ~ "misc diadromous fishes",
+                                    taxa == "fresh_crust" ~ "freshwater crustaceans",
+                                    TRUE ~ taxa),
+         taxa = as.factor(taxa),
+         full_taxa_name = as.factor(full_taxa_name))
+
+# Use tidybayes + ggdist for finer control of aes mapping (instead of bayesplots) 
+get_variables(fit_no_na)
+
+# Sci-level feed footprints as point intervals:
+# Carbon
+fit_no_na %>%
+  spread_draws(sci_c_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_c_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = "kg CO2-eq", y = "", title = "Carbon", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_carbon_obs-level.png"), width = 11, height = 8.5)
+
+# Nitrogen
+fit_no_na %>%
+  spread_draws(sci_n_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_n_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = "kg N-eq", y = "", title = "Nitrogen", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_nitrogen_obs-level.png"), width = 11, height = 8.5)
+
+# Phosphorus
+fit_no_na %>%
+  spread_draws(sci_p_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_p_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = "kg P-eq", y = "", title = "Phosphorus", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_phosphorus_obs-level.png"), width = 11, height = 8.5)
+
+# Land
+fit_no_na %>%
+  spread_draws(sci_land_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_land_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = bquote('m'^2~'a'), y = "", title = "Land", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_land_obs-level.png"), width = 11, height = 8.5)
+
+# Water
+fit_no_na %>%
+  spread_draws(sci_water_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_water_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = bquote('m'^3), y = "", title = "Water", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_water_obs-level.png"), width = 11, height = 8.5)
+
+# Taxa-level feed footprints as densities:
+# Carbon
+fit_no_na %>%
+  spread_draws(tx_c_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_c_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg CO2-eq", y = "", title = "Carbon")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_carbon_taxa-level.png"), width = 11, height = 8.5)
+
+# Nitrogen
+fit_no_na %>%
+  spread_draws(tx_n_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_n_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg N-eq", y = "", title = "Nitrogen")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_nitrogen_taxa-level.png"), width = 11, height = 8.5)
 
 
-feeds <- c("soy", "crops", "fmfo", "animal")
-feed_key <- data.frame(carbon_footprint = paste("carbon_footprint[", feeds, "]", sep = ""),
-                       nitrogen_footprint = paste("nitrogen_footprint[", feeds, "]", sep = ""),
-                       phosphorus_footprint = paste("phosphorus_footprint[", feeds, "]", sep = ""),
-                       land_footprint = paste("land_footprint[", feeds, "]", sep = ""),
-                       water_footprint = paste("water_footprint[", feeds, "]", sep = ""))
-
-fit_pooled_clean <- fit_pooled
-names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "feed_carbon_footprint\\[")] <- feed_key$carbon_footprint
-names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "feed_nitrogen_footprint\\[")] <- feed_key$nitrogen_footprint
-names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "feed_phosphorus_footprint\\[")] <- feed_key$phosphorus_footprint
-names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "feed_land_footprint\\[")] <- feed_key$land_footprint
-names(fit_pooled_clean)[grep(names(fit_pooled_clean), pattern = "feed_water_footprint\\[")] <- feed_key$water_footprint
-
-distribution_pooled <- as.matrix(fit_pooled_clean)
-
-# FIX IT - replace parameter names and add plots for other parameters
-p_footprint <- mcmc_areas(distribution_pooled,
-                          pars = vars(contains("carbon_footprint")),
-                          prob = 0.8,
-                          prob_outer = 0.9,
-                          area_method = "scaled height",
-                          point_est = "median") + 
-  ggtitle("Oncorhynchus mykiss full feed footprint model", "with 80% credible intervals") +
-  xlim(0, 10) +
-  plot_theme 
-
-p_footprint
-ggsave(filename = file.path(outdir, "bayes-example_trout_carbon-feed-footprint.png"), width = 11, height = 8.5)
+# Phosphorus
+fit_no_na %>%
+  spread_draws(tx_p_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_p_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg P-eq", y = "", title = "Phosphorus")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_phosphorus_taxa-level.png"), width = 11, height = 8.5)
 
 
-p_footprint <- mcmc_areas(distribution_pooled,
-                          pars = vars(contains("nitrogen_footprint")),
-                          prob = 0.8,
-                          prob_outer = 0.9,
-                          area_method = "scaled height",
-                          point_est = "median") + 
-  ggtitle("Oncorhynchus mykiss full feed footprint model", "with 80% credible intervals") +
-  xlim(0, 0.01) +
-  plot_theme 
+# Land
+fit_no_na %>%
+  spread_draws(tx_land_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_land_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = bquote('m'^2~'a'), y = "", title = "Land")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_land_taxa-level.png"), width = 11, height = 8.5)
 
-p_footprint
-ggsave(filename = file.path(outdir, "bayes-example_trout_nitrogen-feed-footprint.png"), width = 11, height = 8.5)
-
-p_footprint <- mcmc_areas(distribution_pooled,
-                          pars = vars(contains("phosphorus_footprint")),
-                          prob = 0.8,
-                          prob_outer = 0.9,
-                          area_method = "scaled height",
-                          point_est = "median") + 
-  ggtitle("Oncorhynchus mykiss full feed footprint model", "with 80% credible intervals") +
-  xlim(0, 0.001) +
-  plot_theme 
-
-p_footprint
-ggsave(filename = file.path(outdir, "bayes-example_trout_phosphorus-feed-footprint.png"), width = 11, height = 8.5)
-
-p_footprint <- mcmc_areas(distribution_pooled,
-                          pars = vars(contains("land_footprint")),
-                          prob = 0.8,
-                          prob_outer = 0.9,
-                          area_method = "scaled height",
-                          point_est = "median") + 
-  ggtitle("Oncorhynchus mykiss full feed footprint model", "with 80% credible intervals") +
-  xlim(0, 5) +
-  plot_theme 
-
-p_footprint
-ggsave(filename = file.path(outdir, "bayes-example_trout_land-feed-footprint.png"), width = 11, height = 8.5)
-
-p_footprint <- mcmc_areas(distribution_pooled,
-                          pars = vars(contains("water_footprint")),
-                          prob = 0.8,
-                          prob_outer = 0.9,
-                          area_method = "scaled height",
-                          point_est = "median") + 
-  ggtitle("Oncorhynchus mykiss full feed footprint model", "with 80% credible intervals") +
-  xlim(0, 0.2) +
-  plot_theme 
-
-p_footprint
-ggsave(filename = file.path(outdir, "bayes-example_trout_water-feed-footprint.png"), width = 11, height = 8.5)
+# Water
+fit_no_na %>%
+  spread_draws(tx_water_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_water_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = bquote('m'^3), y = "", title = "Water")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_water_taxa-level.png"), width = 11, height = 8.5)
 
 
-
-
-
-
-
+# OPTION 2: Taxa-level plots with color themes:
+# If we want to mimic bayesplot color schemes, can get hexadecimal colors and input manually to stat_halfeye aesthetics
+color_scheme_get("blue")
+color_scheme_get("green")
 
 
 # Remaining code below was for initial testing/model building:
