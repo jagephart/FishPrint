@@ -9,7 +9,6 @@ library(bayesplot) # for mcmc_areas_ridges
 library(shinystan)
 library(brms)
 library(tidybayes)
-library(gtable) # for arranging multiple plots
 
 # Mac
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
@@ -532,7 +531,7 @@ feed_dat_merge <- full_feed_dat %>%
   mutate(feed_soy = round(feed_soy, digits = 3),
          feed_crops = round(feed_crops, digits = 3),
          feed_fmfo = round(feed_fmfo, digits = 3),
-         feed_anima = round(feed_animal, digits = 3)) %>%
+         feed_animal = round(feed_animal, digits = 3)) %>%
   mutate(new_scale = feed_soy + feed_crops + feed_fmfo + feed_animal) %>%
   mutate(feed_soy = feed_soy / new_scale,
          feed_crops = feed_crops / new_scale,
@@ -553,12 +552,12 @@ feed_footprint_dat <- feed_dat_merge %>%
   #filter(taxa %in% c("trout", "tilapia")) %>%
   # FILTER OUTLIER DATA
   #filter(FCR < 2 & FCR > 1) %>%
-  # FILTER TO ONLY INCLUDE sci-names with 3 or more observations
+  # FILTER TO ONLY INCLUDE sci-names with 2 or more observations
   # group_by(clean_sci_name) %>%
   # mutate(n_obs = n(),
-  #        sci_mean = mean(FCR)) %>%
+  #         sci_mean = mean(FCR)) %>%
   # ungroup() %>% 
-  # filter(n_obs > 2) %>%
+  # filter(n_obs > 1) %>%
   # Model doesn't converge once taxa level is included - Get taxa means to use for priors
   #group_by(taxa) %>%
   #mutate(taxa_mean = mean(FCR)) %>%
@@ -685,6 +684,176 @@ stan_data <- list(N = N,
 
 # Estimate foot print for all scientific names and taxa groups (removed the "all-seafood" level for simplicity)
 # GAMMA distribution hierarchical model
+stan_no_na <- 'data {
+  // data for gamma model for FCR
+  int<lower=0> N;  // number of observations
+  vector<lower=0>[N] x; // data
+  int N_TX; // number of taxa groups
+  int N_SCI; // number of scientific names
+  int n_to_sci[N]; // sciname index
+  int sci_to_tx[N_SCI]; // taxa-group indices
+
+  // data for dirichlet model for feed
+  int K; // number of feed types
+  simplex[K] feed_weights[N]; // array of observed feed weights simplexes
+  int sci_kappa[N_SCI]; // number of observations per sci-name
+  int tx_kappa[N_TX]; // number of observations per taxa group
+
+  // constants for generated quantities
+  vector[K] fp_c_dat;
+  vector[K] fp_n_dat;
+  vector[K] fp_p_dat;
+  vector[K] fp_land_dat;
+  vector[K] fp_water_dat;
+}
+parameters {
+  // FCR model:
+  vector<lower=0>[N_TX] tx_mu;
+  vector<lower=0>[N_SCI] sci_mu;
+  // only need sigmas if defining shape and rate with mu and sigma
+  //real<lower=0> tx_sigma;
+  //real<lower=0> sci_sigma;
+  // if using variance instead of st dev
+  real<lower=0> tx_sigma_sq;
+  real<lower=0> sci_sigma_sq;
+
+  // Feed proportion model:
+  simplex[K] sci_phi[N_SCI];
+  simplex[K] sci_theta[N_SCI]; // vectors of estimated sci-level feed weight simplexes
+  simplex[K] tx_phi[N_TX];
+  simplex[K] tx_theta[N_TX];
+
+  // Params for the dirichlet priors:
+  // real<lower=0> sigma_1;
+  // real<lower=0> sigma_2;
+}
+transformed parameters {
+  // define transofrmed params for gamma model for FCRs
+  vector<lower=0>[N_SCI] sci_shape;
+  vector<lower=0>[N_SCI] sci_rate;
+  vector<lower=0>[N_TX] tx_shape;
+  vector<lower=0>[N_TX] tx_rate;
+
+  // define params for dirichlet model for feed proportions
+  vector<lower=0>[K] sci_alpha[N_SCI];
+  vector<lower=0>[K] tx_alpha[N_TX];
+
+  // gamma model reparameterization
+  // option 1: reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+  // taxa group level
+  //for (n_tx in 1:N_TX){
+  //  tx_shape[n_tx] = square(tx_mu[n_tx]) ./ square(tx_sigma);
+  //  tx_rate[n_tx] = tx_mu[n_tx] ./ square(tx_sigma);
+  //}
+
+  // sci level
+  //for (n_sci in 1:N_SCI){
+  //  sci_shape[n_sci] = square(sci_mu[n_sci]) ./ square(sci_sigma);
+  //  sci_rate[n_sci] = sci_mu[n_sci] ./ square(sci_sigma);
+  //}
+
+  // option 2: reparameterize gamma to get just mu
+  //for (n_tx in 1:N_TX){
+  //  tx_rate[n_tx] = tx_shape[n_tx] ./ tx_mu[n_tx];
+  //}
+  // sci level
+  //for (n_sci in 1:N_SCI){
+  //  sci_rate[n_sci] = sci_shape[n_sci] ./ sci_mu[n_sci];
+  //}
+  
+  // option 3: reparameterize shape and rate as inverse(va) and inverse(va)/mu
+  for (n_tx in 1:N_TX){
+    tx_shape[n_tx] = 1 / tx_sigma_sq;
+    tx_rate[n_tx] = 1 / (tx_sigma_sq * tx_mu[n_tx]);
+  }
+  for (n_sci in 1:N_SCI){
+    sci_shape[n_sci] = 1 / sci_sigma_sq;
+    sci_rate[n_sci] = 1 / (sci_sigma_sq * sci_mu[n_sci]);
+  }
+  
+  
+  // dirichlet model reparameterization
+  // reparameterize alphas as a vector of means (phi) and counts (kappas)
+  // theta is expected value of mean feed weights
+  // kappa is strength of the prior measured in number of prior observations (minus K)
+  for (n_tx in 1:N_TX) {
+    tx_alpha[n_tx] = tx_kappa[n_tx] * tx_theta[n_tx];
+  }
+
+  for (n_sci in 1:N_SCI) {
+    sci_alpha[n_sci] = sci_kappa[n_sci] * sci_theta[n_sci];
+  }
+}
+model {
+  // define priors for gamma model for FCRs
+  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+  tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
+  sci_mu ~ uniform(0, 100);
+  //tx_sigma ~ uniform(0, 100); // only need sigmas if calculating shape and rate with mu and sigma
+  //sci_sigma ~ uniform(0, 100);
+
+  // define priors for dirichlet model for feed proportions
+  // sci_phi defined as sci_phi[n_to_sci][K]
+
+  // option 1: define feed proportion priors as lower upper bounds
+  // sci_phi[2][1] ~ uniform(0.1, 0.2); // hypothetical lower and upper bounds for Oncorhynchus mykiss soy
+
+  // option 2: define feed proportions as means (need to define sigmas in parameters block: real<lower=0> sigma_1, sigma_2 etc;)
+  // sci_phi[2][1] ~ normal(0.13, sigma_1); // mean for Oncorhynhchus mykiss soy feed
+
+  // likelihood
+  // gamma model sci-name and taxa-level
+  for (n in 1:N){
+    x[n] ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
+  }
+
+  for (n_sci in 1:N_SCI){
+    sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
+  }
+
+  // dirichlet model
+  // use data to estimate sci-level dirichlet shape param (alphas)
+  for (n in 1:N) {
+    feed_weights[n] ~ dirichlet(to_vector(sci_alpha[n_to_sci[n]]));
+  }
+  // use sci-level thetas to estimate taxa-level dirichlet shape param (alphas)
+  for (n_sci in 1:N_SCI) {
+    sci_theta[n_sci] ~ dirichlet(to_vector(tx_alpha[sci_to_tx[n_sci]]));
+  }
+}
+generated quantities {
+  // Carbon
+  vector[N_TX] tx_c_fp;
+  vector[K] tx_feed_c_fp[N_TX]; // array of k feeds and N_TX taxa groups
+  vector[N_TX] tx_sum_feed_c_fp;
+  vector[N_SCI] sci_c_fp;
+  vector[K] sci_feed_c_fp[N_SCI];
+  vector[N_SCI] sci_sum_feed_c_fp;
+  // Nitrogen
+
+  // Phosphorus
+
+  // Land
+
+  // Water
+
+  // Calculations
+  for (n_tx in 1:N_TX) {
+    tx_feed_c_fp[n_tx] = fp_c_dat .* tx_theta[n_tx];
+    tx_sum_feed_c_fp[n_tx] = sum(tx_feed_c_fp[n_tx]);
+    tx_c_fp[n_tx] = tx_mu[n_tx] * tx_sum_feed_c_fp[n_tx];
+  }
+  for (n_sci in 1:N_SCI) {
+    sci_feed_c_fp[n_sci] = fp_c_dat .* sci_theta[n_sci];
+    sci_sum_feed_c_fp[n_sci] = sum(sci_feed_c_fp[n_sci]);
+    sci_c_fp[n_sci] = sci_mu[n_sci] * sci_sum_feed_c_fp[n_sci];
+  }
+}'
+
+
+
+
+# NORMAL distribution hierarchical model
 # stan_no_na <- 'data {
 #   // data for gamma model for FCR
 #   int<lower=0> N;  // number of observations
@@ -725,29 +894,9 @@ stan_data <- list(N = N,
 #   // real<lower=0> sigma_2;
 # }
 # transformed parameters {
-#   // define transofrmed params for gamma model for FCRs
-#   vector[N_SCI] sci_shape;
-#   vector[N_SCI] sci_rate;
-#   vector[N_TX] tx_shape;
-#   vector[N_TX] tx_rate;
-#   
 #   // define params for dirichlet model for feed proportions
 #   vector<lower=0>[K] sci_alpha[N_SCI];
 #   vector<lower=0>[K] tx_alpha[N_TX];
-#   
-#   // gamma model reparameterization
-#   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
-#   // taxa group level
-#   for (n_tx in 1:N_TX){
-#     tx_shape[n_tx] = square(tx_mu[n_tx]) ./ square(tx_sigma);
-#     tx_rate[n_tx] = tx_mu[n_tx] ./ square(tx_sigma);
-#   }
-#   
-#   // sci level
-#   for (n_sci in 1:N_SCI){
-#     sci_shape[n_sci] = square(sci_mu[n_sci]) ./ square(sci_sigma);
-#     sci_rate[n_sci] = sci_mu[n_sci] ./ square(sci_sigma);
-#   }
 #   
 #   // dirichlet model reparameterization
 #   // reparameterize alphas as a vector of means (phi) and counts (kappas)
@@ -764,10 +913,10 @@ stan_data <- list(N = N,
 # model {
 #   // define priors for gamma model for FCRs
 #   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-#   tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
-#   tx_sigma ~ uniform(0, 100);
-#   sci_mu ~ uniform(0, 100);
-#   sci_sigma ~ uniform(0, 100);
+#   //tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
+#   //tx_sigma ~ uniform(0, 100);
+#   //sci_mu ~ uniform(0, 100);
+#   //sci_sigma ~ uniform(0, 100);
 #   
 #   // define priors for dirichlet model for feed proportions
 #   // sci_phi defined as sci_phi[n_to_sci][K]
@@ -779,13 +928,13 @@ stan_data <- list(N = N,
 #   // sci_phi[2][1] ~ normal(0.13, sigma_1); // mean for Oncorhynhchus mykiss soy feed 
 #   
 #   // likelihood
-#   // gamma model sci-name and taxa-level
+#   // normal model sci-name and taxa-level
 #   for (n in 1:N){
-#     x[n] ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
+#     x[n] ~ normal(sci_mu[n_to_sci[n]], sci_sigma);
 #   }
 #   
 #   for (n_sci in 1:N_SCI){
-#     sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
+#     sci_mu[n_sci] ~ normal(tx_mu[sci_to_tx[n_sci]], tx_sigma);
 #   }
 #   
 #   // dirichlet model 
@@ -801,166 +950,40 @@ stan_data <- list(N = N,
 # generated quantities {
 #   // Carbon
 #   vector[N_TX] tx_c_fp;
-#   vector[K] tx_feed_c_fp[N_TX]; // array of k feeds and N_TX taxa groups
-#   vector[N_TX] tx_sum_feed_c_fp;
 #   vector[N_SCI] sci_c_fp;
-#   vector[K] sci_feed_c_fp[N_SCI];
-#   vector[N_SCI] sci_sum_feed_c_fp;
+# 
 #   // Nitrogen
+#   vector[N_TX] tx_n_fp;
+#   vector[N_SCI] sci_n_fp;
 # 
 #   // Phosphorus
-# 
+#   vector[N_TX] tx_p_fp;
+#   vector[N_SCI] sci_p_fp;
+#   
 #   // Land
+#   vector[N_TX] tx_land_fp;
+#   vector[N_SCI] sci_land_fp;
 # 
 #   // Water
+#   vector[N_TX] tx_water_fp;
+#   vector[N_SCI] sci_water_fp;
 #   
 #   // Calculations
 #   for (n_tx in 1:N_TX) {
-#     tx_feed_c_fp[n_tx] = fp_c_dat .* tx_theta[n_tx];
-#     tx_sum_feed_c_fp[n_tx] = sum(tx_feed_c_fp[n_tx]);
-#     tx_c_fp[n_tx] = tx_mu[n_tx] * tx_sum_feed_c_fp[n_tx];
+#     tx_c_fp[n_tx] = tx_mu[n_tx] * sum(fp_c_dat .* tx_theta[n_tx]);
+#     tx_n_fp[n_tx] = tx_mu[n_tx] * sum(fp_n_dat .* tx_theta[n_tx]);
+#     tx_p_fp[n_tx] = tx_mu[n_tx] * sum(fp_p_dat .* tx_theta[n_tx]);
+#     tx_land_fp[n_tx] = tx_mu[n_tx] * sum(fp_land_dat .* tx_theta[n_tx]);
+#     tx_water_fp[n_tx] = tx_mu[n_tx] * sum(fp_water_dat .* tx_theta[n_tx]);
 #   }
 #   for (n_sci in 1:N_SCI) {
-#     sci_feed_c_fp[n_sci] = fp_c_dat .* sci_theta[n_sci];
-#     sci_sum_feed_c_fp[n_sci] = sum(sci_feed_c_fp[n_sci]);
-#     sci_c_fp[n_sci] = sci_mu[n_sci] * sci_sum_feed_c_fp[n_sci];
+#     sci_c_fp[n_sci] = sci_mu[n_sci] * sum(fp_c_dat .* sci_theta[n_sci]);
+#     sci_n_fp[n_sci] = sci_mu[n_sci] * sum(fp_n_dat .* sci_theta[n_sci]);
+#     sci_p_fp[n_sci] = sci_mu[n_sci] * sum(fp_p_dat .* sci_theta[n_sci]);
+#     sci_land_fp[n_sci] = sci_mu[n_sci] * sum(fp_land_dat .* sci_theta[n_sci]);
+#     sci_water_fp[n_sci] = sci_mu[n_sci] * sum(fp_water_dat .* sci_theta[n_sci]);
 #   }
 # }'
-
-
-
-
-# NORMAL distribution hierarchical model
-stan_no_na <- 'data {
-  // data for gamma model for FCR
-  int<lower=0> N;  // number of observations
-  vector<lower=0>[N] x; // data
-  int N_TX; // number of taxa groups
-  int N_SCI; // number of scientific names
-  int n_to_sci[N]; // sciname index
-  int sci_to_tx[N_SCI]; // taxa-group indices
-  
-  // data for dirichlet model for feed
-  int K; // number of feed types
-  simplex[K] feed_weights[N]; // array of observed feed weights simplexes
-  int sci_kappa[N_SCI]; // number of observations per sci-name
-  int tx_kappa[N_TX]; // number of observations per taxa group
-  
-  // constants for generated quantities
-  vector[K] fp_c_dat;
-  vector[K] fp_n_dat;
-  vector[K] fp_p_dat;
-  vector[K] fp_land_dat;
-  vector[K] fp_water_dat;
-}
-parameters {
-  // FCR model:
-  vector<lower=0>[N_TX] tx_mu;
-  real<lower=0> tx_sigma;
-  vector<lower=0>[N_SCI] sci_mu;
-  real<lower=0> sci_sigma;
-  
-  // Feed proportion model:
-  simplex[K] sci_phi[N_SCI];
-  simplex[K] sci_theta[N_SCI]; // vectors of estimated sci-level feed weight simplexes
-  simplex[K] tx_phi[N_TX];
-  simplex[K] tx_theta[N_TX];
-
-  // Params for the dirichlet priors:
-  // real<lower=0> sigma_1;
-  // real<lower=0> sigma_2;
-}
-transformed parameters {
-  // define params for dirichlet model for feed proportions
-  vector<lower=0>[K] sci_alpha[N_SCI];
-  vector<lower=0>[K] tx_alpha[N_TX];
-  
-  // dirichlet model reparameterization
-  // reparameterize alphas as a vector of means (phi) and counts (kappas)
-  // theta is expected value of mean feed weights
-  // kappa is strength of the prior measured in number of prior observations (minus K)
-  for (n_tx in 1:N_TX) {
-    tx_alpha[n_tx] = tx_kappa[n_tx] * tx_theta[n_tx];
-  }    
-  
-  for (n_sci in 1:N_SCI) {
-    sci_alpha[n_sci] = sci_kappa[n_sci] * sci_theta[n_sci];
-  }
-}
-model {
-  // define priors for gamma model for FCRs
-  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-  //tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
-  //tx_sigma ~ uniform(0, 100);
-  //sci_mu ~ uniform(0, 100);
-  //sci_sigma ~ uniform(0, 100);
-  
-  // define priors for dirichlet model for feed proportions
-  // sci_phi defined as sci_phi[n_to_sci][K]
-  
-  // option 1: define feed proportion priors as lower upper bounds
-  // sci_phi[2][1] ~ uniform(0.1, 0.2); // hypothetical lower and upper bounds for Oncorhynchus mykiss soy 
-  
-  // option 2: define feed proportions as means (need to define sigmas in parameters block: real<lower=0> sigma_1, sigma_2 etc;)
-  // sci_phi[2][1] ~ normal(0.13, sigma_1); // mean for Oncorhynhchus mykiss soy feed 
-  
-  // likelihood
-  // normal model sci-name and taxa-level
-  for (n in 1:N){
-    x[n] ~ normal(sci_mu[n_to_sci[n]], sci_sigma);
-  }
-  
-  for (n_sci in 1:N_SCI){
-    sci_mu[n_sci] ~ normal(tx_mu[sci_to_tx[n_sci]], tx_sigma);
-  }
-  
-  // dirichlet model 
-  // use data to estimate sci-level dirichlet shape param (alphas)
-  for (n in 1:N) {
-    feed_weights[n] ~ dirichlet(to_vector(sci_alpha[n_to_sci[n]])); 
-  }
-  // use sci-level thetas to estimate taxa-level dirichlet shape param (alphas)
-  for (n_sci in 1:N_SCI) {
-    sci_theta[n_sci] ~ dirichlet(to_vector(tx_alpha[sci_to_tx[n_sci]]));
-  }
-}
-generated quantities {
-  // Carbon
-  vector[N_TX] tx_c_fp;
-  vector[N_SCI] sci_c_fp;
-
-  // Nitrogen
-  vector[N_TX] tx_n_fp;
-  vector[N_SCI] sci_n_fp;
-
-  // Phosphorus
-  vector[N_TX] tx_p_fp;
-  vector[N_SCI] sci_p_fp;
-  
-  // Land
-  vector[N_TX] tx_land_fp;
-  vector[N_SCI] sci_land_fp;
-
-  // Water
-  vector[N_TX] tx_water_fp;
-  vector[N_SCI] sci_water_fp;
-  
-  // Calculations
-  for (n_tx in 1:N_TX) {
-    tx_c_fp[n_tx] = tx_mu[n_tx] * sum(fp_c_dat .* tx_theta[n_tx]);
-    tx_n_fp[n_tx] = tx_mu[n_tx] * sum(fp_n_dat .* tx_theta[n_tx]);
-    tx_p_fp[n_tx] = tx_mu[n_tx] * sum(fp_p_dat .* tx_theta[n_tx]);
-    tx_land_fp[n_tx] = tx_mu[n_tx] * sum(fp_land_dat .* tx_theta[n_tx]);
-    tx_water_fp[n_tx] = tx_mu[n_tx] * sum(fp_water_dat .* tx_theta[n_tx]);
-  }
-  for (n_sci in 1:N_SCI) {
-    sci_c_fp[n_sci] = sci_mu[n_sci] * sum(fp_c_dat .* sci_theta[n_sci]);
-    sci_n_fp[n_sci] = sci_mu[n_sci] * sum(fp_n_dat .* sci_theta[n_sci]);
-    sci_p_fp[n_sci] = sci_mu[n_sci] * sum(fp_p_dat .* sci_theta[n_sci]);
-    sci_land_fp[n_sci] = sci_mu[n_sci] * sum(fp_land_dat .* sci_theta[n_sci]);
-    sci_water_fp[n_sci] = sci_mu[n_sci] * sum(fp_water_dat .* sci_theta[n_sci]);
-  }
-}'
 
 
 no_na_mod <- stan_model(model_code = stan_no_na)
@@ -971,10 +994,11 @@ no_na_mod <- stan_model(model_code = stan_no_na)
 
 # Fit model:
 # Set seed while testing
-fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
+#fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
+fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 10000, control = list(adapt_delta = 0.999))
 summary(fit_no_na)
 
-#launch_shinystan(fit_no_na)
+launch_shinystan(fit_no_na)
 
 # Key for naming sci and taxa levels
 # Get full taxa group names back
