@@ -1,12 +1,8 @@
 # Combine bayes_prop_feed and bayes_fcr to calculate on-farm, feed-associated footprint
 
-
 # First run: process_data_for_analysis.R, then clear environment other than:
 rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups", "datadir", "outdir"))])
 
-# Get feed footprint data
-fp_dat <- read.csv(file.path(datadir, "Feed_FP_raw.csv"))
-fp_clean <- clean.feedFP(fp_dat)
 
 ######################################################################################################
 # Step 1: Model FCR, imputing NAs in the predictors (with just the intercept - equivalent to setting this to the mean), and predict missing FCR values
@@ -106,6 +102,21 @@ fp_clean <- clean.feedFP(fp_dat)
 # Step 1b: Model FCR but mirror dirichlet regression which doesn't imput missing predictors
 # ie, remove all NAs and model these data, then use the model to predict FCR for those data with a complete set of predictors
 # Remove FCR == 0 (species that aren't fed)
+
+# Get model-specific data:
+# CREATE STUDY ID COLUMN - use this for rejoining outputs from multiple regression models back together
+# Select relevant data columns and arrange by categorical info
+# Need FCR to identify which species aren't fed (FCR == 0)
+lca_categories <- lca_dat_clean_groups %>%
+  select(FCR, contains("new"), clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
+  arrange(clean_sci_name, taxa, intensity, system) %>%
+  filter(taxa %in% c("mussel")==FALSE) %>% # Remove taxa that don't belong in FCR/feed analysis - mussels
+  mutate(study_id = row_number())
+
+# Get footprint data
+fp_dat <- read.csv(file.path(datadir, "Feed_FP_raw.csv"))
+fp_clean <- clean.feedFP(fp_dat)
+
 fcr_no_na <- lca_categories %>%
   filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
