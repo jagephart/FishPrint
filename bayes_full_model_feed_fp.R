@@ -8,7 +8,7 @@ rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups", "datadir", "outdir"))])
 # Step 1: Model FCR, imputing NAs in the predictors (with just the intercept - equivalent to setting this to the mean), and predict missing FCR values
 
 # Remove species that are not fed (FCR == 0), format intensity and system variables as ordinal
-# lca_with_na <- lca_categories %>%
+# lca_with_na <- feed_model_dat_categories %>%
 #   filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
 #   arrange(clean_sci_name, taxa, intensity, system)
 # 
@@ -106,8 +106,7 @@ rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups", "datadir", "outdir"))])
 # Get model-specific data:
 # CREATE STUDY ID COLUMN - use this for rejoining outputs from multiple regression models back together
 # Select relevant data columns and arrange by categorical info
-# Need FCR to identify which species aren't fed (FCR == 0)
-lca_categories <- lca_dat_clean_groups %>%
+feed_model_dat_categories <- lca_dat_clean_groups %>%
   select(FCR, contains("new"), clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
   arrange(clean_sci_name, taxa, intensity, system) %>%
   filter(taxa %in% c("mussel")==FALSE) %>% # Remove taxa that don't belong in FCR/feed analysis - mussels
@@ -117,10 +116,10 @@ lca_categories <- lca_dat_clean_groups %>%
 fp_dat <- read.csv(file.path(datadir, "Feed_FP_raw.csv"))
 fp_clean <- clean.feedFP(fp_dat)
 
-fcr_no_na <- lca_categories %>%
-  filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+fcr_no_na <- feed_model_dat_categories %>%
+  #filter(FCR != 0 | is.na(FCR))  %>% # If we want to retain NAs, have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
+  filter(FCR != 0) %>% # This also automatically drops NAs
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
-  filter(is.na(FCR)==FALSE) %>%
   select(study_id, FCR, clean_sci_name, taxa, intensity, system)
 
 # Set data for model:
@@ -181,7 +180,7 @@ stancode(fit_fcr_no_na)
 ######################################################################################################
 # Use FCR model to predict NA FCRs for studies with complete set of predictors
 # Both intensity AND system are non-NA
-fcr_complete_predictors <- lca_categories %>%
+fcr_complete_predictors <- feed_model_dat_categories %>%
   filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
   filter(is.na(intensity)==FALSE & is.na(system)== FALSE) %>%
   filter(is.na(FCR))
@@ -270,7 +269,7 @@ full_fcr_dat <- fcr_predictions %>%
 # Then use the model to predict missing feed proportion data for those data that have a complete set of predictors
 
 # Remove FCR == 0 (species that aren't fed)
-feed_no_na <- lca_categories %>%
+feed_no_na <- feed_model_dat_categories %>%
   filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
   filter(is.na(feed_soy_new)==FALSE) %>%
@@ -333,7 +332,7 @@ summary(fit_feed_no_na)
 # Use feed proportion model to predict NA feeds for studies with complete set of predictors
 
 # Both intensity AND system are non-NA
-feed_complete_predictors <- lca_categories %>%
+feed_complete_predictors <- feed_model_dat_categories %>%
   filter(FCR != 0 | is.na(FCR))  %>% # Have to explicitly include is.na(FCR) otherwise NA's get dropped by FCR != 0
   filter(is.na(intensity)==FALSE & is.na(system)== FALSE) %>%
   filter(is.na(feed_soy_new))
