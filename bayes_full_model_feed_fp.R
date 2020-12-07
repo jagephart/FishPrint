@@ -1,4 +1,5 @@
-# Combine bayes_prop_feed and bayes_fcr to calculate on-farm, feed-associated footprint
+# Estiamte on-farm, feed-associated footprint
+# Reminder for new data: entries with data for some columns should have no blanks in other columns (these should be filled in as zeroes)
 
 # First run: process_data_for_analysis.R, then clear environment other than:
 rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups", "datadir", "outdir"))])
@@ -104,16 +105,16 @@ rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups", "datadir", "outdir"))])
 # Remove FCR == 0 (species that aren't fed)
 
 # Get model-specific data:
-# CREATE STUDY ID COLUMN - use this for rejoining outputs from multiple regression models back together
+# SELECT STUDY ID COLUMN - use this for rejoining outputs from multiple regression models back together
 # Select relevant data columns and arrange by categorical info
 feed_model_dat_categories <- lca_dat_clean_groups %>%
-  select(FCR, contains("new"), clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
+  select(study_id, FCR, contains("new"), clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
   arrange(clean_sci_name, taxa, intensity, system) %>%
-  filter(taxa %in% c("mussel")==FALSE) %>% # Remove taxa that don't belong in FCR/feed analysis - mussels
-  mutate(study_id = row_number())
+  filter(taxa %in% c("mussel")==FALSE) # Remove taxa that don't belong in FCR/feed analysis - mussels
 
 # Get footprint data
-fp_dat <- read.csv(file.path(datadir, "Feed_FP_raw.csv"))
+source("Functions.R")
+fp_dat <- read.csv(file.path(datadir, "Feed_impact_factors_20201203.csv"))
 fp_clean <- clean.feedFP(fp_dat)
 
 fcr_no_na <- feed_model_dat_categories %>%
@@ -152,10 +153,10 @@ options(na.action='na.omit') # Return option back to the default
 # Create dataframe for brms and rename feed variables
 
 # Create dataframe for brms and rename feed variables
-gamma_brms_data <- data.frame(y = fcr_no_na$FCR, X_taxa_scaled, X_ordinal_scaled)
+fcr_brms_data <- data.frame(y = fcr_no_na$FCR, X_taxa_scaled, X_ordinal_scaled)
 
 # Set model formula
-y_brms <- brmsformula(y ~ 1 + taxamisc_diad + taxamisc_fresh +
+fcr_brms <- brmsformula(y ~ 1 + taxamisc_diad + taxamisc_fresh +
                         taxamisc_marine + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna +
                         intensity + system, family = Gamma("log"))
 
@@ -169,7 +170,7 @@ all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response v
 # Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
 # increasing max_treedepth is more about efficiency (instead of validity)
 # See: https://mc-stan.org/misc/warnings.html
-fit_fcr_no_na <- brm(y_brms, data = gamma_brms_data,
+fit_fcr_no_na <- brm(fcr_brms, data = fcr_brms_data,
                        prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
 
 # Bulk ESS for y_intensityintensive still < 400; try increasing iterto 50000?
@@ -307,14 +308,14 @@ X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
 options(na.action='na.omit') # Return option back to the default
 
 # Create dataframe for brms and rename feed variables
-brms_data <- data.frame(cbind(feed_no_na %>% select(contains("feed")), X_taxa_scaled, X_ordinal_scaled)) 
+feed_data <- data.frame(cbind(feed_no_na %>% select(contains("feed")), X_taxa_scaled, X_ordinal_scaled)) 
 
 # Response variable must be a matrix, create function bind since cbind within the brm function is reserved for specifying multivariate models
 bind <- function(...) cbind(...)
 
 # CHOOSE ONE:
 # Option1: For TAXA + INTENSITY + SYSTEM
-y_brms <- brmsformula(bind(feed_soy, feed_crops, feed_fmfo, feed_animal) ~ 
+feed_brms <- brmsformula(bind(feed_soy, feed_crops, feed_fmfo, feed_animal) ~ 
                         taxamisc_diad + taxamisc_fresh + taxamisc_marine + taxasalmon + taxashrimp + taxatilapia + taxatrout + taxatuna + 
                         intensity + system, family = dirichlet())
 # Option2: For TAXA + INTENSITY 
@@ -323,7 +324,7 @@ y_brms <- brmsformula(bind(feed_soy, feed_crops, feed_fmfo, feed_animal) ~
 # y_brms <- brmsformula(bind(feed_soy, feed_crops, feed_fmfo, feed_animal) ~ taxamisc_marine + taxasalmon + taxatilapia + taxatrout + system, family = dirichlet())
 
 # Model converges after increasing the adapt_delta and iterations from default values
-fit_feed_no_na <- brm(y_brms, data = brms_data,
+fit_feed_no_na <- brm(feed_brms, data = feed_data,
                  cores = 4, seed = "11729", iter = 10000)
 
 summary(fit_feed_no_na) 
@@ -382,12 +383,12 @@ X_ordinal_new_scaled <- scale(X_ordinal_new, center=apply(X_ordinal, MARGIN = 2,
 options(na.action='na.omit') # Return option back to the default
 
 # Create dataframe for brms and rename feed variables
-brms_new_data <- data.frame(cbind(X_taxa_new_scaled, X_ordinal_new_scaled)) 
+brms_new_feed_data <- data.frame(cbind(X_taxa_new_scaled, X_ordinal_new_scaled)) 
 
 # Make predictions
-#predicted_feed_dat <- predict(fit_no_na, newdata = brms_new_data)
+#predicted_feed_dat <- predict(fit_no_na, newdata = brms_new_feed_data)
 # Use tidybayes instead:
-predicted_feed_dat <- add_predicted_draws(newdata = brms_new_data, model = fit_feed_no_na)
+predicted_feed_dat <- add_predicted_draws(newdata = brms_new_feed_data, model = fit_feed_no_na)
 
 # Get point and interval estimates from predicted data
 # Select just the prediction columns
@@ -487,7 +488,7 @@ ggsave(file.path(outdir, "boxplot_feed-prop_all-feeds.png"), height = 8, width =
 # Set data for model
 
 # Merge fcr and feed datasets by study_id, remove interval info, only use medians for rest of analysis
-
+# FIX IT - vectorize over different allocation methods of footprint data (now called impact factors)
 
 # Format feed_dat
 # Standardize number of significant digits (round to digist = 3)
@@ -510,25 +511,12 @@ feed_dat_merge <- full_feed_dat %>%
 fcr_dat_merge <- full_fcr_dat %>%
   select(study_id, clean_sci_name, taxa, intensity, system, fcr_data_type = data_type, FCR)
 
-# FIX IT - use a smaller dataset for testing purposes: just 2 taxa
+# FIX IT - check dim of feed_dat_merge and fcr_dat_merge (which is bigger - i.e., is left_join appropriate?)
+# MERGE
 feed_footprint_dat <- feed_dat_merge %>%
-  left_join(fcr_dat_merge, by = intersect(names(feed_dat_merge), names(fcr_dat_merge))) %>%
+  full_join(fcr_dat_merge, by = intersect(names(feed_dat_merge), names(fcr_dat_merge))) %>%
+  drop_na() %>%
   arrange(clean_sci_name, taxa) %>%
-  # FILTER TO SMALLER DATASET
-  #filter(taxa %in% c("fresh_crust", "misc_diad")) %>%
-  #filter(taxa %in% c("trout", "tilapia")) %>%
-  # FILTER OUTLIER DATA
-  #filter(FCR < 2 & FCR > 1) %>%
-  # FILTER TO ONLY INCLUDE sci-names with 2 or more observations
-  # group_by(clean_sci_name) %>%
-  # mutate(n_obs = n(),
-  #         sci_mean = mean(FCR)) %>%
-  # ungroup() %>% 
-  # filter(n_obs > 1) %>%
-  # Model doesn't converge once taxa level is included - Get taxa means to use for priors
-  #group_by(taxa) %>%
-  #mutate(taxa_mean = mean(FCR)) %>%
-  #ungroup() %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sci = as.numeric(clean_sci_name),
          taxa = as.factor(taxa),

@@ -99,16 +99,18 @@ library(ggplot2)
 
 source("Functions.R")
 
+datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+
 #_______________________________________________________________________________________________________________________#
 # Load lca data
 #_______________________________________________________________________________________________________________________#
-lca <- clean.lca(LCA_data = read.csv("Data/LCA_compiled_20201109.csv", stringsAsFactors = FALSE))
+lca <- clean.lca(LCA_data = read.csv(file.path(datadir, "LCA_compiled_20201109.csv"), stringsAsFactors = FALSE))
 
 #_______________________________________________________________________________________________________________________#
 # Load feed FP data 
 #_______________________________________________________________________________________________________________________#
 # Units of footprint are per 1 kg (apart from energy, which has per L) FIX IT: Rob, is this correct?
-feed_fp <- read.csv("Data/Feed_FP_raw.csv", stringsAsFactors = FALSE)
+feed_fp <- read.csv(file.path(datadir, "Feed_FP_raw.csv"), stringsAsFactors = FALSE)
 # Tidy FP data
 feed_fp <- clean.feedFP(feed_fp)
 
@@ -119,7 +121,7 @@ feed_fp <- clean.feedFP(feed_fp)
 #Carbon, nitrogen and phosphorus elemental stoichiometry in aquacultured and wild-caught fish and consequences for pelagic nutrient dynamics and also a simplified NPZ method approach
 
 # N and P content of fish in % of DM
-fishNutrition <- read.csv("Data/FishGenus.csv", stringsAsFactors = FALSE)
+fishNutrition <- read.csv(file.path(datadir, "FishGenus.csv"), stringsAsFactors = FALSE)
 fishNutrition <-fishNutrition %>%filter(Preparation=='raw')   #filter out all non raw observations (e.g. dried, cooked)
 
 fishNutrition <- fishNutrition %>%
@@ -140,7 +142,7 @@ lca <- lca %>%
 
 #N and P content of feed in % of DM (read from feed composition tables, USDA 1982)
 feedNutrition <-clean_feedNutrition(feedNutrition_data = 
-                                      read.csv("Data/United-States-Canadian-Tables-of-Feed-1982-pages-68-921-with_CrudeProtein.csv",
+                                      read.csv(file.path(datadir, "United-States-Canadian-Tables-of-Feed-1982-pages-68-921-with_CrudeProtein.csv"),
                                                stringsAsFactors = FALSE))
 
 #_______________________________________________________________________________________________________________________#
@@ -152,7 +154,7 @@ lca$harvest <- runif(nrow(lca), min = 10, max = 500)
 #_______________________________________________________________________________________________________________________#
 # Load on-farm energy data
 #_______________________________________________________________________________________________________________________#
-energy_gwp <- read.csv("Data/electricity_GWP.csv")
+energy_gwp <- read.csv(file.path(datadir, "electricity_GWP.csv"))
 # Clean eneergy data
 energy_gwp$iso3c <- countrycode(energy_gwp$Country, origin = "country.name", destination = "iso3c")
 

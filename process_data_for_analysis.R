@@ -30,6 +30,9 @@ fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global
 # Use ISSCAAP grouping (in FAO data) to help with classification
 lca_dat_clean_groups <- add_taxa_group(lca_dat_clean, fishstat_dat)
 
+# Output clean data with groups (later will read this back in to join with model predictions)
+write.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"), row.names = FALSE)
+
 # Output taxa groupings and sample sizes:
 #data.frame(table(lca_dat_clean_groups$taxa_group_name))
 #data.frame(table(lca_dat_clean_groups$taxa)) # abbreviated version of taxa_group_name for writing models

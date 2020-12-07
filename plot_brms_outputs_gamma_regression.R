@@ -26,13 +26,28 @@ library(RColorBrewer)
 #name_of_var <- "FCR"
 
 # Yield
-name_of_fit <- "fit_yield_no_na"
-name_of_data <- "full_yield_dat"
-name_of_var <- "yield"
+# name_of_fit <- "fit_yield_no_na"
+# name_of_data <- "full_yield_dat"
+# name_of_var <- "yield"
 
+# Harvest
+name_of_fit <- "fit_harvest_no_na"
+name_of_data <- "full_harvest_dat"
+name_of_var <- "harvest"
+
+# Electricity
+# name_of_fit <- "fit_elec_no_na"
+# name_of_data <- "full_elec_dat"
+# name_of_var <- "electricity" # This is the column name in full_elec_dat
+
+compiled_dat_clean <- read.csv(file.path(datadir, "lca_clean_with_groups.csv"))
 brms_output <- get(name_of_fit)
 full_dat <- get(name_of_data)
 
+# Combine modeled data (both data and predictions) with the full clean LCA dataset and output this
+dat_for_si <- compiled_dat_clean %>%
+  left_join(full_dat, by = c("study_id", "clean_sci_name", "taxa", "Intensity" = "intensity", "Production_system_group" = "system"))
+write.csv(dat_for_si, file.path(outdir, paste("lca_clean_with_model_predictions-", name_of_var, ".csv", sep = "")), row.names = FALSE)
 
 summary(brms_output)
 
@@ -138,7 +153,7 @@ for (i in 1:length(unique(full_dat$taxa))){
           axis.title = element_text(size = 20),
           axis.text.y = element_blank())
   plot(p)
-  file_i <- paste("plot_gamma-regression_missing-dat-predictions_taxa-", taxa_i, ".png", sep = "")
+  file_i <- paste("plot_gamma-regression_", name_of_var, "_missing-dat-predictions_taxa-", taxa_i, ".png", sep = "")
   ggsave(filename = file.path(outdir, file_i), width = 11.5, height = 8)
 }
 

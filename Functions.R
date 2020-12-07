@@ -32,7 +32,7 @@ clean.lca <- function(LCA_data){
     ) %>%
     select(Year, Country, iso3c, Scientific.Name = Species.scientific.name, Common.Name = Species.common.name, 
            Production_system, Sample_size,
-           Environment, Intensity, Yield_t_per_Ha, Yield_kg_per_m3, Grow_out_period_days, Mortality_rate, FCR, 
+           Environment, Intensity, Product, Yield_t_per_Ha, Yield_kg_per_m3, Grow_out_period_days, Mortality_rate, FCR, 
            Feed_type, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent, Feed_method,
            Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L) %>%
     mutate(
@@ -110,6 +110,10 @@ clean.lca <- function(LCA_data){
            feed_crops_new = feed_crops_new / sum_for_rescaling_feed,
            feed_fmfo_new = feed_fmfo_new / sum_for_rescaling_feed,
            feed_animal_new = feed_animal_new / sum_for_rescaling_feed)
+  
+  # FINAL STEP: Create study_id column, use this in all analyses to bind predictions from multiple models back together
+  LCA_data <- LCA_data %>%
+    mutate(study_id = row_number())
 }
 
 #_____________________________________________________________________________________________________#
@@ -326,18 +330,18 @@ rep_data <- function(lca_dat_clean){
 #_____________________________________________________________________________________________________#
 clean.feedFP <- function(feedFP_data){
   feedFP_data <- feedFP_data %>%
-    filter(Unit != "kg PO4-eq") %>% # Not currently using
-    group_by(Category, Unit, Allocation.method) %>%
+    #filter(Units != "kg PO4-eq") %>% # Not currently using
+    group_by(Input.type, Impact.category, Units, Allocation) %>%
     # Revise this to change from arithmetic mean to a weighted mean
-    summarise(FP_val = mean(Value, na.rm = TRUE), SD = sd(Value, na.rm = TRUE), .groups = 'drop') %>% 
-    mutate(FP = case_when(
-      (Unit == "kg CO2-eq") ~ "Carbon",
-      (Unit == "m3") ~ "Water",
-      (Unit == "m2a") ~ "Land",
-      (Unit == "kg N-eq") ~ "Nitrogen",
-      (Unit == "kg P-eq") ~ "Phosphorus"
+    summarise(impact_val = mean(Value, na.rm = TRUE), SD = sd(Value, na.rm = TRUE), .groups = 'drop') %>% 
+    mutate(impact_factor = case_when(
+      (Units == "kg CO2-eq / kg") ~ "Carbon",
+      (Units == "m3 / kg") ~ "Water",
+      (Units == "m2a / kg") ~ "Land",
+      (Units == "kg N-eq / kg") ~ "Nitrogen",
+      (Units == "kg P-eq / kg") ~ "Phosphorus"
     )) %>%
-    select(FP, Category, Allocation.method, FP_val, SD, Unit)
+    select(impact_factor, Impact.category, Allocation, impact_val, SD, Units)
 }
 
 #_____________________________________________________________________________________________________#
