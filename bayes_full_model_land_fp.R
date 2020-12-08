@@ -93,10 +93,6 @@ names(yield_brms_data)
 yield_brms <- brmsformula(y ~ 1 + taxamisc_fresh + taxamisc_marine + taxaoth_carp + taxatilapia + 
                         intensity, family = Gamma("log"))
 
-# Versus:
-#yield_brms_shortcut <- brmsformula(y ~ 1 + ., family = Gamma("log"))
-
-
 # Use "resp = <response_variable>" to specify different priors for different response variables
 all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
                 set_prior("normal(0,2.5)", class = "Intercept"), 
@@ -345,7 +341,6 @@ harvest_dat_merge <- full_harvest_dat %>%
 
 
 # Merge as full_join and remove NAs
-# FIX IT - check dim of full_yield_dat and 
 land_footprint_dat <- yield_dat_merge %>%
   full_join(harvest_dat_merge, by = intersect(names(yield_dat_merge), names(harvest_dat_merge))) %>%
   drop_na() %>%
@@ -360,6 +355,7 @@ N = nrow(land_footprint_dat)
 N_SCI <- length(unique(land_footprint_dat$sci))
 n_to_sci <- land_footprint_dat$sci
 N_TX <- length(unique(land_footprint_dat$tx))
+n_to_tx <- land_footprint_dat$tx
 sci_to_tx = land_footprint_dat %>%
   select(sci, tx) %>%
   unique() %>%
@@ -371,6 +367,7 @@ stan_data <- list(N = N,
                   N_SCI = N_SCI, 
                   n_to_sci = n_to_sci,
                   N_TX = N_TX,
+                  n_to_tx = n_to_tx,
                   sci_to_tx = sci_to_tx,
                   harvest = harvest,
                   yield = yield)
@@ -385,6 +382,7 @@ stan_no_na <- 'data {
   int N_TX; // number of taxa groups
   int N_SCI; // number of scientific names
   int n_to_sci[N]; // sciname index
+  //int n_to_tx[N]; // taxa-group index
   int sci_to_tx[N_SCI]; // taxa-group indices
 }
 parameters {
@@ -406,54 +404,36 @@ transformed parameters {
 
   // gamma model reparameterization
   // option 1: reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+  // sci level
+  for (k in 1:N){
+    sci_shape[n_to_sci[k]] = square(sci_mu[n_to_sci[k]]) ./ square(sci_sigma);
+    sci_rate[n_to_sci[k]] = sci_mu[n_to_sci[k]] ./ square(sci_sigma);
+  }
+
   // taxa group level
-  for (n_tx in 1:N_TX){
-    tx_shape[n_tx] = square(tx_mu[n_tx]) ./ square(tx_sigma);
-    tx_rate[n_tx] = tx_mu[n_tx] ./ square(tx_sigma);
-  }
-
-  // sci level
   for (n_sci in 1:N_SCI){
-    sci_shape[n_sci] = square(sci_mu[n_sci]) ./ square(sci_sigma);
-    sci_rate[n_sci] = sci_mu[n_sci] ./ square(sci_sigma);
+    tx_shape[sci_to_tx[n_sci]] = square(tx_mu[sci_to_tx[n_sci]]) ./ square(tx_sigma);
+    tx_rate[sci_to_tx[n_sci]] = tx_mu[sci_to_tx[n_sci]] ./ square(tx_sigma);
   }
-
-  // option 2: reparameterize gamma to get just mu
-  //for (n_tx in 1:N_TX){
-  //  tx_rate[n_tx] = tx_shape[n_tx] ./ tx_mu[n_tx];
-  //}
-  // sci level
-  //for (n_sci in 1:N_SCI){
-  //  sci_rate[n_sci] = sci_shape[n_sci] ./ sci_mu[n_sci];
-  //}
-  
-  // option 3: reparameterize shape and rate as inverse(va) and inverse(va)/mu
-  //for (n_tx in 1:N_TX){
-  //  tx_shape[n_tx] = 1 / tx_sigma_sq;
-  //  tx_rate[n_tx] = 1 / (tx_sigma_sq * tx_mu[n_tx]);
-  //}
-  //for (n_sci in 1:N_SCI){
-  //  sci_shape[n_sci] = 1 / sci_sigma_sq;
-  //  sci_rate[n_sci] = 1 / (sci_sigma_sq * sci_mu[n_sci]);
-  //}
 }
 model {
   // define priors for gamma model
   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-  tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
-  sci_mu ~ uniform(0, 100);
+  //tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
+  //sci_mu ~ uniform(0, 100);
   //tx_sigma ~ uniform(0, 100); // only need sigmas if calculating shape and rate with mu and sigma
   //sci_sigma ~ uniform(0, 100);
 
   // likelihood
   // gamma model sci-name and taxa-level
-  for (n in 1:N){
-    harvest[n]/yield[n] ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
+  for (i in 1:N){
+    harvest[i]/yield[i] ~ gamma(sci_shape[n_to_sci[i]], sci_rate[n_to_sci[i]]);
   }
 
   for (n_sci in 1:N_SCI){
     sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
   }
+  
 }'
 
 
