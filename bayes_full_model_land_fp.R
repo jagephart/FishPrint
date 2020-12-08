@@ -194,6 +194,132 @@ full_yield_dat <- yield_predictions %>%
 # NEXT: use plot_brms_gamma_regression to produce figures for SI
 
 ######################################################################################################
+# Aggregate up to taxa level and estimate total feed footprint
+# Set data for model
+
+# Merge datasets by study_id, remove interval info, only use medians for rest of analysis
+# Format dat for merge
+# Rename data_type to keep track of different datasets
+yield_dat_merge <- full_yield_dat %>%
+  select(study_id, clean_sci_name, taxa, intensity, system, yield_data_type = data_type, yield)
+
+harvest_dat_merge <- full_harvest_dat %>%
+  select(study_id, clean_sci_name, taxa, intensity, system, harvest_data_type = data_type, harvest)
+
+
+# Merge as full_join and remove NAs
+land_footprint_dat <- yield_dat_merge %>%
+  full_join(harvest_dat_merge, by = intersect(names(yield_dat_merge), names(harvest_dat_merge))) %>%
+  drop_na() %>%
+  arrange(clean_sci_name, taxa) %>%
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sci = as.numeric(clean_sci_name),
+         taxa = as.factor(taxa),
+         tx = as.numeric(taxa))
+
+# Set data
+N = nrow(land_footprint_dat)
+N_SCI <- length(unique(land_footprint_dat$sci))
+n_to_sci <- land_footprint_dat$sci
+N_TX <- length(unique(land_footprint_dat$tx))
+n_to_tx <- land_footprint_dat$tx
+sci_to_tx = land_footprint_dat %>%
+  select(sci, tx) %>%
+  unique() %>%
+  pull(tx)
+harvest <- land_footprint_dat$harvest
+yield <- land_footprint_dat$yield
+
+stan_data <- list(N = N,
+                  N_SCI = N_SCI, 
+                  n_to_sci = n_to_sci,
+                  N_TX = N_TX,
+                  n_to_tx = n_to_tx,
+                  sci_to_tx = sci_to_tx,
+                  harvest = harvest,
+                  yield = yield)
+
+# Estimate foot print for all scientific names and taxa groups (removed the "all-seafood" level for simplicity)
+# GAMMA distribution hierarchical model
+stan_no_na <- 'data {
+  // data for gamma model for FCR
+  int<lower=0> N;  // number of observations
+  vector<lower=0>[N] harvest; // data
+  vector<lower=0>[N] yield; // data
+  int N_TX; // number of taxa groups
+  int N_SCI; // number of scientific names
+  int n_to_sci[N]; // sciname index
+  //int n_to_tx[N]; // taxa-group index
+  int sci_to_tx[N_SCI]; // taxa-group indices
+}
+parameters {
+  vector<lower=0>[N_TX] tx_mu;
+  vector<lower=0>[N_SCI] sci_mu;
+  // only need sigmas if defining shape and rate with mu and sigma
+  real<lower=0> tx_sigma;
+  real<lower=0> sci_sigma;
+  // if using variance instead of st dev
+  //real<lower=0> tx_sigma_sq;
+  //real<lower=0> sci_sigma_sq;
+}
+transformed parameters {
+  // define transofrmed params for gamma model for FCRs
+  vector<lower=0>[N_SCI] sci_shape;
+  vector<lower=0>[N_SCI] sci_rate;
+  vector<lower=0>[N_TX] tx_shape;
+  vector<lower=0>[N_TX] tx_rate;
+
+  // gamma model reparameterization
+  // option 1: reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+  // sci level
+  for (k in 1:N){
+    sci_shape[n_to_sci[k]] = square(sci_mu[n_to_sci[k]]) ./ square(sci_sigma);
+    sci_rate[n_to_sci[k]] = sci_mu[n_to_sci[k]] ./ square(sci_sigma);
+  }
+
+  // taxa group level
+  for (n_sci in 1:N_SCI){
+    tx_shape[sci_to_tx[n_sci]] = square(tx_mu[sci_to_tx[n_sci]]) ./ square(tx_sigma);
+    tx_rate[sci_to_tx[n_sci]] = tx_mu[sci_to_tx[n_sci]] ./ square(tx_sigma);
+  }
+}
+model {
+  // define priors for gamma model
+  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+  //tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
+  //sci_mu ~ uniform(0, 100);
+  //tx_sigma ~ uniform(0, 100); // only need sigmas if calculating shape and rate with mu and sigma
+  //sci_sigma ~ uniform(0, 100);
+
+  // likelihood
+  // gamma model sci-name and taxa-level
+  for (i in 1:N){
+    harvest[i]/yield[i] ~ gamma(sci_shape[n_to_sci[i]], sci_rate[n_to_sci[i]]);
+  }
+
+  for (n_sci in 1:N_SCI){
+    sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
+  }
+  
+}'
+
+
+no_na_mod <- stan_model(model_code = stan_no_na)
+# Note: For Windows, apparently OK to ignore this warning message:
+# Warning message:
+#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
+#   'C:/rtools40/usr/mingw_/bin/g++' not found
+
+# Fit model:
+# Set seed while testing
+#fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
+fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 10000, control = list(adapt_delta = 0.999))
+summary(fit_no_na)
+
+launch_shinystan(fit_no_na)
+
+######################################################################################################
+# OLD: No longer modeling harvest
 # Step 2: Model harvest
 
 harvest_no_na <- land_model_dat_categories %>%
@@ -326,127 +452,4 @@ full_harvest_dat <- harvest_predictions %>%
 
 # NEXT: use plot_brms_gamma_regression to produce figures for SI
 
-######################################################################################################
-# STEP 3 - aggregate up to taxa level and estimate total feed footprint
-# Set data for model
 
-# Merge datasets by study_id, remove interval info, only use medians for rest of analysis
-# Format dat for merge
-# Rename data_type to keep track of different datasets
-yield_dat_merge <- full_yield_dat %>%
-  select(study_id, clean_sci_name, taxa, intensity, system, yield_data_type = data_type, yield)
-
-harvest_dat_merge <- full_harvest_dat %>%
-  select(study_id, clean_sci_name, taxa, intensity, system, harvest_data_type = data_type, harvest)
-
-
-# Merge as full_join and remove NAs
-land_footprint_dat <- yield_dat_merge %>%
-  full_join(harvest_dat_merge, by = intersect(names(yield_dat_merge), names(harvest_dat_merge))) %>%
-  drop_na() %>%
-  arrange(clean_sci_name, taxa) %>%
-  mutate(clean_sci_name = as.factor(clean_sci_name),
-       sci = as.numeric(clean_sci_name),
-       taxa = as.factor(taxa),
-       tx = as.numeric(taxa))
-
-# Set data
-N = nrow(land_footprint_dat)
-N_SCI <- length(unique(land_footprint_dat$sci))
-n_to_sci <- land_footprint_dat$sci
-N_TX <- length(unique(land_footprint_dat$tx))
-n_to_tx <- land_footprint_dat$tx
-sci_to_tx = land_footprint_dat %>%
-  select(sci, tx) %>%
-  unique() %>%
-  pull(tx)
-harvest <- land_footprint_dat$harvest
-yield <- land_footprint_dat$yield
-
-stan_data <- list(N = N,
-                  N_SCI = N_SCI, 
-                  n_to_sci = n_to_sci,
-                  N_TX = N_TX,
-                  n_to_tx = n_to_tx,
-                  sci_to_tx = sci_to_tx,
-                  harvest = harvest,
-                  yield = yield)
-
-# Estimate foot print for all scientific names and taxa groups (removed the "all-seafood" level for simplicity)
-# GAMMA distribution hierarchical model
-stan_no_na <- 'data {
-  // data for gamma model for FCR
-  int<lower=0> N;  // number of observations
-  vector<lower=0>[N] harvest; // data
-  vector<lower=0>[N] yield; // data
-  int N_TX; // number of taxa groups
-  int N_SCI; // number of scientific names
-  int n_to_sci[N]; // sciname index
-  //int n_to_tx[N]; // taxa-group index
-  int sci_to_tx[N_SCI]; // taxa-group indices
-}
-parameters {
-  vector<lower=0>[N_TX] tx_mu;
-  vector<lower=0>[N_SCI] sci_mu;
-  // only need sigmas if defining shape and rate with mu and sigma
-  real<lower=0> tx_sigma;
-  real<lower=0> sci_sigma;
-  // if using variance instead of st dev
-  //real<lower=0> tx_sigma_sq;
-  //real<lower=0> sci_sigma_sq;
-}
-transformed parameters {
-  // define transofrmed params for gamma model for FCRs
-  vector<lower=0>[N_SCI] sci_shape;
-  vector<lower=0>[N_SCI] sci_rate;
-  vector<lower=0>[N_TX] tx_shape;
-  vector<lower=0>[N_TX] tx_rate;
-
-  // gamma model reparameterization
-  // option 1: reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
-  // sci level
-  for (k in 1:N){
-    sci_shape[n_to_sci[k]] = square(sci_mu[n_to_sci[k]]) ./ square(sci_sigma);
-    sci_rate[n_to_sci[k]] = sci_mu[n_to_sci[k]] ./ square(sci_sigma);
-  }
-
-  // taxa group level
-  for (n_sci in 1:N_SCI){
-    tx_shape[sci_to_tx[n_sci]] = square(tx_mu[sci_to_tx[n_sci]]) ./ square(tx_sigma);
-    tx_rate[sci_to_tx[n_sci]] = tx_mu[sci_to_tx[n_sci]] ./ square(tx_sigma);
-  }
-}
-model {
-  // define priors for gamma model
-  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-  //tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
-  //sci_mu ~ uniform(0, 100);
-  //tx_sigma ~ uniform(0, 100); // only need sigmas if calculating shape and rate with mu and sigma
-  //sci_sigma ~ uniform(0, 100);
-
-  // likelihood
-  // gamma model sci-name and taxa-level
-  for (i in 1:N){
-    harvest[i]/yield[i] ~ gamma(sci_shape[n_to_sci[i]], sci_rate[n_to_sci[i]]);
-  }
-
-  for (n_sci in 1:N_SCI){
-    sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
-  }
-  
-}'
-
-
-no_na_mod <- stan_model(model_code = stan_no_na)
-# Note: For Windows, apparently OK to ignore this warning message:
-# Warning message:
-#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
-#   'C:/rtools40/usr/mingw_/bin/g++' not found
-
-# Fit model:
-# Set seed while testing
-#fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
-fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 10000, control = list(adapt_delta = 0.999))
-summary(fit_no_na)
-
-launch_shinystan(fit_no_na)
