@@ -26,14 +26,29 @@ library(RColorBrewer)
 #name_of_var <- "FCR"
 
 # Yield
-name_of_fit <- "fit_yield_no_na"
-name_of_data <- "full_yield_dat"
-name_of_var <- "yield"
+# name_of_fit <- "fit_yield_no_na"
+# name_of_data <- "full_yield_dat"
+# name_of_var <- "yield"
 
 # Electricity
-# name_of_fit <- "fit_elec_no_na"
-# name_of_data <- "full_elec_dat"
-# name_of_var <- "electricity" # This is the column name in full_elec_dat
+# name_of_fit <- "fit_electric_no_na"
+# name_of_data <- "full_electric_dat"
+# name_of_var <- "electric"
+
+# Diesel
+# name_of_fit <- "fit_diesel_no_na"
+# name_of_data <- "full_diesel_dat"
+# name_of_var <- "diesel"
+
+# Petrol
+name_of_fit <- "fit_petrol_no_na"
+name_of_data <- "full_petrol_dat"
+name_of_var <- "petrol"
+
+# Natural gas
+# name_of_fit <- "fit_natgas_no_na"
+# name_of_data <- "full_natgas_dat"
+# name_of_var <- "natgas"
 
 compiled_dat_clean <- read.csv(file.path(datadir, "lca_clean_with_groups.csv"))
 brms_output <- get(name_of_fit)

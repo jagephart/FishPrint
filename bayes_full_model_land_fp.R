@@ -82,7 +82,7 @@ X_ordinal <- yield_no_na %>%
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
 
-# Create dataframe for brms and rename feed variables
+# Create dataframe for brms
 yield_brms_data <- data.frame(y = yield_no_na$yield, X_taxa_scaled, X_ordinal_scaled)
 
 names(yield_brms_data)
@@ -103,7 +103,7 @@ fit_yield_no_na <- brm(yield_brms, data = yield_brms_data,
                      prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
 
 # Get stan code
-stancode(fit_yield_no_na)
+#stancode(fit_yield_no_na)
 
 ######################################################################################################
 # Use model to predict NAs for studies with complete set of predictors
@@ -113,7 +113,6 @@ yield_complete_predictors <- land_model_dat_categories %>%
   filter(is.na(intensity)==FALSE) %>%
   filter(is.na(yield)) # Now, filter to just the NAs
 
-# PROBLEM: lca_complete predictors has more taxa than originally model:
 taxa_not_modeled <- setdiff(unique(yield_complete_predictors$taxa), unique(yield_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
 
 # DROP THESE FOR NOW:
@@ -152,7 +151,7 @@ X_ordinal_new <- yield_complete_predictors %>%
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
 X_ordinal_new_scaled <- scale(X_ordinal_new, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
 
-# Create dataframe for brms and rename feed variables
+# Create dataframe for brms
 brms_new_yield_dat <- data.frame(cbind(X_taxa_new_scaled, X_ordinal_new_scaled)) 
 
 # Make predictions
@@ -180,7 +179,7 @@ yield_predictions <- yield_dat_intervals %>%
 ######################################################################################################
 # Step 2: Model yield with intensity (no taxa, no system)
 
-# Create dataframe for brms and rename feed variables
+# Create dataframe for brms
 yield_brms_data_no_taxa <- data.frame(y = yield_no_na$yield, X_ordinal_scaled)
 
 names(yield_brms_data_no_taxa)
@@ -201,7 +200,7 @@ fit_yield_no_taxa <- brm(yield_brms_no_taxa, data = yield_brms_data_no_taxa,
                        prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
 
 # Get stan code
-stancode(fit_yield_no_taxa)
+#stancode(fit_yield_no_taxa)
 
 ######################################################################################################
 # Use model (of just intensity) to predict yield for taxa that were not part of the previous model
@@ -228,7 +227,7 @@ X_ordinal_no_taxa <- yield_complete_predictors_no_taxa %>%
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
 X_ordinal_scaled_no_taxa <- scale(X_ordinal_no_taxa, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
 
-# Create dataframe for brms and rename feed variables
+# Create dataframe for brms
 brms_yield_dat_no_taxa <- data.frame(X_ordinal_scaled_no_taxa)
 
 # Make predictions
@@ -413,7 +412,7 @@ X_ordinal <- harvest_no_na %>%
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
 
-# Create dataframe for brms and rename feed variables
+# Create dataframe for brms
 harvest_brms_data <- data.frame(y = harvest_no_na$harvest, X_taxa_scaled, X_ordinal_scaled)
 
 names(harvest_brms_data)
@@ -435,7 +434,7 @@ fit_harvest_no_na <- brm(harvest_brms, data = harvest_brms_data,
                        prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
 
 # Get stan code
-stancode(fit_harvest_no_na)
+#stancode(fit_harvest_no_na)
 
 ######################################################################################################
 # Use model to predict NAs for studies with complete set of predictors
@@ -484,7 +483,7 @@ X_ordinal_new <- harvest_complete_predictors %>%
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
 X_ordinal_new_scaled <- scale(X_ordinal_new, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
 
-# Create dataframe for brms and rename feed variables
+# Create dataframe for brms
 brms_new_harvest_dat <- data.frame(cbind(X_taxa_new_scaled, X_ordinal_new_scaled)) 
 
 # Make predictions
