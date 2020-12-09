@@ -26,14 +26,9 @@ library(RColorBrewer)
 #name_of_var <- "FCR"
 
 # Yield
-# name_of_fit <- "fit_yield_no_na"
-# name_of_data <- "full_yield_dat"
-# name_of_var <- "yield"
-
-# Harvest
-name_of_fit <- "fit_harvest_no_na"
-name_of_data <- "full_harvest_dat"
-name_of_var <- "harvest"
+name_of_fit <- "fit_yield_no_na"
+name_of_data <- "full_yield_dat"
+name_of_var <- "yield"
 
 # Electricity
 # name_of_fit <- "fit_elec_no_na"

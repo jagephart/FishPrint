@@ -46,7 +46,7 @@ elec_brms_data <- data.frame(y = elec_no_na$electricity, X_taxa_scaled, X_ordina
 names(elec_brms_data)
 
 # Set model formula
-# elec_brms <- brmsformula(y ~ 1 + ., family = Gamma("log"))
+elec_brms <- brmsformula(y ~ 1 + ., family = Gamma("log"))
 # Equivalent to:
 # elec_brms <- brmsformula(y ~ 1 + taxatilapia + taxatrout +
 #                            intensity + system, family = Gamma("log"))
