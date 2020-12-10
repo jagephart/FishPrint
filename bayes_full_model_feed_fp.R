@@ -955,6 +955,9 @@ summary(fit_no_na)
 
 launch_shinystan(fit_no_na)
 
+######################################################################################################
+# PLOT RESULTS
+
 # Key for naming sci and taxa levels
 # Get full taxa group names back
 index_key <- feed_footprint_dat %>%
@@ -1110,6 +1113,14 @@ ggsave(filename = file.path(outdir, "plot_feed-footprint_water_taxa-level.png"),
 # If we want to mimic bayesplot color schemes, can get hexadecimal colors and input manually to stat_halfeye aesthetics
 color_scheme_get("blue")
 color_scheme_get("green")
+
+
+
+
+
+
+
+
 
 
 # Remaining code below was for initial testing/model building:

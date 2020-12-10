@@ -49,18 +49,18 @@ land_model_dat_categories <- lca_dat_clean_groups %>%
   # For now, just use weight:
   rename(harvest = weight)
 
-# Get footprint data
+# Get feed footprint data
 source("Functions.R")
 fp_dat <- read.csv(file.path(datadir, "Feed_impact_factors_20201203.csv"))
 fp_clean <- clean.feedFP(fp_dat)
 
 ######################################################################################################
-# Step 1: Model yield
+# Step 1: Model yield as taxa + intensity (no system because these are all the same systems)
 # Remove all NAs and model these data, then use the model to predict yield for those data with a complete set of predictors
 yield_no_na <- land_model_dat_categories %>%
   filter(yield != 0)  %>% # This also automatically drops yield == NA
-  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
-  select(study_id, yield, clean_sci_name, taxa, intensity, system)
+  filter(is.na(intensity)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
+  select(study_id, yield, clean_sci_name, taxa, intensity)
 
 # See which ones have missing predictors: land_model_dat_categories %>% filter(is.na(yield)==FALSE & (is.na(intensity) | is.na(system)))
 
@@ -72,26 +72,23 @@ X_taxa <- model.matrix(object = ~ 1 + taxa,
 taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
 
-# Format intensity and system as ordinal variables, then center and scale
+# Not including system since there's no variation in available data
+# Format intensity as ordinal variable, then center and scale
 X_ordinal <- yield_no_na %>%
   mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
-  mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  select(intensity) %>%
   as.matrix()
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
 
-# Create dataframe for brms and rename feed variables
+# Create dataframe for brms
 yield_brms_data <- data.frame(y = yield_no_na$yield, X_taxa_scaled, X_ordinal_scaled)
 
 names(yield_brms_data)
 
 # Set model formula
-# FIX IT - for now removing system since there's no variation in available data
-yield_brms <- brmsformula(y ~ 1 + taxamisc_fresh + taxamisc_marine + taxaoth_carp + taxatilapia + 
-                        intensity, family = Gamma("log"))
+yield_brms <- brmsformula(y ~ 1 + ., family = Gamma("log"))
 
 # Use "resp = <response_variable>" to specify different priors for different response variables
 all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
@@ -106,17 +103,16 @@ fit_yield_no_na <- brm(yield_brms, data = yield_brms_data,
                      prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
 
 # Get stan code
-stancode(fit_yield_no_na)
+#stancode(fit_yield_no_na)
 
 ######################################################################################################
 # Use model to predict NAs for studies with complete set of predictors
-# Both intensity AND system are non-NA
+# Intensity must be non-NA
 yield_complete_predictors <- land_model_dat_categories %>%
   filter(yield != 0 | is.na(yield))  %>% # First drop the zeroes; Have to explicitly include is.na(yield) otherwise NA's get dropped by yield != 0
-  filter(is.na(intensity)==FALSE & is.na(system)== FALSE) %>%
+  filter(is.na(intensity)==FALSE) %>%
   filter(is.na(yield)) # Now, filter to just the NAs
 
-# PROBLEM: lca_complete predictors has more taxa than originally model:
 taxa_not_modeled <- setdiff(unique(yield_complete_predictors$taxa), unique(yield_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
 
 # DROP THESE FOR NOW:
@@ -132,7 +128,7 @@ setdiff(unique(yield_no_na$taxa), unique(yield_complete_predictors$taxa))
 sort(unique(yield_no_na$taxa))
 yield_complete_predictors <- yield_complete_predictors %>%
   mutate(taxa = as.factor(taxa))
-levels(yield_complete_predictors$taxa) <- list(fresh_crust = "fresh_crust", misc_fresh = "misc_fresh", misc_marine = "misc_marine", oth_carp = "oth_carp", tilapia = "tilapia")
+levels(yield_complete_predictors$taxa) <- list(fresh_crust = "fresh_crust", misc_fresh = "misc_fresh", misc_marine = "misc_marine", oth_carp = "oth_carp", shrimp = "shrimp", tilapia = "tilapia")
 
 # Create NEW taxa model matrix for the studies whose feeds need to be predicted
 # Taxa categories:
@@ -142,25 +138,21 @@ X_taxa_new <- model.matrix(object = ~ 1 + taxa,
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
 X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(X_taxa[,-1], MARGIN = 2, FUN = mean), scale=2*taxa_sd)
 
-# System and Intensity variables:
-# Format intensity and system as ordinal variables, then center and scale
+# Still only using intensity (no system)
+# Format intensity as ordinal variable, then center and scale
 X_ordinal_new <- yield_complete_predictors %>%
   mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  #mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
-  mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #mutate(system = as.numeric(system)) %>%
+  select(intensity) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
 X_ordinal_new_scaled <- scale(X_ordinal_new, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
 
-# Create dataframe for brms and rename feed variables
+# Create dataframe for brms
 brms_new_yield_dat <- data.frame(cbind(X_taxa_new_scaled, X_ordinal_new_scaled)) 
-
-# FIX IT - system was not part of the original model (no variation in available data) so removing this column for now:
-brms_new_yield_dat <- brms_new_yield_dat %>%
-  select(-system)
 
 # Make predictions
 #predicted_yield_dat <- predict(fit_no_na, newdata = brms_new_yield_data)
@@ -184,9 +176,86 @@ yield_predictions <- yield_dat_intervals %>%
   left_join(yield_metadat, by = ".row") %>%
   rename(yield = .value)
 
-# Bind
+######################################################################################################
+# Step 2: Model yield with intensity (no taxa, no system)
+
+# Create dataframe for brms
+yield_brms_data_no_taxa <- data.frame(y = yield_no_na$yield, X_ordinal_scaled)
+
+names(yield_brms_data_no_taxa)
+
+# Set model formula
+yield_brms_no_taxa <- brmsformula(y ~ 1 + ., family = Gamma("log"))
+
+# Use "resp = <response_variable>" to specify different priors for different response variables
+all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
+                set_prior("normal(0,2.5)", class = "Intercept"), 
+                set_prior("exponential(1)", class = "shape"))
+
+# Model converges after increasing the adapt_delta and iterations from default values
+# Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
+# increasing max_treedepth is more about efficiency (instead of validity)
+# See: https://mc-stan.org/misc/warnings.html
+fit_yield_no_taxa <- brm(yield_brms_no_taxa, data = yield_brms_data_no_taxa,
+                       prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+
+# Get stan code
+#stancode(fit_yield_no_taxa)
+
+######################################################################################################
+# Use model (of just intensity) to predict yield for taxa that were not part of the previous model
+# Intensity must be non-NA
+yield_complete_predictors <- land_model_dat_categories %>%
+  filter(yield != 0 | is.na(yield))  %>% # First drop the zeroes; Have to explicitly include is.na(yield) otherwise NA's get dropped by yield != 0
+  filter(is.na(intensity)==FALSE) %>%
+  filter(is.na(yield)) # Now, filter to just the NAs
+
+# PROBLEM: lca_complete predictors has more taxa than originally model:
+taxa_not_modeled <- setdiff(unique(yield_complete_predictors$taxa), unique(yield_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
+
+# Only keep taxa that were not modeled previously
+yield_complete_predictors_no_taxa <- yield_complete_predictors %>%
+  filter(taxa %in% taxa_not_modeled) 
+
+# Format intensity as ordinal variable, then center and scale
+X_ordinal_no_taxa <- yield_complete_predictors_no_taxa %>%
+  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(intensity = as.numeric(intensity)) %>%
+  select(intensity) %>%
+  as.matrix()
+
+# Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
+X_ordinal_scaled_no_taxa <- scale(X_ordinal_no_taxa, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
+
+# Create dataframe for brms
+brms_yield_dat_no_taxa <- data.frame(X_ordinal_scaled_no_taxa)
+
+# Make predictions
+#predicted_yield_dat <- predict(fit_no_na, newdata = brms_new_yield_data)
+# Use tidybayes instead:
+predicted_yield_dat_no_taxa <- add_predicted_draws(newdata = brms_yield_dat_no_taxa, model = fit_yield_no_taxa)
+
+# Get point and interval estimates from predicted data
+# Select just the prediction columns
+# Join these with the modeled data (yield_complete_predictors_no_taxa) to get metadata on taxa/intensity/syste,
+yield_dat_intervals_no_taxa <- predicted_yield_dat_no_taxa %>%
+  median_qi(.value = .prediction) %>% # Rename prediction to value
+  ungroup() %>%
+  select(contains("."))
+
+# .row is equivalent to the row number in the modeled dataset (yield_complete_predictors_no_taxa) - create a join column for this
+yield_metadat_no_taxa <- yield_complete_predictors_no_taxa %>%
+  select(study_id, clean_sci_name, taxa, intensity, system) %>%
+  mutate(.row = row_number())
+
+yield_predictions_no_taxa <- yield_dat_intervals_no_taxa %>%
+  left_join(yield_metadat_no_taxa, by = ".row") %>%
+  rename(yield = .value)
+
+# Bind yield_no_na (data), yield_predictions, and yield_predictions_no_taxa
 full_yield_dat <- yield_predictions %>%
   bind_rows(yield_no_na) %>%
+  bind_rows(yield_predictions_no_taxa) %>%
   mutate(data_type = if_else(is.na(.point), true = "data", false = "prediction")) %>%
   arrange(taxa, intensity, system, clean_sci_name) %>%
   rownames_to_column() # Arrange by taxa first, then create dummy column for plotting 
@@ -195,22 +264,19 @@ full_yield_dat <- yield_predictions %>%
 
 ######################################################################################################
 # Aggregate up to taxa level and estimate total feed footprint
-# Set data for model
 
-# Merge datasets by study_id, remove interval info, only use medians for rest of analysis
-# Format dat for merge
-# Rename data_type to keep track of different datasets
-yield_dat_merge <- full_yield_dat %>%
-  select(study_id, clean_sci_name, taxa, intensity, system, yield_data_type = data_type, yield)
-
-harvest_dat_merge <- full_harvest_dat %>%
-  select(study_id, clean_sci_name, taxa, intensity, system, harvest_data_type = data_type, harvest)
-
-
-# Merge as full_join and remove NAs
-land_footprint_dat <- yield_dat_merge %>%
-  full_join(harvest_dat_merge, by = intersect(names(yield_dat_merge), names(harvest_dat_merge))) %>%
-  drop_na() %>%
+# Format data for model
+# Calculate n_in_sci and n_in_taxa in case we want to remove small sample sizes
+land_footprint_dat <- full_yield_dat %>%
+  select(study_id, clean_sci_name, taxa, intensity, data_type, yield) %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_in_sci = n()) %>%
+  ungroup() %>%
+  group_by(taxa) %>%
+  mutate(n_in_taxa = n()) %>%
+  ungroup() %>%
+  #filter(n_in_taxa > 3) %>%
+  #filter(n_in_sci > 3) %>%
   arrange(clean_sci_name, taxa) %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sci = as.numeric(clean_sci_name),
@@ -221,22 +287,20 @@ land_footprint_dat <- yield_dat_merge %>%
 N = nrow(land_footprint_dat)
 N_SCI <- length(unique(land_footprint_dat$sci))
 n_to_sci <- land_footprint_dat$sci
-N_TX <- length(unique(land_footprint_dat$tx))
 n_to_tx <- land_footprint_dat$tx
-sci_to_tx = land_footprint_dat %>%
+N_TX <- length(unique(land_footprint_dat$tx))
+sci_to_tx <- land_footprint_dat %>%
   select(sci, tx) %>%
   unique() %>%
   pull(tx)
-harvest <- land_footprint_dat$harvest
 yield <- land_footprint_dat$yield
 
 stan_data <- list(N = N,
                   N_SCI = N_SCI, 
                   n_to_sci = n_to_sci,
                   N_TX = N_TX,
-                  n_to_tx = n_to_tx,
+                  #n_to_tx = n_to_tx,
                   sci_to_tx = sci_to_tx,
-                  harvest = harvest,
                   yield = yield)
 
 # Estimate foot print for all scientific names and taxa groups (removed the "all-seafood" level for simplicity)
@@ -244,7 +308,6 @@ stan_data <- list(N = N,
 stan_no_na <- 'data {
   // data for gamma model for FCR
   int<lower=0> N;  // number of observations
-  vector<lower=0>[N] harvest; // data
   vector<lower=0>[N] yield; // data
   int N_TX; // number of taxa groups
   int N_SCI; // number of scientific names
@@ -254,13 +317,9 @@ stan_no_na <- 'data {
 }
 parameters {
   vector<lower=0>[N_TX] tx_mu;
-  vector<lower=0>[N_SCI] sci_mu;
-  // only need sigmas if defining shape and rate with mu and sigma
   real<lower=0> tx_sigma;
+  vector<lower=0>[N_SCI] sci_mu;
   real<lower=0> sci_sigma;
-  // if using variance instead of st dev
-  //real<lower=0> tx_sigma_sq;
-  //real<lower=0> sci_sigma_sq;
 }
 transformed parameters {
   // define transofrmed params for gamma model for FCRs
@@ -269,19 +328,16 @@ transformed parameters {
   vector<lower=0>[N_TX] tx_shape;
   vector<lower=0>[N_TX] tx_rate;
 
-  // gamma model reparameterization
-  // option 1: reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
-  // sci level
-  for (k in 1:N){
-    sci_shape[n_to_sci[k]] = square(sci_mu[n_to_sci[k]]) ./ square(sci_sigma);
-    sci_rate[n_to_sci[k]] = sci_mu[n_to_sci[k]] ./ square(sci_sigma);
+  // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+  for (n_tx in 1:N_TX){
+    tx_shape[n_tx] = square(tx_mu[n_tx]) / square(tx_sigma);
+    tx_rate[n_tx] = tx_mu[n_tx] / square(tx_sigma);
   }
-
-  // taxa group level
   for (n_sci in 1:N_SCI){
-    tx_shape[sci_to_tx[n_sci]] = square(tx_mu[sci_to_tx[n_sci]]) ./ square(tx_sigma);
-    tx_rate[sci_to_tx[n_sci]] = tx_mu[sci_to_tx[n_sci]] ./ square(tx_sigma);
+    sci_shape[n_sci] = square(sci_mu[n_sci]) / square(sci_sigma);
+    sci_rate[n_sci] = sci_mu[n_sci] / square(sci_sigma);
   }
+  
 }
 model {
   // define priors for gamma model
@@ -293,10 +349,9 @@ model {
 
   // likelihood
   // gamma model sci-name and taxa-level
-  for (i in 1:N){
-    harvest[i]/yield[i] ~ gamma(sci_shape[n_to_sci[i]], sci_rate[n_to_sci[i]]);
+  for (n in 1:N){
+    1/yield[n] ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
   }
-
   for (n_sci in 1:N_SCI){
     sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
   }
@@ -312,12 +367,186 @@ no_na_mod <- stan_model(model_code = stan_no_na)
 
 # Fit model:
 # Set seed while testing
-#fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
-fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 10000, control = list(adapt_delta = 0.999))
-summary(fit_no_na)
+fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
+summary(fit_no_na)$summary
 
 launch_shinystan(fit_no_na)
 
+######################################################################################################
+# PLOT RESULTS
+
+# LEFT OFF HERE:
+# Key for naming sci and taxa levels
+# Get full taxa group names back
+index_key <- feed_footprint_dat %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_obs = n()) %>%
+  ungroup() %>%
+  select(clean_sci_name, sci, taxa, tx, n_obs) %>%
+  unique() %>%
+  arrange(taxa) %>%
+  mutate(taxa = as.character(taxa),
+         full_taxa_name = case_when(taxa == "misc_marine" ~ "misc marine fishes",
+                                    taxa == "misc_fresh" ~ "misc freshwater fishes",
+                                    taxa == "misc_diad" ~ "misc diadromous fishes",
+                                    taxa == "fresh_crust" ~ "freshwater crustaceans",
+                                    TRUE ~ taxa),
+         taxa = as.factor(taxa),
+         full_taxa_name = as.factor(full_taxa_name))
+
+# Use tidybayes + ggdist for finer control of aes mapping (instead of bayesplots) 
+get_variables(fit_no_na)
+
+# Sci-level feed footprints as point intervals:
+# Carbon
+fit_no_na %>%
+  spread_draws(sci_c_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_c_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = "kg CO2-eq", y = "", title = "Carbon", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_carbon_obs-level.png"), width = 11, height = 8.5)
+
+# Nitrogen
+fit_no_na %>%
+  spread_draws(sci_n_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_n_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = "kg N-eq", y = "", title = "Nitrogen", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_nitrogen_obs-level.png"), width = 11, height = 8.5)
+
+# Phosphorus
+fit_no_na %>%
+  spread_draws(sci_p_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_p_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = "kg P-eq", y = "", title = "Phosphorus", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_phosphorus_obs-level.png"), width = 11, height = 8.5)
+
+# Land
+fit_no_na %>%
+  spread_draws(sci_land_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_land_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = bquote('m'^2~'a'), y = "", title = "Land", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_land_obs-level.png"), width = 11, height = 8.5)
+
+# Water
+fit_no_na %>%
+  spread_draws(sci_water_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_water_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = bquote('m'^3), y = "", title = "Water", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_water_obs-level.png"), width = 11, height = 8.5)
+
+# Taxa-level feed footprints as densities:
+# Carbon
+fit_no_na %>%
+  spread_draws(tx_c_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_c_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg CO2-eq", y = "", title = "Carbon")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_carbon_taxa-level.png"), width = 11, height = 8.5)
+
+# Nitrogen
+fit_no_na %>%
+  spread_draws(tx_n_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_n_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg N-eq", y = "", title = "Nitrogen")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_nitrogen_taxa-level.png"), width = 11, height = 8.5)
+
+
+# Phosphorus
+fit_no_na %>%
+  spread_draws(tx_p_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_p_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg P-eq", y = "", title = "Phosphorus")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_phosphorus_taxa-level.png"), width = 11, height = 8.5)
+
+
+# Land
+fit_no_na %>%
+  spread_draws(tx_land_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_land_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = bquote('m'^2~'a'), y = "", title = "Land")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_land_taxa-level.png"), width = 11, height = 8.5)
+
+# Water
+fit_no_na %>%
+  spread_draws(tx_water_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_water_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = bquote('m'^3), y = "", title = "Water")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_water_taxa-level.png"), width = 11, height = 8.5)
+
+
+# OPTION 2: Taxa-level plots with color themes:
+# If we want to mimic bayesplot color schemes, can get hexadecimal colors and input manually to stat_halfeye aesthetics
+color_scheme_get("blue")
+color_scheme_get("green")
+
+
+
+
+
+
+
+
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
 ######################################################################################################
 # OLD: No longer modeling harvest
 # Step 2: Model harvest
@@ -347,7 +576,7 @@ X_ordinal <- harvest_no_na %>%
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
 
-# Create dataframe for brms and rename feed variables
+# Create dataframe for brms
 harvest_brms_data <- data.frame(y = harvest_no_na$harvest, X_taxa_scaled, X_ordinal_scaled)
 
 names(harvest_brms_data)
@@ -369,7 +598,7 @@ fit_harvest_no_na <- brm(harvest_brms, data = harvest_brms_data,
                        prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
 
 # Get stan code
-stancode(fit_harvest_no_na)
+#stancode(fit_harvest_no_na)
 
 ######################################################################################################
 # Use model to predict NAs for studies with complete set of predictors
@@ -418,7 +647,7 @@ X_ordinal_new <- harvest_complete_predictors %>%
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
 X_ordinal_new_scaled <- scale(X_ordinal_new, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
 
-# Create dataframe for brms and rename feed variables
+# Create dataframe for brms
 brms_new_harvest_dat <- data.frame(cbind(X_taxa_new_scaled, X_ordinal_new_scaled)) 
 
 # Make predictions
