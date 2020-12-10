@@ -54,33 +54,124 @@ prod_weightings <-  prod_weightings %>%
 
 # Calculate the weighted averages for the feed components # FIX IT: Need to add in groupings (not finished yet)
 feed_fp <- read.csv(file.path(datadir, "Feed_impact_factors_20201203.csv"))
+feed_fp$iso3c <- countrycode(feed_fp$Country.Region, origin = "country.name", destination = "iso3c")
+feed_fp$iso3c[is.na(feed_fp$iso3c)] <- "Other"
 
-faostat <- read.csv(file.path(datadir, "FAOSTAT_data_12-8-2020.csv"))
-faostat_summary <- faostat %>% 
+faostat <- read.csv(file.path(datadir, "FAOSTAT_data_12-9-2020.csv"))
+faostat$iso3c <- countrycode(faostat$Area, origin = "country.name", destination = "iso3c")
+
+# Calculate soy weightings
+# Since the specific soy products don't map onto the FAO items, use all soy exports for all soy products
+weightings <-  faostat %>% 
   filter(Unit == "tonnes") %>% 
-  group_by(Area, Item) %>%
-  summarise(Value = sum(Value, na.rm = TRUE)) %>%
-  filter(Value > 0) %>% 
-  mutate(Item_group = case_when(
-    (Item %in% c("Soybeans", "Cake, soybeans", )) ~ "Soy",
-    (Item %in% c("Flour, cassava", "Starch, cassava")) ~ "Cassava",
-    (Item %in% c()) ~ "Corn gluten meal",
-    (Item %in% c()) ~ "Maize",
-    (Item %in% c()) ~ "Peanut meal",
-    (Item %in% c()) ~ "Rapeseed meal",
-    (Item %in% c("Oil, rapeseed")) ~ "Rapeseed oil",
-    (Item %in% c()) ~ "Wheat",
-    (Item %in% c()) ~ "Rice bran",
-    (Item %in% c()) ~ "Sunflower meal",
-    (Item %in% c()) ~ "Wheat bran",
-    (Item %in% c()) ~ "Soy protein concentrate",
-    (Item %in% c()) ~ "Soy protein isolate",
-    (Item %in% c()) ~ "Soybean meal"
-  ))
+  filter(Item %in% c("Soybeans", "Cake, soybeans", "Oil, soybean")) %>%
+  group_by(iso3c) %>%
+  summarise(Exports = sum(Value, na.rm = TRUE)) %>%
+  filter(Exports > 0) %>% 
+  left_join(feed_fp %>% filter(Input.type == "Soy"), by = c("iso3c")) %>%
+  filter(is.na(Input.type) == FALSE) %>%
+  group_by(iso3c) %>%
+  summarise(Exports = sum(Exports, na.rm = TRUE)) %>%
+  mutate(weighting = Exports/sum(Exports)) %>%
+  select(iso3c, weighting)
 
+weighted_soy <- feed_fp %>% 
+  filter(Input.type == "Soy") %>%
+  left_join(weightings, by = "iso3c") %>%
+  group_by(Input.type, Impact.category, Allocation) %>%
+  # If weighting soy ingredient types, do here along with country weightings
+  summarise(ave_stressor = sum(Value * weighting))
+  
+# Calculate crop weightings
+weightings <- faostat %>% 
+  filter(Unit == "tonnes") %>% 
+  group_by(iso3c, Item) %>%
+  summarise(Exports = sum(Value, na.rm = TRUE)) %>%
+  filter(Exports > 0) %>% 
+  mutate(Input = case_when(
+    (Item %in% c("Cassava Equivalent")) ~ "Cassava",
+    (Item %in% c("Maize")) ~ "Maize",
+    (Item %in% c("Cake, maize")) ~ "Corn gluten meal",
+    (Item %in% c("Cake, groundnuts")) ~ "Peanut meal",
+    (Item %in% c("Rape and Mustard Oils")) ~ "Rapeseed oil",
+    (Item %in% c("Cake, rapeseed")) ~ "Rapeseed meal",
+    (Item %in% c("Wheat")) ~ "Wheat",
+    (Item %in% c("Bran, wheat")) ~ "Wheat bran",
+    (Item %in% c("Rice")) ~ "Rice bran",
+    (Item %in% c("Cake, sunflower")) ~ "Sunflower meal"
+  )) %>%
+  filter(is.na(Input) == FALSE) %>% 
+  left_join(feed_fp %>% filter(Input.type == "Crop"), by = c("iso3c", "Input")) %>%
+  filter(is.na(Input.type) == FALSE) %>%
+  ungroup() %>%
+  group_by(Input, iso3c) %>%
+  summarise(Exports = sum(Exports, na.rm = TRUE)) %>%
+  mutate(weighting = Exports/sum(Exports)) %>%
+  select(iso3c, Input, weighting)
 
- "Chicken by-product meal"              "Chicken by-product oil"              
-[25] "Pork blood meal"                                                     
-[28]    
+weighted_crop <- feed_fp %>% 
+  filter(Input.type == "Crop") %>%
+  left_join(weightings, by = c("iso3c", "Input")) %>%
+  group_by(Input.type, Impact.category, Allocation) %>%
+  # Currently filtering out NAs weightings (no trade matched for corn gluten meal)
+  filter(is.na(weighting) == FALSE) %>% 
+  # If weighting soy ingredient types, do here along with country weightings
+  summarise(ave_stressor = sum(Value * weighting))
 
+# Weightings for animal by products
+# Using weightings for all pigmeat and chicken exports
+weightings <-  faostat %>% 
+  filter(Unit == "tonnes") %>% 
+  filter(Item %in% c("Pigmeat")) %>%
+  group_by(iso3c) %>%
+  summarise(Exports = sum(Value, na.rm = TRUE)) %>%
+  filter(Exports > 0) %>% 
+  left_join(feed_fp %>% filter(Input == "Pork blood meal"), by = c("iso3c")) %>%
+  filter(is.na(Input.type) == FALSE) %>%
+  group_by(iso3c) %>%
+  summarise(Exports = sum(Exports, na.rm = TRUE)) %>%
+  mutate(weighting = Exports/sum(Exports)) %>%
+  select(iso3c, weighting)
+
+weighted_pig <- feed_fp %>% 
+  filter(Input == "Pork blood meal") %>%
+  left_join(weightings, by = "iso3c") %>%
+  group_by(Input.type, Impact.category, Allocation) %>%
+  # If weighting soy ingredient types, do here along with country weightings
+  summarise(ave_stressor = sum(Value * weighting))
+
+weightings <-  faostat %>% 
+  filter(Unit == "tonnes") %>% 
+  filter(Item %in% c("Poultry Meat")) %>%
+  group_by(iso3c) %>%
+  summarise(Exports = sum(Value, na.rm = TRUE)) %>%
+  filter(Exports > 0) %>% 
+  left_join(feed_fp %>% filter(Input %in% c("Chicken by-product meal", "Chicken by-product oil")), by = c("iso3c")) %>%
+  filter(is.na(Input.type) == FALSE) %>%
+  group_by(iso3c) %>%
+  summarise(Exports = sum(Exports, na.rm = TRUE)) %>%
+  mutate(weighting = Exports/sum(Exports)) %>%
+  select(iso3c, weighting)
+
+weighted_chicken <- feed_fp %>% 
+  filter(Input == "Pork blood meal") %>%
+  left_join(weightings, by = "iso3c") %>%
+  group_by(Input.type, Impact.category, Allocation) %>%
+  # If weighting soy ingredient types, do here along with country weightings
+  summarise(ave_stressor = sum(Value * weighting))
+
+# Fishery products (currently unweighted since fish products are not in FAOSTAT trade)
+weighted_fish <- feed_fp %>%
+  filter(Input.type == "Fishery") %>%
+  group_by(Input.type, Impact.category, Allocation) %>%
+  # If weighting soy ingredient types, do here along with country weightings
+  summarise(ave_stressor = mean(Value))
+
+# Combine data frames
+weighted_fp <- rbind(weighted_soy, weighted_crop)
+weighted_fp <- rbind(weighted_fp, weighted_pig)
+weighted_fp <- rbind(weighted_fp, weighted_chicken)
+weighted_fp <- rbind(weighted_fp, weighted_fish)
+
+write.csv(weighted_fp, file.path(outdir, "20201209_weighted_feed_fp.csv"))
 
