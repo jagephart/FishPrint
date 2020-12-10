@@ -109,7 +109,7 @@ lca <- clean.lca(LCA_data = read.csv(file.path(datadir, "LCA_compiled_20201109.c
 #_______________________________________________________________________________________________________________________#
 # Rebuild FAO fish production from zip file and merge with lca data
 #_______________________________________________________________________________________________________________________#
-fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
+#fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
 
 # Classify species into taxa groupings
 # Use ISSCAAP grouping (in FAO data) to help with classification
