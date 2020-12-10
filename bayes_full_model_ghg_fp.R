@@ -3,18 +3,28 @@
 
 # Reminder for new data: entries with data for some columns should have no blanks in other columns (these should be filled in as zeroes)
 
-# Step 0: Run process_data_for_analysis.R, then clear environment other than:
-rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups", "datadir", "outdir"))])
-
+# Step 0: Run process_data_for_analysis.R
 # FIX IT - Decide: adjust zeroes upwards? or drop zeroes? See first block of code in each model
-
+library(countrycode)
 
 # Get model-specific data:
 # SELECT STUDY ID COLUMN - use this for rejoining outputs from multiple regression models back together
 # Select relevant data columns and arrange by categorical info
+# Select iso3c so this can be joined with country-specific GHG emissions for electricity
 ghg_model_dat_categories <- lca_dat_clean_groups %>%
-  select(study_id, electric = Electricity_kwh, diesel = Diesel_L, petrol = Petrol_L, natgas = NaturalGas_L, clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
+  select(study_id, Country, iso3c, electric = Electricity_kwh, diesel = Diesel_L, petrol = Petrol_L, natgas = NaturalGas_L, clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
   arrange(clean_sci_name, taxa, intensity, system)
+
+# Get farm-associated carbon footprints data
+# Add iso3c
+electric_fp_dat <- read.csv(file.path(datadir, "electricity_GWP.csv")) %>%
+  mutate(iso3c = countrycode(Country, origin = "country.name", destination = "iso3c"))
+other_energy_fp_dat <- read.csv(file.path(datadir, "energy_carriers_impact_factors.csv"))
+
+# Clear all memory except for final stan model:
+rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
+                           "lca_dat_clean_groups","ghg_model_dat_categories", 
+                           "electric_fp_dat", "other_energy_fp_dat"))])
 
 ######################################################################################################
 # Step 1: Model electricity as taxa + intensity + system
@@ -24,7 +34,7 @@ electric_no_na <- ghg_model_dat_categories %>%
   mutate(electric = if_else(electric == 0, true = min(electric[electric!=0]), false = electric)) %>% # Not modeling the zeroes, option 1: adjust these to the minimum value
   #filter(electric != 0) %>% # Not modeling the zeroes, option 2: drop all zeroes
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
-  select(study_id, electric, clean_sci_name, taxa, intensity, system)
+  select(study_id, Country, iso3c, electric, clean_sci_name, taxa, intensity, system)
 
 # Create model matrix for taxa info, then center and scale
 X_taxa <- model.matrix(object = ~ 1 + taxa, 
@@ -135,7 +145,7 @@ electric_dat_intervals <- predicted_electric_dat %>%
 
 # .row is equivalent to the row number in the modeled dataset (electric_complete_predictors) - create a join column for this
 electric_metadat<- electric_complete_predictors %>%
-  select(study_id, clean_sci_name, taxa, intensity, system) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
   mutate(.row = row_number())
 
 electric_predictions <- electric_dat_intervals %>%
@@ -211,7 +221,7 @@ electric_dat_intervals_no_taxa <- predicted_electric_dat_no_taxa %>%
 
 # .row is equivalent to the row number in the modeled dataset (electric_complete_predictors_no_taxa) - create a join column for this
 electric_metadat_no_taxa <- electric_complete_predictors_no_taxa %>%
-  select(study_id, clean_sci_name, taxa, intensity, system) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
   mutate(.row = row_number())
 
 electric_predictions_no_taxa <- electric_dat_intervals_no_taxa %>%
@@ -228,6 +238,13 @@ full_electric_dat <- electric_predictions %>%
 
 # NEXT: use plot_brms_gamma_regression to produce figures for SI
 
+# Clear all memory except for final stan model:
+rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
+                           "lca_dat_clean_groups","ghg_model_dat_categories", 
+                           "electric_fp_dat", "other_energy_fp_dat", 
+                           "full_electric_dat"))])
+
+
 ######################################################################################################
 # Step 2: Model diesel
 
@@ -236,7 +253,7 @@ diesel_no_na <- ghg_model_dat_categories %>%
   mutate(diesel = if_else(diesel == 0, true = min(diesel[diesel!=0]), false = diesel)) %>% # Not modeling the zeroes, option 1: adjust these to the minimum value
   #filter(diesel != 0) %>% # Not modeling the zeroes, option 2: drop all zeroes
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
-  select(study_id, diesel, clean_sci_name, taxa, intensity, system)
+  select(study_id, Country, iso3c, diesel, clean_sci_name, taxa, intensity, system)
 
 # Create model matrix for taxa info, then center and scale
 X_taxa <- model.matrix(object = ~ 1 + taxa, 
@@ -347,7 +364,7 @@ diesel_dat_intervals <- predicted_diesel_dat %>%
 
 # .row is equivalent to the row number in the modeled dataset (diesel_complete_predictors) - create a join column for this
 diesel_metadat<- diesel_complete_predictors %>%
-  select(study_id, clean_sci_name, taxa, intensity, system) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
   mutate(.row = row_number())
 
 diesel_predictions <- diesel_dat_intervals %>%
@@ -423,7 +440,7 @@ diesel_dat_intervals_no_taxa <- predicted_diesel_dat_no_taxa %>%
 
 # .row is equivalent to the row number in the modeled dataset (diesel_complete_predictors_no_taxa) - create a join column for this
 diesel_metadat_no_taxa <- diesel_complete_predictors_no_taxa %>%
-  select(study_id, clean_sci_name, taxa, intensity, system) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
   mutate(.row = row_number())
 
 diesel_predictions_no_taxa <- diesel_dat_intervals_no_taxa %>%
@@ -440,6 +457,12 @@ full_diesel_dat <- diesel_predictions %>%
 
 # NEXT: use plot_brms_gamma_regression to produce figures for SI
 
+# Clear all memory except for final stan model:
+rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
+                           "lca_dat_clean_groups","ghg_model_dat_categories", 
+                           "electric_fp_dat", "other_energy_fp_dat", 
+                           "full_electric_dat", "full_diesel_dat"))])
+
 ######################################################################################################
 # Step 3: Model petrol
 
@@ -448,7 +471,7 @@ petrol_no_na <- ghg_model_dat_categories %>%
   mutate(petrol = if_else(petrol == 0, true = min(petrol[petrol!=0]), false = petrol)) %>% # Not modeling the zeroes, option 1: adjust these to the minimum value
   #filter(petrol != 0) %>% # Not modeling the zeroes, option 2: drop zeroes
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
-  select(study_id, petrol, clean_sci_name, taxa, intensity, system)
+  select(study_id, Country, iso3c, petrol, clean_sci_name, taxa, intensity, system)
 
 # Create model matrix for taxa info, then center and scale
 X_taxa <- model.matrix(object = ~ 1 + taxa, 
@@ -570,7 +593,7 @@ petrol_dat_intervals <- predicted_petrol_dat %>%
 
 # .row is equivalent to the row number in the modeled dataset (petrol_complete_predictors) - create a join column for this
 petrol_metadat<- petrol_complete_predictors %>%
-  select(study_id, clean_sci_name, taxa, intensity, system) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
   mutate(.row = row_number())
 
 petrol_predictions <- petrol_dat_intervals %>%
@@ -646,7 +669,7 @@ petrol_dat_intervals_no_taxa <- predicted_petrol_dat_no_taxa %>%
 
 # .row is equivalent to the row number in the modeled dataset (petrol_complete_predictors_no_taxa) - create a join column for this
 petrol_metadat_no_taxa <- petrol_complete_predictors_no_taxa %>%
-  select(study_id, clean_sci_name, taxa, intensity, system) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
   mutate(.row = row_number())
 
 petrol_predictions_no_taxa <- petrol_dat_intervals_no_taxa %>%
@@ -663,7 +686,11 @@ full_petrol_dat <- petrol_predictions %>%
 
 # NEXT: use plot_brms_gamma_regression to produce figures for SI
 
-
+# Clear all memory except for final stan model:
+rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
+                           "lca_dat_clean_groups","ghg_model_dat_categories", 
+                           "electric_fp_dat", "other_energy_fp_dat", 
+                           "full_electric_dat", "full_diesel_dat", "full_petrol_dat"))])
 ######################################################################################################
 # Step 4: Model natural gas
 
@@ -672,7 +699,7 @@ natgas_no_na <- ghg_model_dat_categories %>%
   mutate(natgas = if_else(natgas == 0, true = min(natgas[natgas!=0]), false = natgas)) %>% # Not modeling the zeroes, option 1: adjust these to the minimum value
   #filter(natgas != 0) %>% # Not modeling the zeroes option 2: drop zeroes
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
-  select(study_id, natgas, clean_sci_name, taxa, intensity, system)
+  select(study_id, Country, iso3c, natgas, clean_sci_name, taxa, intensity, system)
 
 # FIX IT - option 2 (dropping zeroes) is not a viable option, after dropping zeroes, there's no varaition in taxa (all salmon), intensity (all intensive) or system (all open)
 
@@ -785,7 +812,7 @@ natgas_dat_intervals <- predicted_natgas_dat %>%
 
 # .row is equivalent to the row number in the modeled dataset (natgas_complete_predictors) - create a join column for this
 natgas_metadat<- natgas_complete_predictors %>%
-  select(study_id, clean_sci_name, taxa, intensity, system) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
   mutate(.row = row_number())
 
 natgas_predictions <- natgas_dat_intervals %>%
@@ -861,7 +888,7 @@ natgas_dat_intervals_no_taxa <- predicted_natgas_dat_no_taxa %>%
 
 # .row is equivalent to the row number in the modeled dataset (natgas_complete_predictors_no_taxa) - create a join column for this
 natgas_metadat_no_taxa <- natgas_complete_predictors_no_taxa %>%
-  select(study_id, clean_sci_name, taxa, intensity, system) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
   mutate(.row = row_number())
 
 natgas_predictions_no_taxa <- natgas_dat_intervals_no_taxa %>%
@@ -877,3 +904,163 @@ full_natgas_dat <- natgas_predictions %>%
   rownames_to_column() # Arrange by taxa first, then create dummy column for plotting 
 
 # NEXT: use plot_brms_gamma_regression to produce figures for SI
+
+# Clear all memory except for final stan model:
+rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
+                           "lca_dat_clean_groups","ghg_model_dat_categories", 
+                           "electric_fp_dat", "other_energy_fp_dat", 
+                           "full_electric_dat", "full_diesel_dat", "full_petrol_dat", "full_natgas_dat"))])
+
+######################################################################################################
+# Aggregate up to taxa level and estimate total feed footprint
+
+# Merge electric, diesel, petrol, and natgas datasets
+electric_dat_merge <- full_electric_dat %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, electric_data_type = data_type, electric)
+
+diesel_dat_merge <- full_diesel_dat %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, diesel_data_type = data_type, diesel)
+
+petrol_dat_merge <- full_petrol_dat %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, petrol_data_type = data_type, petrol)
+
+natgas_dat_merge <- full_natgas_dat %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, natgas_data_type = data_type, natgas)
+
+# Merge and format data for model
+# Calculate n_in_sci and n_in_taxa in case we want to remove small sample sizes
+ghg_footprint_merge <- electric_dat_merge %>%
+  full_join(diesel_dat_merge, by = intersect(names(electric_dat_merge), names(diesel_dat_merge))) %>%
+  full_join(petrol_dat_merge, by = intersect(names(.), names(petrol_dat_merge))) %>%
+  full_join(natgas_dat_merge, by = intersect(names(.), names(natgas_dat_merge))) %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_in_sci = n()) %>%
+  ungroup() %>%
+  group_by(taxa) %>%
+  mutate(n_in_taxa = n()) %>%
+  ungroup() %>%
+  arrange(clean_sci_name, taxa) %>%
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sci = as.numeric(clean_sci_name),
+         taxa = as.factor(taxa),
+         tx = as.numeric(taxa))
+
+
+
+# Multiply energy use by their GHG footprint - in STAN model generated quantities will be just the sum of each energy source's footprint
+# (Electricity use * country-specific GHG of electricity) + (Diesel * GHG of diesel) + (Petrol * GHG of petrol) + (Natural gas * GHG of natural gas)
+# Get energy-specific greenhouse gas footprints:
+
+diesel_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Diesel") %>% pull(Value)
+petrol_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Petrol") %>% pull(Value)
+natgas_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Natural gas") %>% pull(Value)
+
+# Calculate GHG footprint for each energy source
+ghg_footprint_dat <- ghg_footprint_merge %>%
+  # Calculate electriciy GHG footprint
+  left_join(electric_fp_dat %>% select(-Country), by = "iso3c") %>% 
+  mutate(GWP_perkWh_CO2eq = if_else(is.na(GWP_perkWh_CO2eq), true = mean(GWP_perkWh_CO2eq, na.rm = TRUE), false = GWP_perkWh_CO2eq)) %>% # for studies with no country data, just use the average across countries
+  mutate(electric_ghg = electric * GWP_perkWh_CO2eq) %>%
+  # Calculate diesel GHG footprint
+  mutate(diesel_ghg = diesel * diesel_fp) %>%
+  # Calculate petrol GHG footprint
+  mutate(petrol_ghg = petrol * petrol_fp) %>%
+  # Calculate natural gas GHG footprint
+  mutate(natgas_ghg = natgas * natgas_fp)
+
+
+
+
+# Set data
+N = nrow(ghg_footprint_dat)
+N_SCI <- length(unique(ghg_footprint_dat$sci))
+n_to_sci <- ghg_footprint_dat$sci
+n_to_tx <- ghg_footprint_dat$tx
+N_TX <- length(unique(ghg_footprint_dat$tx))
+sci_to_tx <- ghg_footprint_dat %>%
+  select(sci, tx) %>%
+  unique() %>%
+  pull(tx)
+electric_ghg <- ghg_footprint_dat$electric_ghg
+diesel_ghg <- ghg_footprint_dat$diesel_ghg
+petrol_ghg <- ghg_footprint_dat$petrol_ghg
+natgas_ghg <- ghg_footprint_dat$natgas_ghg
+
+stan_data <- list(N = N,
+                  N_SCI = N_SCI, 
+                  n_to_sci = n_to_sci,
+                  N_TX = N_TX,
+                  #n_to_tx = n_to_tx,
+                  sci_to_tx = sci_to_tx,
+                  electric_ghg = electric_ghg)
+
+# LEFT OFF HERE - test run single level before moving to two-levels
+# Estimate foot print for all scientific names and taxa groups (removed the "all-seafood" level for simplicity)
+# GAMMA distribution hierarchical model
+stan_no_na <- 'data {
+  // data for gamma model for FCR
+  int<lower=0> N;  // number of observations
+  vector<lower=0>[N] yield; // data
+  int N_TX; // number of taxa groups
+  int N_SCI; // number of scientific names
+  int n_to_sci[N]; // sciname index
+  //int n_to_tx[N]; // taxa-group index
+  int sci_to_tx[N_SCI]; // taxa-group indices
+}
+parameters {
+  vector<lower=0>[N_TX] tx_mu;
+  real<lower=0> tx_sigma;
+  vector<lower=0>[N_SCI] sci_mu;
+  real<lower=0> sci_sigma;
+}
+transformed parameters {
+  // define transofrmed params for gamma model for FCRs
+  vector<lower=0>[N_SCI] sci_shape;
+  vector<lower=0>[N_SCI] sci_rate;
+  vector<lower=0>[N_TX] tx_shape;
+  vector<lower=0>[N_TX] tx_rate;
+
+  // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+  for (n_tx in 1:N_TX){
+    tx_shape[n_tx] = square(tx_mu[n_tx]) / square(tx_sigma);
+    tx_rate[n_tx] = tx_mu[n_tx] / square(tx_sigma);
+  }
+  for (n_sci in 1:N_SCI){
+    sci_shape[n_sci] = square(sci_mu[n_sci]) / square(sci_sigma);
+    sci_rate[n_sci] = sci_mu[n_sci] / square(sci_sigma);
+  }
+  
+}
+model {
+  // define priors for gamma model
+  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+  //tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
+  //sci_mu ~ uniform(0, 100);
+  //tx_sigma ~ uniform(0, 100); // only need sigmas if calculating shape and rate with mu and sigma
+  //sci_sigma ~ uniform(0, 100);
+
+  // likelihood
+  // gamma model sci-name and taxa-level
+  for (n in 1:N){
+    1/yield[n] ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
+  }
+  for (n_sci in 1:N_SCI){
+    sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
+  }
+  
+}'
+
+
+no_na_mod <- stan_model(model_code = stan_no_na)
+# Note: For Windows, apparently OK to ignore this warning message:
+# Warning message:
+#   In system(paste(CXX, ARGS), ignore.stdout = TRUE, ignore.stderr = TRUE) :
+#   'C:/rtools40/usr/mingw_/bin/g++' not found
+
+# Fit model:
+# Set seed while testing
+fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
+summary(fit_no_na)$summary
+
+launch_shinystan(fit_no_na)
+

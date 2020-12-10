@@ -49,7 +49,7 @@ land_model_dat_categories <- lca_dat_clean_groups %>%
   # For now, just use weight:
   rename(harvest = weight)
 
-# Get footprint data
+# Get feed footprint data
 source("Functions.R")
 fp_dat <- read.csv(file.path(datadir, "Feed_impact_factors_20201203.csv"))
 fp_clean <- clean.feedFP(fp_dat)
@@ -264,33 +264,24 @@ full_yield_dat <- yield_predictions %>%
 
 ######################################################################################################
 # Aggregate up to taxa level and estimate total feed footprint
-# Set data for model
-
-
 
 # Format data for model
-# Calculate n_in_taxa in case we want to remove small sample sizes
+# Calculate n_in_sci and n_in_taxa in case we want to remove small sample sizes
 land_footprint_dat <- full_yield_dat %>%
   select(study_id, clean_sci_name, taxa, intensity, data_type, yield) %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_in_sci = n()) %>%
+  ungroup() %>%
   group_by(taxa) %>%
   mutate(n_in_taxa = n()) %>%
   ungroup() %>%
   #filter(n_in_taxa > 3) %>%
+  #filter(n_in_sci > 3) %>%
   arrange(clean_sci_name, taxa) %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sci = as.numeric(clean_sci_name),
          taxa = as.factor(taxa),
          tx = as.numeric(taxa))
-
-
-
-# lEFT OFF HERE:
-brms_tmp <- brmsformula(yield ~ 0, family = Gamma("log"))
-agg_brms_tmp <- brm(brms_tmp, data = land_footprint_dat,
-                         cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
-summary(agg_brms_tmp)
-stancode(agg_brms_tmp)
-
 
 # Set data
 N = nrow(land_footprint_dat)
@@ -338,15 +329,13 @@ transformed parameters {
   vector<lower=0>[N_TX] tx_rate;
 
   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
-  // sci level
-  for (n in 1:N){
-    sci_shape[n_to_sci[n]] = square(sci_mu[n_to_sci[n]]) ./ square(sci_sigma);
-    sci_rate[n_to_sci[n]] = sci_mu[n_to_sci[n]] ./ square(sci_sigma);
+  for (n_tx in 1:N_TX){
+    tx_shape[n_tx] = square(tx_mu[n_tx]) / square(tx_sigma);
+    tx_rate[n_tx] = tx_mu[n_tx] / square(tx_sigma);
   }
-  // taxa group level
   for (n_sci in 1:N_SCI){
-    tx_shape[sci_to_tx[n_sci]] = square(tx_mu[sci_to_tx[n_sci]]) ./ square(tx_sigma);
-    tx_rate[sci_to_tx[n_sci]] = tx_mu[sci_to_tx[n_sci]] ./ square(tx_sigma);
+    sci_shape[n_sci] = square(sci_mu[n_sci]) / square(sci_sigma);
+    sci_rate[n_sci] = sci_mu[n_sci] / square(sci_sigma);
   }
   
 }
@@ -383,6 +372,181 @@ summary(fit_no_na)$summary
 
 launch_shinystan(fit_no_na)
 
+######################################################################################################
+# PLOT RESULTS
+
+# LEFT OFF HERE:
+# Key for naming sci and taxa levels
+# Get full taxa group names back
+index_key <- feed_footprint_dat %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_obs = n()) %>%
+  ungroup() %>%
+  select(clean_sci_name, sci, taxa, tx, n_obs) %>%
+  unique() %>%
+  arrange(taxa) %>%
+  mutate(taxa = as.character(taxa),
+         full_taxa_name = case_when(taxa == "misc_marine" ~ "misc marine fishes",
+                                    taxa == "misc_fresh" ~ "misc freshwater fishes",
+                                    taxa == "misc_diad" ~ "misc diadromous fishes",
+                                    taxa == "fresh_crust" ~ "freshwater crustaceans",
+                                    TRUE ~ taxa),
+         taxa = as.factor(taxa),
+         full_taxa_name = as.factor(full_taxa_name))
+
+# Use tidybayes + ggdist for finer control of aes mapping (instead of bayesplots) 
+get_variables(fit_no_na)
+
+# Sci-level feed footprints as point intervals:
+# Carbon
+fit_no_na %>%
+  spread_draws(sci_c_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_c_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = "kg CO2-eq", y = "", title = "Carbon", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_carbon_obs-level.png"), width = 11, height = 8.5)
+
+# Nitrogen
+fit_no_na %>%
+  spread_draws(sci_n_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_n_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = "kg N-eq", y = "", title = "Nitrogen", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_nitrogen_obs-level.png"), width = 11, height = 8.5)
+
+# Phosphorus
+fit_no_na %>%
+  spread_draws(sci_p_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_p_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = "kg P-eq", y = "", title = "Phosphorus", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_phosphorus_obs-level.png"), width = 11, height = 8.5)
+
+# Land
+fit_no_na %>%
+  spread_draws(sci_land_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_land_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = bquote('m'^2~'a'), y = "", title = "Land", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_land_obs-level.png"), width = 11, height = 8.5)
+
+# Water
+fit_no_na %>%
+  spread_draws(sci_water_fp[sci]) %>%
+  median_qi(.width = 0.8) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_water_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = bquote('m'^3), y = "", title = "Water", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_water_obs-level.png"), width = 11, height = 8.5)
+
+# Taxa-level feed footprints as densities:
+# Carbon
+fit_no_na %>%
+  spread_draws(tx_c_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_c_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg CO2-eq", y = "", title = "Carbon")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_carbon_taxa-level.png"), width = 11, height = 8.5)
+
+# Nitrogen
+fit_no_na %>%
+  spread_draws(tx_n_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_n_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg N-eq", y = "", title = "Nitrogen")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_nitrogen_taxa-level.png"), width = 11, height = 8.5)
+
+
+# Phosphorus
+fit_no_na %>%
+  spread_draws(tx_p_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_p_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg P-eq", y = "", title = "Phosphorus")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_phosphorus_taxa-level.png"), width = 11, height = 8.5)
+
+
+# Land
+fit_no_na %>%
+  spread_draws(tx_land_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_land_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = bquote('m'^2~'a'), y = "", title = "Land")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_land_taxa-level.png"), width = 11, height = 8.5)
+
+# Water
+fit_no_na %>%
+  spread_draws(tx_water_fp[tx]) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_water_fp)) +
+  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = bquote('m'^3), y = "", title = "Water")
+ggsave(filename = file.path(outdir, "plot_feed-footprint_water_taxa-level.png"), width = 11, height = 8.5)
+
+
+# OPTION 2: Taxa-level plots with color themes:
+# If we want to mimic bayesplot color schemes, can get hexadecimal colors and input manually to stat_halfeye aesthetics
+color_scheme_get("blue")
+color_scheme_get("green")
+
+
+
+
+
+
+
+
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
+######################################################################################################
 ######################################################################################################
 # OLD: No longer modeling harvest
 # Step 2: Model harvest
