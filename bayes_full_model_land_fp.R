@@ -276,7 +276,7 @@ land_footprint_dat <- full_yield_dat %>%
   mutate(n_in_taxa = n()) %>%
   ungroup() %>%
   #filter(n_in_taxa > 3) %>%
-  #filter(n_in_sci > 3) %>%
+  filter(n_in_sci > 3) %>%
   arrange(clean_sci_name, taxa) %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sci = as.numeric(clean_sci_name),
@@ -312,14 +312,14 @@ stan_no_na <- 'data {
   int N_TX; // number of taxa groups
   int N_SCI; // number of scientific names
   int n_to_sci[N]; // sciname index
-  //int n_to_tx[N]; // taxa-group index
   int sci_to_tx[N_SCI]; // taxa-group indices
 }
 parameters {
   vector<lower=0>[N_TX] tx_mu;
-  real<lower=0> tx_sigma;
   vector<lower=0>[N_SCI] sci_mu;
-  real<lower=0> sci_sigma;
+  real<lower=0> tx_sigma; // only need to define sigmas if using option 1
+  real<lower=0> sci_sigma; 
+  //vector<lower=0>[N_SCI] sci_shape; // define shape here if not transforming (using option 2 below)
 }
 transformed parameters {
   // define transofrmed params for gamma model for FCRs
@@ -329,6 +329,7 @@ transformed parameters {
   vector<lower=0>[N_TX] tx_rate;
 
   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+  // option 1: mean and variance
   for (n_tx in 1:N_TX){
     tx_shape[n_tx] = square(tx_mu[n_tx]) / square(tx_sigma);
     tx_rate[n_tx] = tx_mu[n_tx] / square(tx_sigma);
@@ -338,6 +339,14 @@ transformed parameters {
     sci_rate[n_sci] = sci_mu[n_sci] / square(sci_sigma);
   }
   
+  // option 2: rate = shape / mean
+  //for (n_tx in 1:N_TX){
+  //  tx_rate[n_tx] = tx_shape[n_tx] / tx_mu[n_tx];
+  //}
+  //for (n_sci in 1:N_SCI){
+  //  sci_rate[n_sci] = sci_shape[n_sci] / sci_mu[n_sci];
+  //}
+  
 }
 model {
   // define priors for gamma model
@@ -346,7 +355,20 @@ model {
   //sci_mu ~ uniform(0, 100);
   //tx_sigma ~ uniform(0, 100); // only need sigmas if calculating shape and rate with mu and sigma
   //sci_sigma ~ uniform(0, 100);
-
+  //tx_sigma ~ cauchy(.05, .01);
+  // try adding weakly informative priors on shape and/or rate parameters
+  // shape priors require target += notation: values come outputs of shape parameters in non-hierarchical model - did not help
+  //target += cauchy_lpdf(sci_shape[1] | 16, 8);
+  //target += cauchy_lpdf(sci_shape[2] | 200, 100);
+  //target += cauchy_lpdf(sci_shape[3] | 8, 4);
+  //target += cauchy_lpdf(sci_shape[4] | 0.3, 0.15);
+  //target += cauchy_lpdf(sci_shape[5] | 7, 3.5);
+  //target += cauchy_lpdf(sci_shape[6] | 0.4, 0.2);
+  //target += cauchy_lpdf(sci_shape[7] | 0.4, 0.2);
+  //target += cauchy_lpdf(sci_shape[8] | 14, 7);
+  //target += cauchy_lpdf(sci_shape[9] | 1, 0.5);
+  //target += cauchy_lpdf(sci_shape[10] | 1, 0.5);
+  
   // likelihood
   // gamma model sci-name and taxa-level
   for (n in 1:N){
@@ -368,6 +390,7 @@ no_na_mod <- stan_model(model_code = stan_no_na)
 # Fit model:
 # Set seed while testing
 fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
+#fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 10000, control = list(adapt_delta = 0.99))
 summary(fit_no_na)$summary
 
 launch_shinystan(fit_no_na)
