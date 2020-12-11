@@ -107,6 +107,15 @@ datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 lca <- clean.lca(LCA_data = read.csv(file.path(datadir, "LCA_compiled_20201109.csv"), stringsAsFactors = FALSE))
 
 #_______________________________________________________________________________________________________________________#
+# Rebuild FAO fish production from zip file and merge with lca data
+#_______________________________________________________________________________________________________________________#
+#fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
+
+# Classify species into taxa groupings
+# Use ISSCAAP grouping (in FAO data) to help with classification
+lca <- add_taxa_group(lca, fishstat_dat)
+
+#_______________________________________________________________________________________________________________________#
 # Load feed FP data 
 #_______________________________________________________________________________________________________________________#
 # Units of footprint are per 1 kg (apart from energy, which has per L) FIX IT: Rob, is this correct?
@@ -169,6 +178,7 @@ evap <- evap %>%
   filter(!is.na(iso3c))
 
 ```
+
 
 ## Calculate Feed Footprint
 

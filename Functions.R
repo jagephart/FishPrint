@@ -17,9 +17,10 @@ clean.lca <- function(LCA_data){
   # Add country codes
   LCA_data$iso3c <- countrycode(LCA_data$Country, origin = "country.name", destination = "iso3c")
   
-  # Remove experimental studies
+  # Remove experimental, polyculture and IAA studies
   LCA_data <- LCA_data %>%
-    filter(Experimental != "Y")
+    filter(Experimental != "Y") %>%
+    filter(!(Polyculture_IAA %in% c("Polyculture", "IAA"))) # FIX IT: Update to one drop column. Drop tunas also
   
   # Scale feed percents to sum to 100%
   LCA_data <- LCA_data %>%
