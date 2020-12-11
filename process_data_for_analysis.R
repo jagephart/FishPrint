@@ -48,9 +48,26 @@ prod_weightings <- fishstat_dat %>%
   group_by(isscaap_group, species_scientific_name) %>%
   summarise(total = sum(quantity, na.rm = TRUE))
 
-# FIX IT: the species merge isn't working. Need to do some species name cleaning 
+# Correct species names to merge with fao production data
+# FIX IT: Start here with final data to have complete species list
+lca_dat_clean_groups <- lca_dat_clean_groups %>%
+  mutate(fao_species = case_when(
+    (clean_sci_name == "Epinephelus") ~ "Epinephelus spp",
+    (clean_sci_name == "Litopenaeus vannamei") ~ "Penaeus vannamei",
+    (clean_sci_name == "Pangasius") ~ "Pangasius spp",
+    (clean_sci_name == "Mixed carps") ~ "Catla catla", # Picked one of the two carps listed from this study (other is Labeo rohita)
+    (clean_sci_name == "Cynoscion") ~ "Cynoscion spp",
+    (clean_sci_name == "Red crayfish") ~ "Procambarus clarkii",
+    (clean_sci_name == "Freshwater prawn") ~ "Macrobrachium spp",
+    (clean_sci_name == "Macrobrachium amazonicum") ~ "Macrobrachium spp"
+  ))
+lca_dat_clean_groups$fao_species[is.na(lca_dat_clean_groups$fao_species)] <- 
+  lca_dat_clean_groups$clean_sci_name[is.na(lca_dat_clean_groups$fao_species)]
+
 prod_weightings <-  prod_weightings %>% 
-  right_join(lca_dat_clean_groups, by = c("species_scientific_name" = "clean_sci_name", "isscaap_group")) 
+  right_join(lca_dat_clean_groups, by = c("species_scientific_name" = "fao_species", "isscaap_group")) %>%
+  select(isscaap_group, taxa_group_name, taxa, clean_sci_name, total) %>%
+  distinct() # FIX IT: Check for NAs in total - may have to use a differnt taxa group
 
 # Calculate the weighted averages for the feed components # FIX IT: Need to add in groupings (not finished yet)
 feed_fp <- read.csv(file.path(datadir, "Feed_impact_factors_20201203.csv"))
