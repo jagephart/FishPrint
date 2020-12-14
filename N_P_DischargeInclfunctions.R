@@ -1,4 +1,4 @@
-#a program to read N and P values of fish and feed anc compuate discharge to the environment
+#a program to read N and P values of fish and feed and compuate discharge to the environment
 rm(list = ls(all = TRUE))    #delete variables
 
 library("rfishbase")  #package to use fishbase in r
@@ -23,9 +23,9 @@ library("openxlsx")
 #N and P content of fish in % of DM
 #read Zach's data and make calculations using built functions
 fishNutrition <-
-  data.table(read.csv("FishGenus.csv", stringsAsFactors = FALSE))
-fishNutrition <-fishNutrition %>%filter(Preparation=='raw')   #filter out all non raw observations (e.g. dried, cooked)
-
+  data.table(read.csv("AFCD_live.csv", stringsAsFactors = FALSE))
+fishNutrition <-fishNutrition %>%filter(Processing=='r') %>%  #filter out all non raw observations (e.g. dried, cooked)
+                                        slice(c(1:1928))    #cut rows without names of species 
 fishNutrition1<-fishNutrition %>% mutate(N=fishN(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
                                          ,P=fishP(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
                                         ,N_fat=fishN_viaFat(Water,Fat.total)
