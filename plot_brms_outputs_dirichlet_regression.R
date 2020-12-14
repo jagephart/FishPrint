@@ -20,11 +20,29 @@ library(RColorBrewer)
 
 # identify model and data output and data variable to be used for visualizations
 name_of_fit <- "fit_feed_no_na" 
-brms_output <- get(name_of_fit)
 name_of_data <- "full_feed_dat"
-full_dat <- get(name_of_data)
 name_of_var <- "feed_proportion"
 
+compiled_dat_clean <- read.csv(file.path(datadir, "lca_clean_with_groups.csv"))
+brms_output <- get(name_of_fit)
+full_dat <- get(name_of_data)
+
+# FIX IT - dropping .lower and upper bounds for now for easier merge
+full_dat_for_merge <- full_dat %>%
+  select(-c(.row, rowname, .lower, .upper, .width, .point, .interval)) %>% 
+  pivot_wider(names_from = .category, values_from = feed_proportion) %>%
+  group_by(study_id, clean_sci_name, taxa, intensity, system, data_type) %>%
+  # SUM to collapse into a single row
+  mutate(feed_soy = sum(feed_soy, na.rm = TRUE),
+         feed_crops = sum(feed_crops, na.rm = TRUE),
+         feed_fmfo = sum(feed_fmfo, na.rm = TRUE),
+         feed_animal = sum(feed_animal, na.rm = TRUE)) %>%
+  distinct()
+
+# Combine modeled data (both data and predictions) with the full clean LCA dataset and output this
+dat_for_si <- compiled_dat_clean %>%
+  left_join(full_dat_for_merge, by = c("study_id", "clean_sci_name", "taxa", "Intensity" = "intensity", "Production_system_group" = "system"))
+write.csv(dat_for_si, file.path(outdir, paste("lca_clean_with_model_predictions-", name_of_var, ".csv", sep = "")), row.names = FALSE)
 
 summary(brms_output)
 

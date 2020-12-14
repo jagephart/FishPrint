@@ -305,6 +305,82 @@ stan_data <- list(N = N,
 
 # Estimate foot print for all scientific names and taxa groups (removed the "all-seafood" level for simplicity)
 # GAMMA distribution hierarchical model
+# stan_no_na <- 'data {
+#   // data for gamma model for FCR
+#   int<lower=0> N;  // number of observations
+#   vector<lower=0>[N] yield; // data
+#   int N_TX; // number of taxa groups
+#   int N_SCI; // number of scientific names
+#   int n_to_sci[N]; // sciname index
+#   int sci_to_tx[N_SCI]; // taxa-group indices
+# }
+# parameters {
+#   vector<lower=0>[N_TX] tx_mu;
+#   vector<lower=0>[N_SCI] sci_mu;
+#   real<lower=0> tx_sigma; // only need to define sigmas if using option 1
+#   real<lower=0> sci_sigma; 
+#   //vector<lower=0>[N_SCI] sci_shape; // define shape here if not transforming (using option 2 below)
+# }
+# transformed parameters {
+#   // define transofrmed params for gamma model for FCRs
+#   vector<lower=0>[N_SCI] sci_shape;
+#   vector<lower=0>[N_SCI] sci_rate;
+#   vector<lower=0>[N_TX] tx_shape;
+#   vector<lower=0>[N_TX] tx_rate;
+# 
+#   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+#   // option 1: mean and variance
+#   for (n_tx in 1:N_TX){
+#     tx_shape[n_tx] = square(tx_mu[n_tx]) / square(tx_sigma);
+#     tx_rate[n_tx] = tx_mu[n_tx] / square(tx_sigma);
+#   }
+#   for (n_sci in 1:N_SCI){
+#     sci_shape[n_sci] = square(sci_mu[n_sci]) / square(sci_sigma);
+#     sci_rate[n_sci] = sci_mu[n_sci] / square(sci_sigma);
+#   }
+#   
+#   // option 2: rate = shape / mean
+#   //for (n_tx in 1:N_TX){
+#   //  tx_rate[n_tx] = tx_shape[n_tx] / tx_mu[n_tx];
+#   //}
+#   //for (n_sci in 1:N_SCI){
+#   //  sci_rate[n_sci] = sci_shape[n_sci] / sci_mu[n_sci];
+#   //}
+#   
+# }
+# model {
+#   // define priors for gamma model
+#   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+#   //tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
+#   //sci_mu ~ uniform(0, 100);
+#   //tx_sigma ~ uniform(0, 100); // only need sigmas if calculating shape and rate with mu and sigma
+#   //sci_sigma ~ uniform(0, 100);
+#   //tx_sigma ~ cauchy(.05, .01);
+#   // try adding weakly informative priors on shape and/or rate parameters
+#   // shape priors require target += notation: values come outputs of shape parameters in non-hierarchical model - did not help
+#   //target += cauchy_lpdf(sci_shape[1] | 16, 8);
+#   //target += cauchy_lpdf(sci_shape[2] | 200, 100);
+#   //target += cauchy_lpdf(sci_shape[3] | 8, 4);
+#   //target += cauchy_lpdf(sci_shape[4] | 0.3, 0.15);
+#   //target += cauchy_lpdf(sci_shape[5] | 7, 3.5);
+#   //target += cauchy_lpdf(sci_shape[6] | 0.4, 0.2);
+#   //target += cauchy_lpdf(sci_shape[7] | 0.4, 0.2);
+#   //target += cauchy_lpdf(sci_shape[8] | 14, 7);
+#   //target += cauchy_lpdf(sci_shape[9] | 1, 0.5);
+#   //target += cauchy_lpdf(sci_shape[10] | 1, 0.5);
+#   
+#   // FIX IT - create generated quantities section for land = 1 / yield
+#   // likelihood
+#   // gamma model sci-name and taxa-level
+#   for (n in 1:N){
+#     yield[n] ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
+#   }
+#   for (n_sci in 1:N_SCI){
+#     sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
+#   }
+# }'
+
+# NORMAL distribution hierarchical model
 stan_no_na <- 'data {
   // data for gamma model for FCR
   int<lower=0> N;  // number of observations
@@ -317,36 +393,10 @@ stan_no_na <- 'data {
 parameters {
   vector<lower=0>[N_TX] tx_mu;
   vector<lower=0>[N_SCI] sci_mu;
-  real<lower=0> tx_sigma; // only need to define sigmas if using option 1
+  //vector<lower=0>[N_TX] tx_sigma;
+  //vector<lower=0>[N_SCI] sci_sigma; 
+  real<lower=0> tx_sigma;
   real<lower=0> sci_sigma; 
-  //vector<lower=0>[N_SCI] sci_shape; // define shape here if not transforming (using option 2 below)
-}
-transformed parameters {
-  // define transofrmed params for gamma model for FCRs
-  vector<lower=0>[N_SCI] sci_shape;
-  vector<lower=0>[N_SCI] sci_rate;
-  vector<lower=0>[N_TX] tx_shape;
-  vector<lower=0>[N_TX] tx_rate;
-
-  // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
-  // option 1: mean and variance
-  for (n_tx in 1:N_TX){
-    tx_shape[n_tx] = square(tx_mu[n_tx]) / square(tx_sigma);
-    tx_rate[n_tx] = tx_mu[n_tx] / square(tx_sigma);
-  }
-  for (n_sci in 1:N_SCI){
-    sci_shape[n_sci] = square(sci_mu[n_sci]) / square(sci_sigma);
-    sci_rate[n_sci] = sci_mu[n_sci] / square(sci_sigma);
-  }
-  
-  // option 2: rate = shape / mean
-  //for (n_tx in 1:N_TX){
-  //  tx_rate[n_tx] = tx_shape[n_tx] / tx_mu[n_tx];
-  //}
-  //for (n_sci in 1:N_SCI){
-  //  sci_rate[n_sci] = sci_shape[n_sci] / sci_mu[n_sci];
-  //}
-  
 }
 model {
   // define priors for gamma model
@@ -356,30 +406,32 @@ model {
   //tx_sigma ~ uniform(0, 100); // only need sigmas if calculating shape and rate with mu and sigma
   //sci_sigma ~ uniform(0, 100);
   //tx_sigma ~ cauchy(.05, .01);
-  // try adding weakly informative priors on shape and/or rate parameters
-  // shape priors require target += notation: values come outputs of shape parameters in non-hierarchical model - did not help
-  //target += cauchy_lpdf(sci_shape[1] | 16, 8);
-  //target += cauchy_lpdf(sci_shape[2] | 200, 100);
-  //target += cauchy_lpdf(sci_shape[3] | 8, 4);
-  //target += cauchy_lpdf(sci_shape[4] | 0.3, 0.15);
-  //target += cauchy_lpdf(sci_shape[5] | 7, 3.5);
-  //target += cauchy_lpdf(sci_shape[6] | 0.4, 0.2);
-  //target += cauchy_lpdf(sci_shape[7] | 0.4, 0.2);
-  //target += cauchy_lpdf(sci_shape[8] | 14, 7);
-  //target += cauchy_lpdf(sci_shape[9] | 1, 0.5);
-  //target += cauchy_lpdf(sci_shape[10] | 1, 0.5);
+
   
   // likelihood
-  // gamma model sci-name and taxa-level
+  // normal model sci-name and taxa-level
   for (n in 1:N){
-    1/yield[n] ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
+    yield[n] ~ normal(sci_mu[n_to_sci[n]], sci_sigma);
   }
+
   for (n_sci in 1:N_SCI){
-    sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
+    sci_mu[n_sci] ~ normal(tx_mu[sci_to_tx[n_sci]], tx_sigma);
+  }
+}
+generated quantities {
+  // Land = 1 / Yield - model converges better if yield ~ normal() instead of 1/yield ~ normal()
+  vector<lower=0>[N_TX] tx_land;
+  vector<lower=0>[N_SCI] sci_land;
+  
+  // Calculations
+  for (n_tx in 1:N_TX) {
+    tx_land[n_tx] = 1 / tx_mu[n_tx];
+  }
+  for (n_sci in 1:N_SCI) {
+    sci_land[n_sci] = 1 / sci_mu[n_sci];
   }
   
 }'
-
 
 no_na_mod <- stan_model(model_code = stan_no_na)
 # Note: For Windows, apparently OK to ignore this warning message:
@@ -393,26 +445,24 @@ fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "1
 #fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 10000, control = list(adapt_delta = 0.99))
 summary(fit_no_na)$summary
 
-launch_shinystan(fit_no_na)
+#launch_shinystan(fit_no_na)
 
 ######################################################################################################
 # PLOT RESULTS
+plot_theme <- theme(title = element_text(size = 18),
+                    axis.title.x = element_text(size = 16),
+                    axis.text=element_text(size=14, color = "black"))
 
-# LEFT OFF HERE:
 # Key for naming sci and taxa levels
 # Get full taxa group names back
-index_key <- feed_footprint_dat %>%
-  group_by(clean_sci_name) %>%
-  mutate(n_obs = n()) %>%
-  ungroup() %>%
-  select(clean_sci_name, sci, taxa, tx, n_obs) %>%
+index_key <- land_footprint_dat %>%
+  select(clean_sci_name, sci, taxa, tx, n_in_sci, n_in_taxa) %>%
   unique() %>%
-  arrange(taxa) %>%
   mutate(taxa = as.character(taxa),
-         full_taxa_name = case_when(taxa == "misc_marine" ~ "misc marine fishes",
-                                    taxa == "misc_fresh" ~ "misc freshwater fishes",
+         full_taxa_name = case_when(taxa == "fresh_crust" ~ "freshwater crustaceans",
                                     taxa == "misc_diad" ~ "misc diadromous fishes",
-                                    taxa == "fresh_crust" ~ "freshwater crustaceans",
+                                    taxa == "misc_fresh" ~ "misc freshwater fishes",
+                                    taxa == "misc_marine" ~ "misc marine fishes",
                                     TRUE ~ taxa),
          taxa = as.factor(taxa),
          full_taxa_name = as.factor(full_taxa_name))
@@ -420,134 +470,34 @@ index_key <- feed_footprint_dat %>%
 # Use tidybayes + ggdist for finer control of aes mapping (instead of bayesplots) 
 get_variables(fit_no_na)
 
-# Sci-level feed footprints as point intervals:
-# Carbon
+# Sci-level land footprints as point intervals:
 fit_no_na %>%
-  spread_draws(sci_c_fp[sci]) %>%
+  spread_draws(sci_land[sci]) %>%
   median_qi(.width = 0.8) %>%
   left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
   mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
-  ggplot(aes(y = clean_sci_name, x = sci_c_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  ggplot(aes(y = clean_sci_name, x = sci_land, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
   theme_classic() + 
   plot_theme + 
-  labs(x = "kg CO2-eq", y = "", title = "Carbon", color = "taxa group")
-ggsave(filename = file.path(outdir, "plot_feed-footprint_carbon_obs-level.png"), width = 11, height = 8.5)
+  labs(x = "hectares per tonne", y = "", title = "Land", color = "taxa group")
+ggsave(filename = file.path(outdir, "plot_land-footprint_sci-level.png"), width = 11, height = 8.5)
 
-# Nitrogen
+# Taxa-level land footprints as densities: 
+# FIX IT - DENSITIES ARE SUPER STEEP (see just trout for example) - if this is true for final dataset, just plot as point-interval
 fit_no_na %>%
-  spread_draws(sci_n_fp[sci]) %>%
-  median_qi(.width = 0.8) %>%
-  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
-  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
-  ggplot(aes(y = clean_sci_name, x = sci_n_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-  geom_pointinterval() +
-  theme_classic() + 
-  plot_theme + 
-  labs(x = "kg N-eq", y = "", title = "Nitrogen", color = "taxa group")
-ggsave(filename = file.path(outdir, "plot_feed-footprint_nitrogen_obs-level.png"), width = 11, height = 8.5)
-
-# Phosphorus
-fit_no_na %>%
-  spread_draws(sci_p_fp[sci]) %>%
-  median_qi(.width = 0.8) %>%
-  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
-  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
-  ggplot(aes(y = clean_sci_name, x = sci_p_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-  geom_pointinterval() +
-  theme_classic() + 
-  plot_theme + 
-  labs(x = "kg P-eq", y = "", title = "Phosphorus", color = "taxa group")
-ggsave(filename = file.path(outdir, "plot_feed-footprint_phosphorus_obs-level.png"), width = 11, height = 8.5)
-
-# Land
-fit_no_na %>%
-  spread_draws(sci_land_fp[sci]) %>%
-  median_qi(.width = 0.8) %>%
-  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
-  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
-  ggplot(aes(y = clean_sci_name, x = sci_land_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-  geom_pointinterval() +
-  theme_classic() + 
-  plot_theme + 
-  labs(x = bquote('m'^2~'a'), y = "", title = "Land", color = "taxa group")
-ggsave(filename = file.path(outdir, "plot_feed-footprint_land_obs-level.png"), width = 11, height = 8.5)
-
-# Water
-fit_no_na %>%
-  spread_draws(sci_water_fp[sci]) %>%
-  median_qi(.width = 0.8) %>%
-  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
-  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
-  ggplot(aes(y = clean_sci_name, x = sci_water_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-  geom_pointinterval() +
-  theme_classic() + 
-  plot_theme + 
-  labs(x = bquote('m'^3), y = "", title = "Water", color = "taxa group")
-ggsave(filename = file.path(outdir, "plot_feed-footprint_water_obs-level.png"), width = 11, height = 8.5)
-
-# Taxa-level feed footprints as densities:
-# Carbon
-fit_no_na %>%
-  spread_draws(tx_c_fp[tx]) %>%
+  spread_draws(tx_land[tx]) %>%
+  #median_qi(.width = 0.8) %>% # need at least 2 points to select a bandwidth automatically
   left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  ggplot(aes(y = full_taxa_name, x = tx_c_fp)) +
+  #filter(tx_land > 100)
+  filter(full_taxa_name == "freshwater crustaceans") %>%
+  ggplot(aes(y = full_taxa_name, x = tx_land)) +
   stat_halfeye(aes(slab_fill = full_taxa_name)) +
   theme_classic() + 
   plot_theme + 
   theme(legend.position = "none") +
-  labs(x = "kg CO2-eq", y = "", title = "Carbon")
-ggsave(filename = file.path(outdir, "plot_feed-footprint_carbon_taxa-level.png"), width = 11, height = 8.5)
-
-# Nitrogen
-fit_no_na %>%
-  spread_draws(tx_n_fp[tx]) %>%
-  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  ggplot(aes(y = full_taxa_name, x = tx_n_fp)) +
-  stat_halfeye(aes(slab_fill = full_taxa_name)) +
-  theme_classic() + 
-  plot_theme + 
-  theme(legend.position = "none") +
-  labs(x = "kg N-eq", y = "", title = "Nitrogen")
-ggsave(filename = file.path(outdir, "plot_feed-footprint_nitrogen_taxa-level.png"), width = 11, height = 8.5)
-
-
-# Phosphorus
-fit_no_na %>%
-  spread_draws(tx_p_fp[tx]) %>%
-  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  ggplot(aes(y = full_taxa_name, x = tx_p_fp)) +
-  stat_halfeye(aes(slab_fill = full_taxa_name)) +
-  theme_classic() + 
-  plot_theme + 
-  theme(legend.position = "none") +
-  labs(x = "kg P-eq", y = "", title = "Phosphorus")
-ggsave(filename = file.path(outdir, "plot_feed-footprint_phosphorus_taxa-level.png"), width = 11, height = 8.5)
-
-
-# Land
-fit_no_na %>%
-  spread_draws(tx_land_fp[tx]) %>%
-  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  ggplot(aes(y = full_taxa_name, x = tx_land_fp)) +
-  stat_halfeye(aes(slab_fill = full_taxa_name)) +
-  theme_classic() + 
-  plot_theme + 
-  theme(legend.position = "none") +
-  labs(x = bquote('m'^2~'a'), y = "", title = "Land")
-ggsave(filename = file.path(outdir, "plot_feed-footprint_land_taxa-level.png"), width = 11, height = 8.5)
-
-# Water
-fit_no_na %>%
-  spread_draws(tx_water_fp[tx]) %>%
-  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  ggplot(aes(y = full_taxa_name, x = tx_water_fp)) +
-  stat_halfeye(aes(slab_fill = full_taxa_name)) +
-  theme_classic() + 
-  plot_theme + 
-  theme(legend.position = "none") +
-  labs(x = bquote('m'^3), y = "", title = "Water")
-ggsave(filename = file.path(outdir, "plot_feed-footprint_water_taxa-level.png"), width = 11, height = 8.5)
+  labs(x = "hectares per tonne", y = "", title = "Land")
+ggsave(filename = file.path(outdir, "plot_land-footprint_taxa-level.png"), width = 11, height = 8.5)
 
 
 # OPTION 2: Taxa-level plots with color themes:

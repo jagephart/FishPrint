@@ -21,9 +21,9 @@ library(RColorBrewer)
 # identify model and data output and data variable to be used for visualizations
 
 # FCR
-#name_of_fit <- "fit_fcr_no_na" 
-#name_of_data <- "full_fcr_dat"
-#name_of_var <- "FCR"
+name_of_fit <- "fit_fcr_no_na"
+name_of_data <- "full_fcr_dat"
+name_of_var <- "fcr"
 
 # Yield
 # name_of_fit <- "fit_yield_no_na"
@@ -41,9 +41,9 @@ library(RColorBrewer)
 # name_of_var <- "diesel"
 
 # Petrol
-name_of_fit <- "fit_petrol_no_na"
-name_of_data <- "full_petrol_dat"
-name_of_var <- "petrol"
+# name_of_fit <- "fit_petrol_no_na"
+# name_of_data <- "full_petrol_dat"
+# name_of_var <- "petrol"
 
 # Natural gas
 # name_of_fit <- "fit_natgas_no_na"
