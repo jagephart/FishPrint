@@ -40,16 +40,21 @@ electric_no_na <- ghg_model_dat_categories %>%
 X_taxa <- model.matrix(object = ~ 1 + taxa, 
                        data = electric_no_na %>% select(taxa)) 
 
-taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+taxa_sd <- apply(matrix(X_taxa[,-1]), MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+#taxa_sd <- sd(X_taxa[,-1], na.rm = TRUE)
 X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
+# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
+colnames(X_taxa_scaled) <- colnames(X_taxa)[2:ncol(X_taxa)]
 
+# FIX IT: only select predictors (intensity, system) if there is variation in it
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal <- electric_no_na %>%
   mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed) 
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #select(intensity, system) %>%
+  select(system) %>%
   as.matrix()
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
@@ -112,8 +117,11 @@ X_taxa_new <- model.matrix(object = ~ 1 + taxa,
                            data = electric_complete_predictors %>% select(taxa)) 
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
-X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(X_taxa[,-1], MARGIN = 2, FUN = mean), scale=2*taxa_sd)
+X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(matrix(X_taxa[,-1]), MARGIN = 2, FUN = mean), scale=2*taxa_sd)
+# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
+colnames(X_taxa_new_scaled) <- colnames(X_taxa_new)[2:ncol(X_taxa_new)]
 
+# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
 # System and Intensity variables:
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal_new <- electric_complete_predictors %>%
@@ -121,7 +129,8 @@ X_ordinal_new <- electric_complete_predictors %>%
   mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #select(intensity, system) %>%
+  select(system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -191,13 +200,15 @@ taxa_not_modeled <- setdiff(unique(electric_complete_predictors$taxa), unique(el
 electric_complete_predictors_no_taxa <- electric_complete_predictors %>%
   filter(taxa %in% taxa_not_modeled) 
 
+# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
 # Format intensity and system as ordinal variable, then center and scale
 X_ordinal_no_taxa <- electric_complete_predictors_no_taxa %>%
   mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #select(intensity, system) %>%
+  select(system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -259,16 +270,21 @@ diesel_no_na <- ghg_model_dat_categories %>%
 X_taxa <- model.matrix(object = ~ 1 + taxa, 
                        data = diesel_no_na %>% select(taxa)) 
 
-taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+taxa_sd <- apply(matrix(X_taxa[,-1]), MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
+# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
+colnames(X_taxa_scaled) <- colnames(X_taxa)[2:ncol(X_taxa)]
 
+
+# FIX IT: only select predictors (intensity, system) if there is variation in it
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal <- diesel_no_na %>%
   mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
   mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #select(intensity, system) %>%
+  select(system) %>%
   as.matrix()
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
@@ -331,8 +347,11 @@ X_taxa_new <- model.matrix(object = ~ 1 + taxa,
                            data = diesel_complete_predictors %>% select(taxa)) 
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
-X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(X_taxa[,-1], MARGIN = 2, FUN = mean), scale=2*taxa_sd)
+X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(matrix(X_taxa[,-1]), MARGIN = 2, FUN = mean), scale=2*taxa_sd)
+# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
+colnames(X_taxa_new_scaled) <- colnames(X_taxa_new)[2:ncol(X_taxa_new)]
 
+# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
 # System and Intensity variables:
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal_new <- diesel_complete_predictors %>%
@@ -340,7 +359,8 @@ X_ordinal_new <- diesel_complete_predictors %>%
   mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #select(intensity, system) %>%
+  select(system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -410,13 +430,15 @@ taxa_not_modeled <- setdiff(unique(diesel_complete_predictors$taxa), unique(dies
 diesel_complete_predictors_no_taxa <- diesel_complete_predictors %>%
   filter(taxa %in% taxa_not_modeled) 
 
+# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
 # Format intensity and system as ordinal variable, then center and scale
 X_ordinal_no_taxa <- diesel_complete_predictors_no_taxa %>%
   mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #select(intensity, system) %>%
+  select(system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -477,22 +499,20 @@ petrol_no_na <- ghg_model_dat_categories %>%
 X_taxa <- model.matrix(object = ~ 1 + taxa, 
                        data = petrol_no_na %>% select(taxa)) 
 
-taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+taxa_sd <- apply(matrix(X_taxa[,-1]), MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
+# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
+colnames(X_taxa_scaled) <- colnames(X_taxa)[2:ncol(X_taxa)]
 
-# FIX IT - if only one column (e.g., after dropping zeroes, only one taxa column remaining in model matrix) no need to use apply function accross columns:
-# Also, need to restore column name to X_taxa_scaled since vector doesn't retain this
-#taxa_sd <- sd(X_taxa[,-1], na.rm = TRUE)
-#X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
-#colnames(X_taxa_scaled) <- colnames(X_taxa)[2]
-
+# FIX IT: only select predictors (intensity, system) if there is variation in it
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal <- petrol_no_na %>%
   mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
   mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #select(intensity, system) %>%
+  select(system) %>%
   as.matrix()
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
@@ -555,13 +575,13 @@ X_taxa_new <- model.matrix(object = ~ 1 + taxa,
                            data = petrol_complete_predictors %>% select(taxa)) 
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
-X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(X_taxa[,-1], MARGIN = 2, FUN = mean), scale=2*taxa_sd)
+X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(matrix(X_taxa[,-1]), MARGIN = 2, FUN = mean), scale=2*taxa_sd)
+# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
+colnames(X_taxa_new_scaled) <- colnames(X_taxa_new)[2:ncol(X_taxa_new)]
 
-# FIX IT - if X_taxa is only one column (e.g., if dropping zeroes, only one taxa column in model matrix) no need to use apply to get mean across columns
-# Also need to restore column name
-#X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=mean(X_taxa[,-1]), scale=2*taxa_sd)
-#colnames(X_taxa_new_scaled) <- colnames(X_taxa_new)[2]
 
+# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
+# Format intensity and system as ordinal variable, then center and scale
 # System and Intensity variables:
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal_new <- petrol_complete_predictors %>%
@@ -569,7 +589,8 @@ X_ordinal_new <- petrol_complete_predictors %>%
   mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #select(intensity, system) %>%
+  select(system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -639,13 +660,16 @@ taxa_not_modeled <- setdiff(unique(petrol_complete_predictors$taxa), unique(petr
 petrol_complete_predictors_no_taxa <- petrol_complete_predictors %>%
   filter(taxa %in% taxa_not_modeled) 
 
+
+# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
 # Format intensity and system as ordinal variable, then center and scale
 X_ordinal_no_taxa <- petrol_complete_predictors_no_taxa %>%
   mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #select(intensity, system) %>%
+  select(system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -701,22 +725,26 @@ natgas_no_na <- ghg_model_dat_categories %>%
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
   select(study_id, Country, iso3c, natgas, clean_sci_name, taxa, intensity, system)
 
-# FIX IT - option 2 (dropping zeroes) is not a viable option, after dropping zeroes, there's no varaition in taxa (all salmon), intensity (all intensive) or system (all open)
+# NOPTE: option 2 (dropping zeroes) is not a viable option, after dropping zeroes, there's no varaition in taxa (all salmon), intensity (all intensive) or system (all open)
 
 # Create model matrix for taxa info, then center and scale
 X_taxa <- model.matrix(object = ~ 1 + taxa, 
                        data = natgas_no_na %>% select(taxa)) 
 
-taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+taxa_sd <- apply(matrix(X_taxa[,-1]), MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
+# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
+colnames(X_taxa_scaled) <- colnames(X_taxa)[2:ncol(X_taxa)]
 
+# FIX IT: only select predictors (intensity, system) if there is variation in it
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal <- natgas_no_na %>%
   mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
   mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #select(intensity, system) %>%
+  select(system) %>%
   as.matrix()
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
@@ -779,8 +807,11 @@ X_taxa_new <- model.matrix(object = ~ 1 + taxa,
                            data = natgas_complete_predictors %>% select(taxa)) 
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
-X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(X_taxa[,-1], MARGIN = 2, FUN = mean), scale=2*taxa_sd)
+X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(matrix(X_taxa[,-1]), MARGIN = 2, FUN = mean), scale=2*taxa_sd)
+# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
+colnames(X_taxa_new_scaled) <- colnames(X_taxa_new)[2:ncol(X_taxa_new)]
 
+# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
 # System and Intensity variables:
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal_new <- natgas_complete_predictors %>%
@@ -788,7 +819,8 @@ X_ordinal_new <- natgas_complete_predictors %>%
   mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #select(intensity, system) %>%
+  select(system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -858,13 +890,15 @@ taxa_not_modeled <- setdiff(unique(natgas_complete_predictors$taxa), unique(natg
 natgas_complete_predictors_no_taxa <- natgas_complete_predictors %>%
   filter(taxa %in% taxa_not_modeled) 
 
+# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
 # Format intensity and system as ordinal variable, then center and scale
 X_ordinal_no_taxa <- natgas_complete_predictors_no_taxa %>%
   mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
   mutate(system = as.numeric(system)) %>%
-  select(intensity, system) %>%
+  #select(intensity, system) %>%
+  select(system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -968,9 +1002,6 @@ ghg_footprint_dat <- ghg_footprint_merge %>%
   # Calculate natural gas GHG footprint
   mutate(natgas_ghg = natgas * natgas_fp)
 
-
-
-
 # Set data
 N = nrow(ghg_footprint_dat)
 N_SCI <- length(unique(ghg_footprint_dat$sci))
@@ -992,61 +1023,179 @@ stan_data <- list(N = N,
                   N_TX = N_TX,
                   #n_to_tx = n_to_tx,
                   sci_to_tx = sci_to_tx,
-                  electric_ghg = electric_ghg)
+                  electric_ghg = electric_ghg, 
+                  diesel_ghg = diesel_ghg, 
+                  petrol_ghg = petrol_ghg, 
+                  natgas_ghg = natgas_ghg)
 
-# LEFT OFF HERE - test run single level before moving to two-levels
-# Estimate foot print for all scientific names and taxa groups (removed the "all-seafood" level for simplicity)
-# GAMMA distribution hierarchical model
+# GAMMA distribution hierarchical model - never finished writing this one
+# stan_no_na <- 'data {
+#   // data for gamma model for FCR
+#   int<lower=0> N;  // number of observations
+#   vector<lower=0>[N] yield; // data
+#   int N_TX; // number of taxa groups
+#   int N_SCI; // number of scientific names
+#   int n_to_sci[N]; // sciname index
+#   //int n_to_tx[N]; // taxa-group index
+#   int sci_to_tx[N_SCI]; // taxa-group indices
+# }
+# parameters {
+#   vector<lower=0>[N_TX] tx_mu;
+#   real<lower=0> tx_sigma;
+#   vector<lower=0>[N_SCI] sci_mu;
+#   real<lower=0> sci_sigma;
+# }
+# transformed parameters {
+#   // define transofrmed params for gamma model for FCRs
+#   vector<lower=0>[N_SCI] sci_shape;
+#   vector<lower=0>[N_SCI] sci_rate;
+#   vector<lower=0>[N_TX] tx_shape;
+#   vector<lower=0>[N_TX] tx_rate;
+#
+#   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+#   for (n_tx in 1:N_TX){
+#     tx_shape[n_tx] = square(tx_mu[n_tx]) / square(tx_sigma);
+#     tx_rate[n_tx] = tx_mu[n_tx] / square(tx_sigma);
+#   }
+#   for (n_sci in 1:N_SCI){
+#     sci_shape[n_sci] = square(sci_mu[n_sci]) / square(sci_sigma);
+#     sci_rate[n_sci] = sci_mu[n_sci] / square(sci_sigma);
+#   }
+#
+# }
+# model {
+#   // define priors for gamma model
+#   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+#   //tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
+#   //sci_mu ~ uniform(0, 100);
+#   //tx_sigma ~ uniform(0, 100); // only need sigmas if calculating shape and rate with mu and sigma
+#   //sci_sigma ~ uniform(0, 100);
+#
+#   // likelihood
+#   // gamma model sci-name and taxa-level
+#   for (n in 1:N){
+#     1/yield[n] ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
+#   }
+#   for (n_sci in 1:N_SCI){
+#     sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
+#   }
+#
+# }'
+
+# NORMAL distribution model
 stan_no_na <- 'data {
   // data for gamma model for FCR
   int<lower=0> N;  // number of observations
-  vector<lower=0>[N] yield; // data
+  vector<lower=0>[N] electric_ghg; // data
+  vector<lower=0>[N] diesel_ghg; // data
+  vector<lower=0>[N] petrol_ghg; // data
+  vector<lower=0>[N] natgas_ghg; // data
   int N_TX; // number of taxa groups
   int N_SCI; // number of scientific names
   int n_to_sci[N]; // sciname index
-  //int n_to_tx[N]; // taxa-group index
   int sci_to_tx[N_SCI]; // taxa-group indices
 }
 parameters {
-  vector<lower=0>[N_TX] tx_mu;
-  real<lower=0> tx_sigma;
-  vector<lower=0>[N_SCI] sci_mu;
-  real<lower=0> sci_sigma;
-}
-transformed parameters {
-  // define transofrmed params for gamma model for FCRs
-  vector<lower=0>[N_SCI] sci_shape;
-  vector<lower=0>[N_SCI] sci_rate;
-  vector<lower=0>[N_TX] tx_shape;
-  vector<lower=0>[N_TX] tx_rate;
-
-  // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
-  for (n_tx in 1:N_TX){
-    tx_shape[n_tx] = square(tx_mu[n_tx]) / square(tx_sigma);
-    tx_rate[n_tx] = tx_mu[n_tx] / square(tx_sigma);
-  }
-  for (n_sci in 1:N_SCI){
-    sci_shape[n_sci] = square(sci_mu[n_sci]) / square(sci_sigma);
-    sci_rate[n_sci] = sci_mu[n_sci] / square(sci_sigma);
-  }
-  
+  // electric
+  vector<lower=0>[N_TX] tx_mu_electric;
+  real<lower=0> tx_sigma_electric;
+  vector<lower=0>[N_SCI] sci_mu_electric;
+  real<lower=0> sci_sigma_electric;
+  // diesel
+  vector<lower=0>[N_TX] tx_mu_diesel;
+  real<lower=0> tx_sigma_diesel;
+  vector<lower=0>[N_SCI] sci_mu_diesel;
+  real<lower=0> sci_sigma_diesel;
+  // petrol
+  vector<lower=0>[N_TX] tx_mu_petrol;
+  real<lower=0> tx_sigma_petrol;
+  vector<lower=0>[N_SCI] sci_mu_petrol;
+  real<lower=0> sci_sigma_petrol;
+  // natural gas
+  vector<lower=0>[N_TX] tx_mu_natgas;
+  real<lower=0> tx_sigma_natgas;
+  vector<lower=0>[N_SCI] sci_mu_natgas;
+  real<lower=0> sci_sigma_natgas;
 }
 model {
   // define priors for gamma model
-  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-  //tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
+  // Put priors on mu and sigma:
+  //tx_mu ~ uniform(0, 100); // 
   //sci_mu ~ uniform(0, 100);
-  //tx_sigma ~ uniform(0, 100); // only need sigmas if calculating shape and rate with mu and sigma
-  //sci_sigma ~ uniform(0, 100);
+  //tx_sigma ~ uniform(0, 100);
 
   // likelihood
-  // gamma model sci-name and taxa-level
-  for (n in 1:N){
-    1/yield[n] ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
-  }
-  for (n_sci in 1:N_SCI){
-    sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
-  }
+  // normal model sci-name and taxa-level energy-specific ghg
+  electric_ghg ~ normal(sci_mu_electric[n_to_sci], sci_sigma_electric);
+  sci_mu_electric ~ normal(tx_mu_electric[sci_to_tx], tx_sigma_electric);
+  
+  diesel_ghg ~ normal(sci_mu_diesel[n_to_sci], sci_sigma_diesel);
+  sci_mu_electric ~ normal(tx_mu_diesel[sci_to_tx], tx_sigma_diesel);
+  
+  petrol_ghg ~ normal(sci_mu_petrol[n_to_sci], sci_sigma_petrol);
+  sci_mu_petrol ~ normal(tx_mu_petrol[sci_to_tx], tx_sigma_petrol);
+  
+  natgas_ghg ~ normal(sci_mu_natgas[n_to_sci], sci_sigma_natgas);
+  sci_mu_natgas ~ normal(tx_mu_natgas[sci_to_tx], tx_sigma_natgas);
+  
+}'
+
+# LEFT OFF HERE:
+# GAMMA distribution model no levels
+stan_no_na <- 'data {
+  // data for gamma model for FCR
+  int<lower=0> N;  // number of observations
+  vector<lower=0>[N] electric_ghg; // data
+  vector<lower=0>[N] diesel_ghg; // data
+  vector<lower=0>[N] petrol_ghg; // data
+  vector<lower=0>[N] natgas_ghg; // data
+  int N_TX; // number of taxa groups
+  int N_SCI; // number of scientific names
+  int n_to_sci[N]; // sciname index
+  int sci_to_tx[N_SCI]; // taxa-group indices
+}
+parameters {
+  // electric
+  vector<lower=0>[N_TX] tx_mu_electric;
+  real<lower=0> tx_sigma_electric;
+  vector<lower=0>[N_SCI] sci_mu_electric;
+  real<lower=0> sci_sigma_electric;
+  // diesel
+  vector<lower=0>[N_TX] tx_mu_diesel;
+  real<lower=0> tx_sigma_diesel;
+  vector<lower=0>[N_SCI] sci_mu_diesel;
+  real<lower=0> sci_sigma_diesel;
+  // petrol
+  vector<lower=0>[N_TX] tx_mu_petrol;
+  real<lower=0> tx_sigma_petrol;
+  vector<lower=0>[N_SCI] sci_mu_petrol;
+  real<lower=0> sci_sigma_petrol;
+  // natural gas
+  vector<lower=0>[N_TX] tx_mu_natgas;
+  real<lower=0> tx_sigma_natgas;
+  vector<lower=0>[N_SCI] sci_mu_natgas;
+  real<lower=0> sci_sigma_natgas;
+}
+model {
+  // define priors for gamma model
+  // Put priors on mu and sigma:
+  //tx_mu ~ uniform(0, 100); // 
+  //sci_mu ~ uniform(0, 100);
+  //tx_sigma ~ uniform(0, 100);
+
+  // likelihood
+  // normal model sci-name and taxa-level energy-specific ghg
+  electric_ghg ~ normal(sci_mu_electric[n_to_sci], sci_sigma_electric);
+  sci_mu_electric ~ normal(tx_mu_electric[sci_to_tx], tx_sigma_electric);
+  
+  diesel_ghg ~ normal(sci_mu_diesel[n_to_sci], sci_sigma_diesel);
+  sci_mu_electric ~ normal(tx_mu_diesel[sci_to_tx], tx_sigma_diesel);
+  
+  petrol_ghg ~ normal(sci_mu_petrol[n_to_sci], sci_sigma_petrol);
+  sci_mu_petrol ~ normal(tx_mu_petrol[sci_to_tx], tx_sigma_petrol);
+  
+  natgas_ghg ~ normal(sci_mu_natgas[n_to_sci], sci_sigma_natgas);
+  sci_mu_natgas ~ normal(tx_mu_natgas[sci_to_tx], tx_sigma_natgas);
   
 }'
 
@@ -1059,7 +1208,7 @@ no_na_mod <- stan_model(model_code = stan_no_na)
 
 # Fit model:
 # Set seed while testing
-fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
+fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 100000, control = list(adapt_delta = 0.99))
 summary(fit_no_na)$summary
 
 launch_shinystan(fit_no_na)
