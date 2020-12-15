@@ -6,6 +6,9 @@
 clean.lca <- function(LCA_data){
   # Change columns to numeric where applicable
   LCA_data$Feed_soy_percent <- as.numeric(LCA_data$Feed_soy_percent)
+  LCA_data$Feed_othercrops_percent <- as.numeric(LCA_data$Feed_othercrops_percent)
+  LCA_data$Feed_animal_percent <- as.numeric(LCA_data$Feed_animal_percent)
+  LCA_data$Feed_FMFO_percent <- as.numeric(LCA_data$Feed_FMFO_percent)
   LCA_data$Electricity_kwh <- as.numeric(LCA_data$Electricity_kwh)
   LCA_data$Diesel_L <- as.numeric(LCA_data$Diesel_L)
   LCA_data$Petrol_L <- as.numeric(LCA_data$Petrol_L)
@@ -13,54 +16,50 @@ clean.lca <- function(LCA_data){
   LCA_data$Yield_t_per_Ha <- as.numeric(LCA_data$Yield_t_per_Ha)
   LCA_data$Yield_kg_per_m3 <- as.numeric(LCA_data$Yield_kg_per_m3)
   LCA_data$Grow_out_period_days <- as.numeric(LCA_data$Grow_out_period_days)
+  LCA_data$FCR_overall <- as.numeric(LCA_data$FCR_overall)
   
   # Add country codes
   LCA_data$iso3c <- countrycode(LCA_data$Country, origin = "country.name", destination = "iso3c")
   
-  # Remove experimental, polyculture and IAA studies
+  # Remove experimental, polyculture, IAA, tuna, eel, and caviar studies
   LCA_data <- LCA_data %>%
-    filter(Experimental != "Y") %>%
-    filter(!(Polyculture_IAA %in% c("Polyculture", "IAA"))) # FIX IT: Update to one drop column. Drop tunas also
+    filter(!(Drop_study_flag %in% c("Polyculture", "Experimental", "Hypothetical", "IAA", "Tuna", "Eels", "Caviar")))   
   
-  # Scale feed percents to sum to 100%
   LCA_data <- LCA_data %>%
-    mutate(sum_percent = Feed_soy_percent+Feed_othercrops_percent+Feed_FMFO_percent+Feed_animal_percent) %>%
-    mutate(
-    Feed_soy_percent = Feed_soy_percent/sum_percent,
-    Feed_othercrops_percent = Feed_othercrops_percent/sum_percent,
-    Feed_FMFO_percent = Feed_FMFO_percent/sum_percent,
-    Feed_animal_percent = Feed_animal_percent/sum_percent
-    ) %>%
-    select(Year, Country, iso3c, Scientific.Name = Species.scientific.name, Common.Name = Species.common.name, 
-           Production_system, Sample_size,
-           Environment, Intensity, Product, Yield_t_per_Ha, Yield_kg_per_m3, Grow_out_period_days, Mortality_rate, FCR, 
-           Feed_type, Feed_soy_percent, Feed_othercrops_percent, Feed_FMFO_percent, Feed_animal_percent, Feed_method,
-           Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L) %>%
+    # Scale feed percents to sum to 100%
+    # mutate(sum_percent = Feed_soy_percent+Feed_othercrops_percent+Feed_FMFO_percent+Feed_animal_percent) %>%
+    # mutate(
+    # Feed_soy_percent = Feed_soy_percent/sum_percent,
+    # Feed_othercrops_percent = Feed_othercrops_percent/sum_percent,
+    # Feed_FMFO_percent = Feed_FMFO_percent/sum_percent,
+    # Feed_animal_percent = Feed_animal_percent/sum_percent
+    # ) %>%
+    # Convert all yield to the same units # FIX IT: Check this is done correctly
+    mutate(Yield_m2_per_t = 
+             ifelse(m2a_t > 0, m2a_t,
+           ifelse(m3a_t  > 0, m3a_t/1, # Add in average depth when we have this; 1 is a placeholder
+           ifelse(Yield_t_per_Ha > 0, 1/(Yield_t_per_Ha*1/10000),
+           ifelse(Yield_kg_per_m3  > 0, 1/(Yield_kg_per_m3*1*(1/1000)), # Add in average depth when we have this; 1 is a placeholder
+           NA))))) %>%
+    # Create system group
     mutate(
       Production_system_group = case_when(
-        (Production_system %in% c("Extensive raft culture", "Intensive lake net-pen", "Marine cages", "Marine net-pen",
-                                  "Marine floating bag", "Lake-based net cages", "Integrated marine rafts", "Longline",
-                                  "Bouchot culture", "Offshore cages", "Floating cages", "Net-pens", "Net pen",
-                                  "Freshwater net pen (?)", "Saltwater net pen", "Semi-intensive cages")) ~ "open",
+        (Production_system %in% c("Intensive lake net-pen", "Marine cages", "Marine net-pen", "Reservoirs", "Lakes", "Ponds, lakes, and reservoirs",
+                                  "Lake-based net cages", "Offshore cages", "Floating cages", "Net-pens", "Net pen",
+                                  "Freshwater net pen (?)", "Saltwater net pen", "Semi-intensive cages")) ~ "Cages & pens",
+        (Production_system %in% c("Extensive raft culture", "Marine floating bag", "Integrated marine rafts", "Longline",
+                                  "Bouchot culture", "Wooden stakes", "Long-lines", "Suspended baskets", "Bottom planted")) ~ "On- and off-bottom",
         (Production_system %in% c("Intensive pond", "Extensive pond polyculture", "Semi-intensive pond", "Extensive pond",
                                   "Earthen pond aquaculture", "Integrated pond, high input", "Integrated pond, medium inputs",
-                                  "Solid-walled aquaculture system", "Reservoirs", "Earthen pond aquaculture integrated with pigs",
-                                  "Earthern ponds", "Earthern/concrete ponds", "Ponds", "Silvo pond")) ~ "semi",
+                                  "Solid-walled aquaculture system",  "Earthen pond aquaculture integrated with pigs",
+                                  "Earthern ponds", "Earthern/concrete ponds", "Ponds", "Silvo pond", "Lined pond aquaculture",
+                                  "Pond aquaculture", "Earthen pond monoculture", "Pond")) ~ "Ponds",
         (Production_system %in% c("Indoor recirculating", "Flow-through", "Land-based recirculating", "Onshore tanks",
                                   "Saltwater flow-through", "Freshwater flow-through", "Recirculating system", 
                                   "Land-based recirculating system", "Raceway", "Tanks / raceway", 
-                                  "Semi-closed recirculating system")) ~ "closed",
-        (Production_system %in% c("Integrated agri-aquaculture", "Unspecified", "Ecological farm", 
-                                  "Floating net-cage in polyculture pond", "", "Ponds / recirculating", 
-                                  "Ponds / pens")) ~ "not specified"
-      ),  # Check groupings (some recirculating not really closed...)
-      Intensity = case_when(
-        (Intensity %in% c("Intensive")) ~ "intensive",
-        (Intensity %in% c("Semi-intensive", "Improved extensive", "Imp. extensive")) ~ "semi",
-        (Intensity %in% c("Extensive")) ~ "extensive"
-      ),
-      # Many others can be identified based on the system description
-      # Add fed/un-fed categories and replace FCR with 0 for all unfed 
+                                  "Semi-closed recirculating system", "Concrete tanks")) ~ "Recirculating and tanks",
+        (Production_system %in% c("Unspecified", "", "Ponds / recirculating", "Ponds / pens")) ~ "not specified"
+      ), 
       ) %>%
     # Convert "not specified" to NA
     mutate(Production_system_group = na_if(Production_system_group, "not specified"))
@@ -70,37 +69,29 @@ clean.lca <- function(LCA_data){
   # Simplify hybrid M. chrysops x M. saxatilis to its genus
   # Change outdated names (P. vannamei and P hypophthalmus)
   LCA_data <- LCA_data %>%
-    mutate(Scientific.Name = case_when(str_detect(Scientific.Name, "spp") ~ str_replace(Scientific.Name, pattern = " spp\\.| spp", replacement = ""),
-                                       TRUE ~ Scientific.Name)) %>%
-    mutate(clean_sci_name = case_when(Common.Name == "Freshwater prawn" ~ "Freshwater prawn",
-                                      Common.Name == "Indo-Pacific swamp crab" ~ "Brachyura",
-                                      Common.Name == "Red crayfish" ~ "Red crayfish", # crayfish are split into two superfamilies, so go to the next higher-classification, infraorder = Astacidea
-                                      Common.Name == "River eels nei" ~ "Freshwater eels",
-                                      Common.Name == "Salmonids nei" ~ "Salmonidae",
-                                      Common.Name == "Striped bass" ~ "Morone saxatilis",
-                                      Common.Name == "Yellowtail_Seriola_Almaco jack" ~ "Seriola rivoliana",
-                                      TRUE ~ Scientific.Name)) %>%
-    mutate(clean_sci_name = case_when(Scientific.Name == "Morone chrysops x M. saxatilis" ~ "Morone",
-                                      Scientific.Name == "Labeo rohita and Catla Catla" ~ "Mixed carps",
-                                      Scientific.Name == "Osteichthyes" ~ "Freshwater fishes",
-                                      Scientific.Name == "Penaeus vannamei" ~ "Litopenaeus vannamei",
-                                      Scientific.Name == "Pangasius hypophthalmus" ~ "Pangasianodon hypophthalmus",
+    mutate(Scientific.Name = case_when(str_detect(Species.scientific.name, "spp") ~ str_replace(Species.scientific.name, pattern = " spp\\.| spp", replacement = ""),
+                                       TRUE ~ Species.scientific.name)) %>%
+    mutate(clean_sci_name = case_when(Species.common.name == "Freshwater prawn" ~ "Freshwater prawn",
+                                      Species.common.name == "Indo-Pacific swamp crab" ~ "Brachyura",
+                                      Species.common.name == "Red crayfish" ~ "Red crayfish", # crayfish are split into two superfamilies, so go to the next higher-classification, infraorder = Astacidea
+                                      Species.common.name == "River eels nei" ~ "Freshwater eels",
+                                      Species.common.name == "Salmonids nei" ~ "Salmonidae",
+                                      Species.common.name == "Striped bass" ~ "Morone saxatilis",
+                                      Species.common.name == "Yellowtail_Seriola_Almaco jack" ~ "Seriola rivoliana",
+                                      TRUE ~ Species.scientific.name)) %>%
+    mutate(clean_sci_name = case_when(Species.scientific.name == "Morone chrysops x M. saxatilis" ~ "Morone",
+                                      Species.scientific.name == "Labeo rohita and Catla Catla" ~ "Mixed carps",
+                                      Species.scientific.name == "Osteichthyes" ~ "Freshwater fishes",
+                                      Species.scientific.name == "Penaeus vannamei" ~ "Litopenaeus vannamei",
+                                      Species.scientific.name == "Pangasius hypophthalmus" ~ "Pangasianodon hypophthalmus",
                                       TRUE ~ clean_sci_name))
   
-  # Remove Sturgeons since these are farmed for caviar
-  # Remove eels
-  LCA_data <- LCA_data %>%
-    filter(Scientific.Name != "Acipenseridae") %>%
-    filter(Scientific.Name != "Anguilla")
-  
   # Make adjustments to data:
-  # Divide tuna FCR by 5
-  # Divide any feed_type moist pellet by 5 (e.g., Salmonids nei)
-  # Renormalize the FINAL feed proportion values to be greater than 0 and no less than 0.01
   LCA_data <- LCA_data %>%
-    mutate(FCR = case_when(str_detect(Scientific.Name, "Thunnus") ~ FCR/5,
-                           Feed_type == "Moist pellet" ~ FCR/5,
-                           TRUE ~ FCR)) %>%
+    # Divide tuna FCR by 5 for moist pellets
+    mutate(FCR = case_when(Feed_type == "Moist pellet" ~ FCR_overall/5,
+                           TRUE ~ FCR_overall)) %>%
+    # Normalize the FINAL feed proportion values to be greater than 0 and no less than 0.01
     mutate(feed_soy_new = if_else(Feed_soy_percent == 0, true = 0.0105, false = Feed_soy_percent),
            feed_crops_new = if_else(Feed_othercrops_percent == 0, true = 0.0105, false = Feed_othercrops_percent),
            feed_fmfo_new = if_else(Feed_FMFO_percent == 0, true = 0.0105, false = Feed_FMFO_percent),
@@ -112,9 +103,17 @@ clean.lca <- function(LCA_data){
            feed_fmfo_new = feed_fmfo_new / sum_for_rescaling_feed,
            feed_animal_new = feed_animal_new / sum_for_rescaling_feed)
   
+  LCA_data <- as.data.frame(lapply(LCA_data, rep, LCA_data$Sample_size_n_farms))
+  
   # FINAL STEP: Create study_id column, use this in all analyses to bind predictions from multiple models back together
   LCA_data <- LCA_data %>%
-    mutate(study_id = row_number())
+    mutate(study_id = row_number()) %>%
+    # Drop columns we no longer need
+    # Subset to columns to keep
+    select(study_id, Country, iso3c, Common.Name = Species.common.name, Scientific.Name = Species.scientific.name, clean_sci_name, 
+           Production_system_group, Intensity, Product, Yield_m2_per_t, Grow_out_period_days, FCR = FCR_overall, 
+           Feed_type, feed_soy_new, feed_crops_new, feed_fmfo_new, feed_animal_new,
+           Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L)
 }
 
 #_____________________________________________________________________________________________________#

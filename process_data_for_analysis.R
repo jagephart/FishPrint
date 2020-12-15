@@ -17,7 +17,7 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # datadir <- "K:/BFA Environment 2/Data"
 # outdir <- "K:BFA Environment 2/Outputs"
 
-lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201109.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201214.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
 source("Functions.R")
 
 # Clean LCA data
