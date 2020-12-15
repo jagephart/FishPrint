@@ -22,6 +22,7 @@ source("Functions.R")
 
 # Clean LCA data
 lca_dat_clean <- clean.lca(LCA_data = lca_dat)
+# Ignore warning "NAs introduced by coercion" - applies to filling in NAs when applying as.numeric() to Feed_percent columns
 
 # Rebuild FAO fish production from zip file
 fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
@@ -31,8 +32,12 @@ fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global
 lca_dat_clean_groups <- add_taxa_group(lca_dat_clean, fishstat_dat) %>%
   group_by(clean_sci_name, taxa_group_name, taxa) %>%
   mutate(n_in_sci = n()) %>%
-  ungroup() %>%
-  filter(n_in_sci > 2)
+  ungroup() #%>%
+  #filter(n_in_sci > 2)
+# doign this removes whole taxa groups: crabs, aquatic plants get filtered out
+
+# Check after add_taxa_group, there should be no taxa == "unassigned"
+sort(unique(lca_dat_clean_groups$taxa))
 
 # Output clean data with groups (later will read this back in to join with model predictions)
 write.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"), row.names = FALSE)

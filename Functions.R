@@ -7,8 +7,8 @@ clean.lca <- function(LCA_data){
   # Change columns to numeric where applicable
   LCA_data$Feed_soy_percent <- as.numeric(LCA_data$Feed_soy_percent)
   LCA_data$Feed_othercrops_percent <- as.numeric(LCA_data$Feed_othercrops_percent)
-  LCA_data$Feed_animal_percent <- as.numeric(LCA_data$Feed_animal_percent)
   LCA_data$Feed_FMFO_percent <- as.numeric(LCA_data$Feed_FMFO_percent)
+  LCA_data$Feed_animal_percent <- as.numeric(LCA_data$Feed_animal_percent)
   LCA_data$Electricity_kwh <- as.numeric(LCA_data$Electricity_kwh)
   LCA_data$Diesel_L <- as.numeric(LCA_data$Diesel_L)
   LCA_data$Petrol_L <- as.numeric(LCA_data$Petrol_L)
@@ -23,7 +23,10 @@ clean.lca <- function(LCA_data){
   
   # Remove experimental, polyculture, IAA, tuna, eel, and caviar studies
   LCA_data <- LCA_data %>%
-    filter(!(Drop_study_flag %in% c("Polyculture", "Experimental", "Hypothetical", "IAA", "Tuna", "Eels", "Caviar")))   
+    mutate(Drop_study_flag = if_else(Species.scientific.name %in% c("Penaeus monodon (1 tonne) and milkfish (786 kg)"), true = "Polyculture", false = Drop_study_flag)) %>%
+    mutate(Drop_study_flag = if_else(Species.common.name %in% c("Common carp (33%), Grass carp (21%), Crucian carp (9%), silver carp (9%), bighead carp (7%), and other carp (21%)",
+                                                                "Grass carp (76%), bighead carp (5%), silver carp (8%), and crucian carp (12%)"), true = "Polyculture", false = Drop_study_flag)) %>%
+    filter(Drop_study_flag == "") # ie, filter out Drop_study_flag %in% c(Experimental, Hypothetical, IAA, Polyculture, Tuna)
   
   LCA_data <- LCA_data %>%
     # Scale feed percents to sum to 100%
@@ -44,22 +47,28 @@ clean.lca <- function(LCA_data){
     # Create system group
     mutate(
       Production_system_group = case_when(
-        (Production_system %in% c("Intensive lake net-pen", "Marine cages", "Marine net-pen", "Reservoirs", "Lakes", "Ponds, lakes, and reservoirs",
-                                  "Lake-based net cages", "Offshore cages", "Floating cages", "Net-pens", "Net pen",
-                                  "Freshwater net pen (?)", "Saltwater net pen", "Semi-intensive cages")) ~ "Cages & pens",
         (Production_system %in% c("Extensive raft culture", "Marine floating bag", "Integrated marine rafts", "Longline",
-                                  "Bouchot culture", "Wooden stakes", "Long-lines", "Suspended baskets", "Bottom planted")) ~ "On- and off-bottom",
+                                  "Bouchot culture", "Wooden stakes", "Long-lines", "Suspended baskets", 
+                                  "Bottom planted")) ~ "On- and off-bottom",
+        
+        (Production_system %in% c("Intensive lake net-pen", "Marine cages", "Marine net-pen", "Reservoirs", "Lakes", 
+                                  "Ponds, lakes, and reservoirs", "Lake-based net cages", "Offshore cages", "Floating cages", 
+                                  "Net-pens", "Net pen", "Freshwater net pen (?)", "Saltwater net pen", 
+                                  "Semi-intensive cages")) ~ "Cages & pens",
+        
         (Production_system %in% c("Intensive pond", "Extensive pond polyculture", "Semi-intensive pond", "Extensive pond",
                                   "Earthen pond aquaculture", "Integrated pond, high input", "Integrated pond, medium inputs",
                                   "Solid-walled aquaculture system",  "Earthen pond aquaculture integrated with pigs",
                                   "Earthern ponds", "Earthern/concrete ponds", "Ponds", "Silvo pond", "Lined pond aquaculture",
                                   "Pond aquaculture", "Earthen pond monoculture", "Pond")) ~ "Ponds",
+        
         (Production_system %in% c("Indoor recirculating", "Flow-through", "Land-based recirculating", "Onshore tanks",
                                   "Saltwater flow-through", "Freshwater flow-through", "Recirculating system", 
                                   "Land-based recirculating system", "Raceway", "Tanks / raceway", 
                                   "Semi-closed recirculating system", "Concrete tanks")) ~ "Recirculating and tanks",
+        
         (Production_system %in% c("Unspecified", "", "Ponds / recirculating", "Ponds / pens")) ~ "not specified"
-      ), 
+      ) 
       ) %>%
     # Convert "not specified" to NA
     mutate(Production_system_group = na_if(Production_system_group, "not specified"))
@@ -85,10 +94,9 @@ clean.lca <- function(LCA_data){
                                       Species.scientific.name == "Penaeus vannamei" ~ "Litopenaeus vannamei",
                                       Species.scientific.name == "Pangasius hypophthalmus" ~ "Pangasianodon hypophthalmus",
                                       TRUE ~ clean_sci_name))
-  
-  # Make adjustments to data:
+
   LCA_data <- LCA_data %>%
-    # Divide tuna FCR by 5 for moist pellets
+    # Divide by 5 for moist pellets
     mutate(FCR = case_when(Feed_type == "Moist pellet" ~ FCR_overall/5,
                            TRUE ~ FCR_overall)) %>%
     # Normalize the FINAL feed proportion values to be greater than 0 and no less than 0.01
@@ -259,19 +267,30 @@ add_taxa_group <- function(lca_dat_clean, fishstat_dat){
     unique()
 
   lca_dat_out <- lca_dat_out %>% 
-    # First pass is to deal with NAs in ISSCAAP group
-    mutate(isscaap_group = case_when(clean_sci_name %in% c("Cynoscion", "Epinephelus") ~ "Miscellaneous marine fishes",
-                                     clean_sci_name %in% c("Freshwater fishes", "Pangasius") ~ "Miscellaneous freshwater fishes",
+    # First pass is to assign NAs to ISSCAAP group
+    mutate(isscaap_group = case_when(clean_sci_name %in% c("Mixed Labeo rohita and Catla catla",
+                                                           "Mixed Hypophthalmichthys molitrix and H. nobilis",
+                                                           "Ctenopharyngodon idella",
+                                                           "Mixed Ctenopharyngodon idella and Carassius carassius") ~ "Carps, barbels and other cyprinids",
                                      clean_sci_name %in% c("Red crayfish", "Freshwater prawn", "Macrobrachium amazonicum") ~ "Freshwater crustaceans",
+                                     clean_sci_name %in% c("Morone hybrid") ~ "Miscellaneous diadromous fishes",
+                                     clean_sci_name %in% c("Cynoscion", "Epinephelus") ~ "Miscellaneous marine fishes",
+                                     clean_sci_name %in% c("Freshwater fishes", "Pangasius") ~ "Miscellaneous freshwater fishes",
+                                     clean_sci_name %in% c("Gracilaria chilensis") ~ "Red seaweeds",
                                      clean_sci_name %in% c("Litopenaeus vannamei") ~ "Shrimps, prawns",
-                                     clean_sci_name %in% c("Mixed carps") ~ "Carps, barbels and other cyprinids",
                                      TRUE ~ isscaap_group)) 
   
-  # Create taxa groups either manually or from isscaap_group
+  # Once all groups have an isscaap group, Create taxa groups either manually or from isscaap_group
   lca_dat_out <- lca_dat_out %>%
     # Split up carps
-    mutate(taxa_group_name = case_when(clean_sci_name == "Cyprinus carpio" ~ "Common carp",
-                                       clean_sci_name == "Mixed carps" ~ "Other carps, barbels and cyprinids",
+    mutate(taxa_group_name = case_when(clean_sci_name %in% c("Mixed Hypophthalmichthys molitrix and H. nobilis", 
+                                                             "Hypophthalmichthys molitrix") ~ "Silver and bighead carp",
+                                       clean_sci_name %in% c("Carassius carassius", 
+                                                             "Ctenopharyngodon idella", 
+                                                             "Cyprinidae", 
+                                                             "Cyprinus carpio", 
+                                                             "Mixed Ctenopharyngodon idella and Carassius carassius",
+                                                             "Mixed Labeo rohita and Catla catla") ~ "Other carps, barbels and cyprinids",
                                        # Split salmons and trouts
                                        str_detect(Common.Name, "salmon|Salmonids") ~ "Salmon",
                                        str_detect(Common.Name, "trout") ~ "Trout",
@@ -280,31 +299,34 @@ add_taxa_group <- function(lca_dat_clean, fishstat_dat){
                                        clean_sci_name == "Chanos chanos" ~ "Milkfish",
                                        # Combine groups into misc marine fishes
                                        isscaap_group %in% c("Miscellaneous coastal fishes", "Miscellaneous demersal fishes", "Miscellaneous pelagic fishes", "Flounders, halibuts, soles") ~ "Miscellaneous marine fishes",
+                                       # Combine seaweeds into aquatic plants
+                                       isscaap_group %in% c("Brown seaweeds", "Red seaweeds") ~ "Aquatic plants",
+                                       # Combine bivalves
+                                       isscaap_group %in% c("Mussels", "Oysters") ~ "Bivalves",
                                        TRUE ~ isscaap_group))
   
   # Inspect assignment of taxa_group_name
-  # lca_dat_out %>%
-  #   select(clean_sci_name, isscaap_group, taxa_group_name) %>%
-  #   unique() %>%
-  #   arrange(taxa_group_name)
+  lca_dat_out %>%
+    select(clean_sci_name, isscaap_group, taxa_group_name) %>%
+    unique() %>%
+    arrange(taxa_group_name)
   
   # Clean up taxa_group_names
   lca_dat_out <- lca_dat_out %>%
-    mutate(taxa = case_when(taxa_group_name == "Cods, hakes, haddocks" ~ "cod",
-                            taxa_group_name == "Common carp" ~ "com_carp",
-                            taxa_group_name == "Crabs, sea-spiders" ~ "crab",
+    mutate(taxa = case_when(taxa_group_name == "Aquatic plants" ~ "plants",
+                            taxa_group_name == "Bivalves" ~ "bivalves",
+                            taxa_group_name == "Crabs, sea-spiders" ~ "crabs",
                             taxa_group_name == "Freshwater crustaceans" ~ "fresh_crust",
                             taxa_group_name == "Milkfish" ~ "milkfish",
                             taxa_group_name == "Miscellaneous diadromous fishes" ~ "misc_diad",
                             taxa_group_name == "Miscellaneous freshwater fishes" ~ "misc_fresh",
                             taxa_group_name == "Miscellaneous marine fishes" ~ "misc_marine",
-                            taxa_group_name == "Mussels" ~ "mussel",
                             taxa_group_name == "Other carps, barbels and cyprinids" ~ "oth_carp",
                             taxa_group_name == "Salmon" ~ "salmon",
                             taxa_group_name == "Shrimps, prawns" ~ "shrimp",
+                            taxa_group_name == "Silver and bighead carp" ~ "hypoph_carp",
                             taxa_group_name == "Tilapias and other cichlids" ~ "tilapia",
                             taxa_group_name == "Trout" ~ "trout",
-                            taxa_group_name == "Tunas, bonitos, billfishes" ~ "tuna",
                             TRUE ~ "unassigned"))
 
   
@@ -312,17 +334,19 @@ add_taxa_group <- function(lca_dat_clean, fishstat_dat){
 
 
 #_____________________________________________________________________________________________________#
-# Replicate data based on Sample_size column
+# Replicate data based on Sample_size_n_farms column
 #_____________________________________________________________________________________________________#
+
 rep_data <- function(lca_dat_clean){
-  lca_dat_clean_rep <- lca_dat_clean %>%
-    # Clean up sample size column
-    # First ignore numbers that are percentages, then find and extract any numbers, then fill the rest in with 1s
-    mutate(clean_sample_size = case_when(str_detect(Sample_size, "%") ~ 1,
-                                         str_detect(Sample_size, "[0-9]+") ~ as.numeric(str_extract(Sample_size, pattern = "[0-9]+")),
-                                         TRUE ~ 1)) 
+  # No longer need to clean sample size column - now has column Sample_size_n_farms
+  # lca_dat_clean_rep <- lca_dat_clean %>%
+  #   # Clean up sample size column
+  #   # First ignore numbers that are percentages, then find and extract any numbers, then fill the rest in with 1s
+  #   mutate(clean_sample_size = case_when(str_detect(Sample_size, "%") ~ 1,
+  #                                        str_detect(Sample_size, "[0-9]+") ~ as.numeric(str_extract(Sample_size, pattern = "[0-9]+")),
+  #                                        TRUE ~ 1)) 
   
-  lca_dat_clean_rep <- as.data.frame(lapply(lca_dat_clean_rep, rep, lca_dat_clean_rep$clean_sample_size))
+  lca_dat_clean_rep <- as.data.frame(lapply(lca_dat_clean, rep, lca_dat_clean$Sample_size_n_farms))
 }
 
 #_____________________________________________________________________________________________________#
