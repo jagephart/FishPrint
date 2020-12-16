@@ -71,7 +71,8 @@ clean.lca <- function(LCA_data){
       ) 
       ) %>%
     # Convert "not specified" to NA
-    mutate(Production_system_group = na_if(Production_system_group, "not specified"))
+    mutate(Production_system_group = na_if(Production_system_group, "not specified")) %>%
+    mutate(Intensity = na_if(Intensity, ""))
   
   # Create column clean_sci_name - use this as the "official" scientific name column
   # When no valid sci name exists just use common name
