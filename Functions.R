@@ -26,7 +26,7 @@ clean.lca <- function(LCA_data){
     mutate(Drop_study_flag = if_else(Species.scientific.name %in% c("Penaeus monodon (1 tonne) and milkfish (786 kg)"), true = "Polyculture", false = Drop_study_flag)) %>%
     mutate(Drop_study_flag = if_else(Species.common.name %in% c("Common carp (33%), Grass carp (21%), Crucian carp (9%), silver carp (9%), bighead carp (7%), and other carp (21%)",
                                                                 "Grass carp (76%), bighead carp (5%), silver carp (8%), and crucian carp (12%)"), true = "Polyculture", false = Drop_study_flag)) %>%
-    filter(Drop_study_flag == "") # ie, filter out Drop_study_flag %in% c(Experimental, Hypothetical, IAA, Polyculture, Tuna)
+    filter(Drop_study_flag == "") # ie, filter out Drop_study_flag %in% c(Experimental, Hypothetical, IAA, Polyculture, Tuna, Eels, Caviar)
   
   LCA_data <- LCA_data %>%
     # Scale feed percents to sum to 100%
