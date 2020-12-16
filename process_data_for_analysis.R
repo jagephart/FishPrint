@@ -22,7 +22,6 @@ source("Functions.R")
 
 # Clean LCA data
 lca_dat_clean <- clean.lca(LCA_data = lca_dat)
-# Ignore warning "NAs introduced by coercion" - applies to filling in NAs when applying as.numeric() to Feed_percent columns
 
 # Rebuild FAO fish production from zip file
 fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
@@ -43,11 +42,11 @@ sort(unique(lca_dat_clean_groups$taxa))
 write.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"), row.names = FALSE)
 
 # Output taxa groupings and sample sizes:
-#data.frame(table(lca_dat_clean_groups$taxa_group_name))
-#data.frame(table(lca_dat_clean_groups$taxa)) # abbreviated version of taxa_group_name for writing models
-#lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name)
-#write.csv(data.frame(table(lca_dat_clean_groups$taxa_group_name)), file.path(outdir, "taxa_group_sample_size.csv"))
-#write.csv(lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name), file.path(outdir, "taxa_group_composition.csv"))
+# data.frame(table(lca_dat_clean_groups$taxa_group_name))
+# data.frame(table(lca_dat_clean_groups$taxa)) # abbreviated version of taxa_group_name for writing models
+# lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% group_by(taxa_group_name, clean_sci_name) %>% mutate(n_obs = n()) %>% unique() %>% arrange(taxa_group_name) %>% print(n=50)
+# write.csv(data.frame(table(lca_dat_clean_groups$taxa_group_name)), file.path(outdir, "taxa_group_sample_size.csv"))
+# write.csv(lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name), file.path(outdir, "taxa_group_composition.csv"))
 
 # Calculate production weightings for each taxa group
 prod_weightings <- fishstat_dat %>% 
