@@ -71,30 +71,42 @@ clean.lca <- function(LCA_data){
       ) 
       ) %>%
     # Convert "not specified" to NA
-    mutate(Production_system_group = na_if(Production_system_group, "not specified"))
+    mutate(Production_system_group = na_if(Production_system_group, "not specified")) %>%
+    mutate(Intensity = na_if(Intensity, ""))
   
   # Create column clean_sci_name - use this as the "official" scientific name column
   # When no valid sci name exists just use common name
   # Simplify hybrid M. chrysops x M. saxatilis to its genus
   # Change outdated names (P. vannamei and P hypophthalmus)
   LCA_data <- LCA_data %>%
-    mutate(Scientific.Name = case_when(str_detect(Species.scientific.name, "spp") ~ str_replace(Species.scientific.name, pattern = " spp\\.| spp", replacement = ""),
+    mutate(Species.scientific.name = case_when(str_detect(Species.scientific.name, " spp\\.") ~ str_replace(Species.scientific.name, pattern = " spp\\.", replacement = " spp"),
                                        TRUE ~ Species.scientific.name)) %>%
-    mutate(clean_sci_name = case_when(Species.common.name == "Freshwater prawn" ~ "Freshwater prawn",
+    mutate(clean_sci_name = case_when(Species.common.name == "Carps" ~ "Cyprinidae", 
+                                      Species.common.name == "Freshwater prawn" ~ "Freshwater prawn",
                                       Species.common.name == "Indo-Pacific swamp crab" ~ "Brachyura",
-                                      Species.common.name == "Red crayfish" ~ "Red crayfish", # crayfish are split into two superfamilies, so go to the next higher-classification, infraorder = Astacidea
                                       Species.common.name == "River eels nei" ~ "Freshwater eels",
                                       Species.common.name == "Salmonids nei" ~ "Salmonidae",
                                       Species.common.name == "Striped bass" ~ "Morone saxatilis",
                                       Species.common.name == "Yellowtail_Seriola_Almaco jack" ~ "Seriola rivoliana",
                                       TRUE ~ Species.scientific.name)) %>%
-    mutate(clean_sci_name = case_when(Species.scientific.name == "Morone chrysops x M. saxatilis" ~ "Morone",
-                                      Species.scientific.name == "Labeo rohita and Catla Catla" ~ "Mixed carps",
+    mutate(clean_sci_name = case_when(Species.scientific.name == "Chinese fed carp" ~ "Cyprinidae",
+                                      Species.scientific.name == "Ctenopharyngodon idella; Carassius carassius" ~ "Cyprinidae",
+                                      # Instead of Cyprinidae, be specific that this next group are Hypophtalmichthys so that they can be pulled into their own taxa group in add_taxa_group
+                                      Species.scientific.name == "Hypophthalmichthys molitrix and Hypophthalmichthys nobilis" ~ "Mixed Hypophthalmichthys molitrix and H. nobilis",
+                                      Species.scientific.name == "Morone chrysops x M. saxatilis" ~ "Morone hybrid",
+                                      Species.scientific.name == "Labeo rohita and Catla Catla" ~ "Cyprinidae",
+                                      Species.scientific.name == "Labeo rohita and Catla catla" ~ "Cyprinidae",
                                       Species.scientific.name == "Osteichthyes" ~ "Freshwater fishes",
                                       Species.scientific.name == "Penaeus vannamei" ~ "Litopenaeus vannamei",
                                       Species.scientific.name == "Pangasius hypophthalmus" ~ "Pangasianodon hypophthalmus",
                                       TRUE ~ clean_sci_name))
 
+  # Check if any have unassigned clean_sci_name
+  # LCA_data %>%
+  #   filter(clean_sci_name == "") %>%
+  #   select(Species.common.name, Species.scientific.name, clean_sci_name) %>%
+  #   unique()
+  
   LCA_data <- LCA_data %>%
     # Divide by 5 for moist pellets
     mutate(FCR = case_when(Feed_type == "Moist pellet" ~ FCR_overall/5,
@@ -268,14 +280,10 @@ add_taxa_group <- function(lca_dat_clean, fishstat_dat){
 
   lca_dat_out <- lca_dat_out %>% 
     # First pass is to assign NAs to ISSCAAP group
-    mutate(isscaap_group = case_when(clean_sci_name %in% c("Mixed Labeo rohita and Catla catla",
-                                                           "Mixed Hypophthalmichthys molitrix and H. nobilis",
-                                                           "Ctenopharyngodon idella",
-                                                           "Mixed Ctenopharyngodon idella and Carassius carassius") ~ "Carps, barbels and other cyprinids",
-                                     clean_sci_name %in% c("Red crayfish", "Freshwater prawn", "Macrobrachium amazonicum") ~ "Freshwater crustaceans",
+    mutate(isscaap_group = case_when(clean_sci_name %in% c("Mixed Hypophthalmichthys molitrix and H. nobilis",
+                                                           "Ctenopharyngodon idella") ~ "Carps, barbels and other cyprinids",
+                                     clean_sci_name %in% c("Freshwater prawn", "Macrobrachium amazonicum") ~ "Freshwater crustaceans",
                                      clean_sci_name %in% c("Morone hybrid") ~ "Miscellaneous diadromous fishes",
-                                     clean_sci_name %in% c("Cynoscion", "Epinephelus") ~ "Miscellaneous marine fishes",
-                                     clean_sci_name %in% c("Freshwater fishes", "Pangasius") ~ "Miscellaneous freshwater fishes",
                                      clean_sci_name %in% c("Gracilaria chilensis") ~ "Red seaweeds",
                                      clean_sci_name %in% c("Litopenaeus vannamei") ~ "Shrimps, prawns",
                                      TRUE ~ isscaap_group)) 
