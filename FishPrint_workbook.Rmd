@@ -104,7 +104,7 @@ datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 #_______________________________________________________________________________________________________________________#
 # Load lca data
 #_______________________________________________________________________________________________________________________#
-lca <- clean.lca(LCA_data = read.csv(file.path(datadir, "LCA_compiled_20201109.csv"), stringsAsFactors = FALSE))
+lca <- clean.lca(LCA_data = read.csv(file.path(datadir, "LCA_compiled_20201214.csv"), stringsAsFactors = FALSE))
 
 #_______________________________________________________________________________________________________________________#
 # Rebuild FAO fish production from zip file and merge with lca data
@@ -164,7 +164,7 @@ lca$harvest <- runif(nrow(lca), min = 10, max = 500)
 # Load on-farm energy data
 #_______________________________________________________________________________________________________________________#
 energy_gwp <- read.csv(file.path(datadir, "electricity_GWP.csv"))
-# Clean eneergy data
+# Clean energy data
 energy_gwp$iso3c <- countrycode(energy_gwp$Country, origin = "country.name", destination = "iso3c")
 
 #_______________________________________________________________________________________________________________________#

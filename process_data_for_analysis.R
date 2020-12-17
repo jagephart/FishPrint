@@ -44,6 +44,7 @@ write.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"),
 # Output taxa groupings and sample sizes:
 # data.frame(table(lca_dat_clean_groups$taxa_group_name))
 # data.frame(table(lca_dat_clean_groups$taxa)) # abbreviated version of taxa_group_name for writing models
+# lca_dat_clean_groups %>% select(taxa_group_name, Source) %>% distinct() %>% group_by(taxa_group_name) %>% tally() # number of studies/sources per taxa
 # lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% group_by(taxa_group_name, clean_sci_name) %>% mutate(n_obs = n()) %>% unique() %>% arrange(taxa_group_name) %>% print(n=50)
 # write.csv(data.frame(table(lca_dat_clean_groups$taxa_group_name)), file.path(outdir, "taxa_group_sample_size.csv"))
 # write.csv(lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name), file.path(outdir, "taxa_group_composition.csv"))
