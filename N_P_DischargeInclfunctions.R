@@ -1,4 +1,4 @@
-#a program to read N and P values of fish and feed and compuate discharge to the environment
+#a program to read N and P values of fish and feed and compute discharge to the environment
 rm(list = ls(all = TRUE))    #delete variables
 
 library("rfishbase")  #package to use fishbase in r
