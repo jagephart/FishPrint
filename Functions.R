@@ -307,7 +307,7 @@ add_taxa_group <- function(lca_dat_clean, fishstat_dat){
   # Once all groups have an isscaap group, Create taxa groups either manually or from isscaap_group
   lca_dat_out <- lca_dat_out %>%
     # Split up carps
-    mutate(taxa_group_name = case_when(clean_sci_name %in% c("Mixed Hypophthalmichthys molitrix and H. nobilis", 
+    mutate(taxa_group_name = case_when(clean_sci_name %in% c("Mixed H. molitrix and H. nobilis", 
                                                              "Hypophthalmichthys molitrix") ~ "Silver and bighead carp",
                                        clean_sci_name %in% c("Carassius carassius", 
                                                              "Ctenopharyngodon idella", 
