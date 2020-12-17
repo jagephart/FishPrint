@@ -91,7 +91,7 @@ clean.lca <- function(LCA_data){
     mutate(clean_sci_name = case_when(Species.scientific.name == "Chinese fed carp" ~ "Cyprinidae",
                                       Species.scientific.name == "Ctenopharyngodon idella; Carassius carassius" ~ "Cyprinidae",
                                       # Instead of Cyprinidae, be specific that this next group are Hypophtalmichthys so that they can be pulled into their own taxa group in add_taxa_group
-                                      Species.scientific.name == "Hypophthalmichthys molitrix and Hypophthalmichthys nobilis" ~ "Mixed Hypophthalmichthys molitrix and H. nobilis",
+                                      Species.scientific.name == "Hypophthalmichthys molitrix and Hypophthalmichthys nobilis" ~ "Mixed H. molitrix and H. nobilis",
                                       Species.scientific.name == "Morone chrysops x M. saxatilis" ~ "Morone hybrid",
                                       Species.scientific.name == "Labeo rohita and Catla Catla" ~ "Cyprinidae",
                                       Species.scientific.name == "Labeo rohita and Catla catla" ~ "Cyprinidae",
