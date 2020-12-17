@@ -44,11 +44,14 @@ write.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"),
 # Output taxa groupings and sample sizes:
 # data.frame(table(lca_dat_clean_groups$taxa_group_name))
 # data.frame(table(lca_dat_clean_groups$taxa)) # abbreviated version of taxa_group_name for writing models
+# lca_dat_clean_groups %>% select(taxa_group_name, Source) %>% distinct() %>% group_by(taxa_group_name) %>% tally() # number of studies/sources per taxa
 # lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% group_by(taxa_group_name, clean_sci_name) %>% mutate(n_obs = n()) %>% unique() %>% arrange(taxa_group_name) %>% print(n=50)
 # write.csv(data.frame(table(lca_dat_clean_groups$taxa_group_name)), file.path(outdir, "taxa_group_sample_size.csv"))
 # write.csv(lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name), file.path(outdir, "taxa_group_composition.csv"))
 
+#________________________________________________________________________________________________________________________________________________________________#
 # Calculate production weightings for each taxa group
+#________________________________________________________________________________________________________________________________________________________________#
 prod_weightings <- fishstat_dat %>% 
   filter(year > 2012) %>%
   filter(unit == "t") %>%
@@ -56,28 +59,41 @@ prod_weightings <- fishstat_dat %>%
   group_by(isscaap_group, species_scientific_name) %>%
   summarise(total = sum(quantity, na.rm = TRUE))
 
+# Check for species names in lca data that does not match fao data
+unique(lca_dat_clean_groups$clean_sci_name[!(lca_dat_clean_groups$clean_sci_name %in% prod_weightings$species_scientific_name)])
+
 # Correct species names to merge with fao production data
-# FIX IT: Start here with final data to have complete species list
+
 lca_dat_clean_groups <- lca_dat_clean_groups %>%
   mutate(fao_species = case_when(
-    (clean_sci_name == "Epinephelus") ~ "Epinephelus spp",
     (clean_sci_name == "Litopenaeus vannamei") ~ "Penaeus vannamei",
-    (clean_sci_name == "Pangasius") ~ "Pangasius spp",
-    (clean_sci_name == "Mixed carps") ~ "Catla catla", # Picked one of the two carps listed from this study (other is Labeo rohita)
-    (clean_sci_name == "Cynoscion") ~ "Cynoscion spp",
-    (clean_sci_name == "Red crayfish") ~ "Procambarus clarkii",
-    (clean_sci_name == "Freshwater prawn") ~ "Macrobrachium spp",
+    (clean_sci_name == "Scophthalmidae") ~ "",
+    (clean_sci_name == "Cynoscion spp") ~ "Sciaenidae", # Replace with the family, but this may underestimate production
+    (clean_sci_name == "Laminaria digitata") ~ "Macrocystis pyrifera", # Or use Saccharina latissima to weight evenly with other brown seaweeds
+    (clean_sci_name == "Gracilaria chilensis") ~ "Gracilaria spp",  # Use as representative for red algae in general
+    (clean_sci_name == "Mixed Hypophthalmichthys molitrix and H. nobilis") ~ "Hypophthalmichthys molitrix",
+    (clean_sci_name == "Ctenopharyngodon idella") ~ "Ctenopharyngodon idellus",
+    (clean_sci_name == "Anoplopoma fimbria") ~ "",
     (clean_sci_name == "Macrobrachium amazonicum") ~ "Macrobrachium spp"
   ))
-lca_dat_clean_groups$fao_species[is.na(lca_dat_clean_groups$fao_species)] <- 
-  lca_dat_clean_groups$clean_sci_name[is.na(lca_dat_clean_groups$fao_species)]
+lca_dat_clean_groups$fao_species[is.na(lca_dat_clean_groups$fao_species)] <- lca_dat_clean_groups$clean_sci_name[is.na(lca_dat_clean_groups$fao_species)]
 
 prod_weightings <-  prod_weightings %>% 
   right_join(lca_dat_clean_groups, by = c("species_scientific_name" = "fao_species", "isscaap_group")) %>%
   select(isscaap_group, taxa_group_name, taxa, clean_sci_name, total) %>%
-  distinct() # FIX IT: Check for NAs in total - may have to use a differnt taxa group
+  distinct()
 
+# Add small amount to na's 
+prod_weightings$total[is.na(prod_weightings$total)] <- 10
+
+prod_weightings <-  prod_weightings %>% 
+  group_by(taxa_group_name, taxa) %>%
+  mutate(weighting = total/sum(total, na.rm = TRUE))
+
+write.csv(prod_weightings, file.path(datadir, "aqua_prod_weightings.csv"), row.names = FALSE)
+#________________________________________________________________________________________________________________________________________________________________#
 # Calculate the weighted averages for the feed components # FIX IT: Need to add in groupings (not finished yet)
+#________________________________________________________________________________________________________________________________________________________________#
 feed_fp <- read.csv(file.path(datadir, "Feed_impact_factors_20201203.csv"))
 feed_fp$iso3c <- countrycode(feed_fp$Country.Region, origin = "country.name", destination = "iso3c")
 feed_fp$iso3c[is.na(feed_fp$iso3c)] <- "Other"
