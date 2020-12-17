@@ -1,11 +1,9 @@
 # Calculate (non-feed associated) greenhouse gas footprint
 # (Electricity use * country-specific GHG of electricity) + (Diesel * GHG of diesel) + (Petrol * GHG of petrol) + (Natural gas * GHG of natural gas)
 
-# Reminder for new data: entries with data for some columns should have no blanks in other columns (these should be filled in as zeroes)
-
-# Step 0: Run process_data_for_analysis.R
-# FIX IT - Decide: adjust zeroes upwards? or drop zeroes? See first block of code in each model
-library(countrycode)
+# DECISION: adjusting zeroes to be very small amount for all energy datasets
+# Helps with modeling the NAs
+# Have to do this anyway for the final aggregation gamma model (must be positive)
 
 # Get model-specific data:
 # SELECT STUDY ID COLUMN - use this for rejoining outputs from multiple regression models back together
@@ -13,13 +11,11 @@ library(countrycode)
 # Select iso3c so this can be joined with country-specific GHG emissions for electricity
 ghg_model_dat_categories <- lca_dat_clean_groups %>%
   select(study_id, Country, iso3c, electric = Electricity_kwh, diesel = Diesel_L, petrol = Petrol_L, natgas = NaturalGas_L, clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
-  arrange(clean_sci_name, taxa, intensity, system)
-
-# Get farm-associated carbon footprints data
-# Add iso3c
-electric_fp_dat <- read.csv(file.path(datadir, "electricity_GWP.csv")) %>%
-  mutate(iso3c = countrycode(Country, origin = "country.name", destination = "iso3c"))
-other_energy_fp_dat <- read.csv(file.path(datadir, "energy_carriers_impact_factors.csv"))
+  arrange(clean_sci_name, taxa, intensity, system) %>%
+  mutate(electric = if_else(electric == 0, true = 0.01, false = electric),
+         diesel = if_else(diesel == 0, true = 0.01, false = diesel),
+         petrol = if_else(petrol == 0, true = 0.01, false = petrol),
+         natgas = if_else(natgas == 0, true = 0.01, false = natgas))
 
 # Clear all memory except for final stan model:
 rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
@@ -31,8 +27,8 @@ rm(list=ls()[!(ls() %in% c("datadir", "outdir",
 
 electric_no_na <- ghg_model_dat_categories %>%
   filter(is.na(electric)==FALSE)  %>% # Drop NAs (Keep zeroes)
-  mutate(electric = if_else(electric == 0, true = min(electric[electric!=0]), false = electric)) %>% # Not modeling the zeroes, option 1: adjust these to the minimum value
-  #filter(electric != 0) %>% # Not modeling the zeroes, option 2: drop all zeroes
+  #mutate(electric = if_else(electric == 0, true = min(electric[electric!=0]), false = electric)) %>% # Not modeling the zeroes, option 1: adjust these to the minimum value
+  filter(electric != 0) %>% # Not modeling the zeroes, option 2: drop all zeroes
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
   select(study_id, Country, iso3c, electric, clean_sci_name, taxa, intensity, system)
 
@@ -40,21 +36,17 @@ electric_no_na <- ghg_model_dat_categories %>%
 X_taxa <- model.matrix(object = ~ 1 + taxa, 
                        data = electric_no_na %>% select(taxa)) 
 
-taxa_sd <- apply(matrix(X_taxa[,-1]), MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 #taxa_sd <- sd(X_taxa[,-1], na.rm = TRUE)
 X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
-# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
-colnames(X_taxa_scaled) <- colnames(X_taxa)[2:ncol(X_taxa)]
 
-# FIX IT: only select predictors (intensity, system) if there is variation in it
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal <- electric_no_na %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed) 
+  mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed) 
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  #select(intensity, system) %>%
-  select(system) %>%
+  select(intensity, system) %>%
   as.matrix()
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
@@ -81,7 +73,7 @@ all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response v
 # increasing max_treedepth is more about efficiency (instead of validity)
 # See: https://mc-stan.org/misc/warnings.html
 fit_electric_no_na <- brm(electric_brms, data = electric_brms_data,
-                       prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+                       prior = all_priors, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
 
 # Get stan code
 #stancode(fit_electric_no_na)
@@ -91,7 +83,7 @@ fit_electric_no_na <- brm(electric_brms, data = electric_brms_data,
 # Both intensity AND system are non-NA
 electric_complete_predictors <- ghg_model_dat_categories %>%
   filter(is.na(electric)) %>% 
-  filter(is.na(intensity)==FALSE & is.na(system)== FALSE) 
+  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) 
 
 # PROBLEM: lca_complete predictors has more taxa than originally model:
 taxa_not_modeled <- setdiff(unique(electric_complete_predictors$taxa), unique(electric_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
@@ -106,10 +98,21 @@ setdiff(unique(electric_no_na$taxa), unique(electric_complete_predictors$taxa))
 # If original model has taxa that are not part of electric_complete_predictors, 
 # Use list of unique taxa in original model and use this to expand/assign levels manually - having trouble automating this
 # Include all levels here, but remember the first level won't show up in design matrix - instead, it's part of the "contrasts"
-# sort(unique(electric_no_na$taxa))
-# electric_complete_predictors <- electric_complete_predictors %>%
-#   mutate(taxa = as.factor(taxa))
-# levels(electric_complete_predictors$taxa) <- list(fresh_crust = "fresh_crust", misc_fresh = "misc_fresh", misc_marine = "misc_marine", oth_carp = "oth_carp", tilapia = "tilapia")
+sort(unique(electric_no_na$taxa))
+electric_complete_predictors <- electric_complete_predictors %>%
+  mutate(taxa = as.factor(taxa))
+levels(electric_complete_predictors$taxa) <- list(bivalves = "bivalves",
+                                                  catfish = "catfish",
+                                                  hypoph_carp = "hypoph_carp",
+                                                  milkfish = "milkfish",
+                                                  misc_diad = "misc_diad",
+                                                  misc_marine = "misc_marine",
+                                                  oth_carp = "oth_carp",
+                                                  plants = "plants",
+                                                  salmon = "salmon",
+                                                  shrimp = "shrimp",
+                                                  tilapia = "tilapia",
+                                                  trout = "trout")
 
 # Create NEW taxa model matrix for the studies to be predicted
 # Taxa categories:
@@ -117,20 +120,17 @@ X_taxa_new <- model.matrix(object = ~ 1 + taxa,
                            data = electric_complete_predictors %>% select(taxa)) 
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
-X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(matrix(X_taxa[,-1]), MARGIN = 2, FUN = mean), scale=2*taxa_sd)
-# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
-colnames(X_taxa_new_scaled) <- colnames(X_taxa_new)[2:ncol(X_taxa_new)]
+X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(X_taxa[,-1], MARGIN = 2, FUN = mean), scale=2*taxa_sd)
 
-# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
 # System and Intensity variables:
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal_new <- electric_complete_predictors %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  #select(intensity, system) %>%
-  select(system) %>%
+  select(intensity, system) %>%
+  #select(system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -162,107 +162,128 @@ electric_predictions <- electric_dat_intervals %>%
   rename(electric = .value)
 
 ######################################################################################################
+# The following section does not apply to electricity (all taxa predicted):
 # Model electricity with intensity + system (no taxa)
 
-# Create dataframe for brms and rename feed variables
-electric_brms_data_no_taxa <- data.frame(y = electric_no_na$electric, X_ordinal_scaled)
-
-names(electric_brms_data_no_taxa)
-
-# Set model formula
-electric_brms_no_taxa <- brmsformula(y ~ 1 + ., family = Gamma("log"))
-
-# Use "resp = <response_variable>" to specify different priors for different response variables
-all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
-                set_prior("normal(0,2.5)", class = "Intercept"), 
-                set_prior("exponential(1)", class = "shape"))
-
-# Model converges after increasing the adapt_delta and iterations from default values
-# Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
-# increasing max_treedepth is more about efficiency (instead of validity)
-# See: https://mc-stan.org/misc/warnings.html
-fit_electric_no_taxa <- brm(electric_brms_no_taxa, data = electric_brms_data_no_taxa,
-                         prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+# # Create dataframe for brms and rename feed variables
+# electric_brms_data_no_taxa <- data.frame(y = electric_no_na$electric, X_ordinal_scaled)
+# 
+# names(electric_brms_data_no_taxa)
+# 
+# # Set model formula
+# electric_brms_no_taxa <- brmsformula(y ~ 1 + ., family = Gamma("log"))
+# 
+# # Use "resp = <response_variable>" to specify different priors for different response variables
+# all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
+#                 set_prior("normal(0,2.5)", class = "Intercept"), 
+#                 set_prior("exponential(1)", class = "shape"))
+# 
+# # Model converges after increasing the adapt_delta and iterations from default values
+# # Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
+# # increasing max_treedepth is more about efficiency (instead of validity)
+# # See: https://mc-stan.org/misc/warnings.html
+# fit_electric_no_taxa <- brm(electric_brms_no_taxa, data = electric_brms_data_no_taxa,
+#                          prior = all_priors, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
 
 # Get stan code
 #stancode(fit_electric_no_taxa)
 
 ######################################################################################################
+
 # Use intensity + system model to predict electricity for taxa that were not part of the previous model
 # Intensity must be non-NA
-electric_complete_predictors <- ghg_model_dat_categories %>%
-  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>%
-  filter(is.na(electric)) # Now, filter to just the NAs
+# electric_complete_predictors <- ghg_model_dat_categories %>%
+#   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>%
+#   filter(is.na(electric)) # Now, filter to just the NAs
+# 
+# taxa_not_modeled <- setdiff(unique(electric_complete_predictors$taxa), unique(electric_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
+# 
+# # Only keep taxa that were not modeled previously
+# electric_complete_predictors_no_taxa <- electric_complete_predictors %>%
+#   filter(taxa %in% taxa_not_modeled) 
+# 
+# # Format intensity and system as ordinal variable, then center and scale
+# X_ordinal_no_taxa <- electric_complete_predictors_no_taxa %>%
+#   mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+#   mutate(intensity = as.numeric(intensity)) %>%
+#   mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed)
+#   mutate(system = as.numeric(system)) %>%
+#   select(intensity, system) %>%
+#   #select(system) %>%
+#   as.matrix()
+# 
+# # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
+# X_ordinal_scaled_no_taxa <- scale(X_ordinal_no_taxa, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
+# 
+# # Create dataframe for brms
+# brms_electric_dat_no_taxa <- data.frame(X_ordinal_scaled_no_taxa)
+# 
+# # Make predictions
+# #predicted_electric_dat <- predict(fit_no_na, newdata = brms_new_electric_data)
+# # Use tidybayes instead:
+# predicted_electric_dat_no_taxa <- add_predicted_draws(newdata = brms_electric_dat_no_taxa, model = fit_electric_no_taxa)
+# 
+# # Get point and interval estimates from predicted data
+# # Select just the prediction columns
+# # Join these with the modeled data (electric_complete_predictors_no_taxa) to get metadata on taxa/intensity/syste,
+# electric_dat_intervals_no_taxa <- predicted_electric_dat_no_taxa %>%
+#   median_qi(.value = .prediction) %>% # Rename prediction to value
+#   ungroup() %>%
+#   select(contains("."))
+# 
+# # .row is equivalent to the row number in the modeled dataset (electric_complete_predictors_no_taxa) - create a join column for this
+# electric_metadat_no_taxa <- electric_complete_predictors_no_taxa %>%
+#   select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
+#   mutate(.row = row_number())
+# 
+# electric_predictions_no_taxa <- electric_dat_intervals_no_taxa %>%
+#   left_join(electric_metadat_no_taxa, by = ".row") %>%
+#   rename(electric = .value)
 
-taxa_not_modeled <- setdiff(unique(electric_complete_predictors$taxa), unique(electric_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
-
-# Only keep taxa that were not modeled previously
-electric_complete_predictors_no_taxa <- electric_complete_predictors %>%
-  filter(taxa %in% taxa_not_modeled) 
-
-# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
-# Format intensity and system as ordinal variable, then center and scale
-X_ordinal_no_taxa <- electric_complete_predictors_no_taxa %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(intensity = as.numeric(intensity)) %>%
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
-  mutate(system = as.numeric(system)) %>%
-  #select(intensity, system) %>%
-  select(system) %>%
-  as.matrix()
-
-# Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
-X_ordinal_scaled_no_taxa <- scale(X_ordinal_no_taxa, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
-
-# Create dataframe for brms
-brms_electric_dat_no_taxa <- data.frame(X_ordinal_scaled_no_taxa)
-
-# Make predictions
-#predicted_electric_dat <- predict(fit_no_na, newdata = brms_new_electric_data)
-# Use tidybayes instead:
-predicted_electric_dat_no_taxa <- add_predicted_draws(newdata = brms_electric_dat_no_taxa, model = fit_electric_no_taxa)
-
-# Get point and interval estimates from predicted data
-# Select just the prediction columns
-# Join these with the modeled data (electric_complete_predictors_no_taxa) to get metadata on taxa/intensity/syste,
-electric_dat_intervals_no_taxa <- predicted_electric_dat_no_taxa %>%
-  median_qi(.value = .prediction) %>% # Rename prediction to value
-  ungroup() %>%
-  select(contains("."))
-
-# .row is equivalent to the row number in the modeled dataset (electric_complete_predictors_no_taxa) - create a join column for this
-electric_metadat_no_taxa <- electric_complete_predictors_no_taxa %>%
-  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
-  mutate(.row = row_number())
-
-electric_predictions_no_taxa <- electric_dat_intervals_no_taxa %>%
-  left_join(electric_metadat_no_taxa, by = ".row") %>%
-  rename(electric = .value)
-
+######################################################################################################
 # Bind electric_no_na (data), electric_predictions, and electric_predictions_no_taxa
+
 full_electric_dat <- electric_predictions %>%
   bind_rows(electric_no_na) %>%
-  bind_rows(electric_predictions_no_taxa) %>%
+  #bind_rows(electric_predictions_no_taxa) %>%
   mutate(data_type = if_else(is.na(.point), true = "data", false = "prediction")) %>%
   arrange(taxa, intensity, system, clean_sci_name) %>%
   rownames_to_column() # Arrange by taxa first, then create dummy column for plotting 
+
+
+# Quick check: PLOT DATA + PREDICTIONS
+ggplot(full_electric_dat, aes(x = electric, y = taxa)) + geom_boxplot(outlier.shape = NA) + geom_jitter(aes(color = data_type))
+
+## FIX IT - temporary fix - filter out predictions with high uncertainty based on highest and lowest data values
+## shouldn't be predicting out of the range of observations
+min_dat <- full_electric_dat %>%
+  filter(data_type == "data") %>%
+  pull(electric) %>%
+  min()
+
+max_dat <- full_electric_dat %>%
+  filter(data_type == "data") %>%
+  pull(electric) %>%
+  max()
+
+full_electric_dat <- full_electric_dat %>%
+  filter(electric <= max_dat & electric >= min_dat)
 
 # NEXT: use plot_brms_gamma_regression to produce figures for SI
 
 # Clear all memory except for final stan model:
 rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
-                           "lca_dat_clean_groups","ghg_model_dat_categories", 
+                           "lca_dat_clean_groups", "ghg_model_dat_categories", 
                            "electric_fp_dat", "other_energy_fp_dat", 
                            "full_electric_dat"))])
-
 
 ######################################################################################################
 # Step 2: Model diesel
 
 diesel_no_na <- ghg_model_dat_categories %>%
   filter(is.na(diesel)==FALSE)  %>% # Drop NAs (Keep zeroes)
-  mutate(diesel = if_else(diesel == 0, true = min(diesel[diesel!=0]), false = diesel)) %>% # Not modeling the zeroes, option 1: adjust these to the minimum value
-  #filter(diesel != 0) %>% # Not modeling the zeroes, option 2: drop all zeroes
+  #mutate(diesel = if_else(diesel == 0, true = 0.01, false = diesel)) %>% # Not modeling the zeroes, option 1: adjust these to the minimum value
+  filter(diesel != 0) %>% # Not modeling the zeroes, option 2: drop all zeroes
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
   select(study_id, Country, iso3c, diesel, clean_sci_name, taxa, intensity, system)
 
@@ -270,21 +291,17 @@ diesel_no_na <- ghg_model_dat_categories %>%
 X_taxa <- model.matrix(object = ~ 1 + taxa, 
                        data = diesel_no_na %>% select(taxa)) 
 
-taxa_sd <- apply(matrix(X_taxa[,-1]), MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
-# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
-colnames(X_taxa_scaled) <- colnames(X_taxa)[2:ncol(X_taxa)]
 
-
-# FIX IT: only select predictors (intensity, system) if there is variation in it
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal <- diesel_no_na %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  #select(intensity, system) %>%
-  select(system) %>%
+  select(intensity, system) %>%
+  #select(system) %>%
   as.matrix()
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
@@ -296,10 +313,6 @@ names(diesel_brms_data)
 
 # Set model formula
 diesel_brms <- brmsformula(y ~ 1 + ., family = Gamma("log"))
-# Equivalent to:
-# diesel_brms <- brmsformula(y ~ 1 + taxatilapia + taxatrout +
-#                            intensity + system, family = Gamma("log"))
-
 
 # Use "resp = <response_variable>" to specify different priors for different response variables
 all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
@@ -311,7 +324,7 @@ all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response v
 # increasing max_treedepth is more about efficiency (instead of validity)
 # See: https://mc-stan.org/misc/warnings.html
 fit_diesel_no_na <- brm(diesel_brms, data = diesel_brms_data,
-                      prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+                      prior = all_priors, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
 
 # Get stan code
 #stancode(fit_diesel_no_na)
@@ -336,10 +349,22 @@ setdiff(unique(diesel_no_na$taxa), unique(diesel_complete_predictors$taxa))
 # If original model has taxa that are not part of diesel_complete_predictors, 
 # Use list of unique taxa in original model and use this to expand/assign levels manually - having trouble automating this
 # Include all levels here, but remember the first level won't show up in design matrix - instead, it's part of the "contrasts"
-# sort(unique(diesel_no_na$taxa))
-# diesel_complete_predictors <- diesel_complete_predictors %>%
-#   mutate(taxa = as.factor(taxa))
-# levels(diesel_complete_predictors$taxa) <- list(fresh_crust = "fresh_crust", misc_fresh = "misc_fresh", misc_marine = "misc_marine", oth_carp = "oth_carp", tilapia = "tilapia")
+sort(unique(diesel_no_na$taxa))
+diesel_complete_predictors <- diesel_complete_predictors %>%
+  mutate(taxa = as.factor(taxa))
+
+levels(diesel_complete_predictors$taxa) <- list(bivalves = "bivalves",
+                                                  catfish = "catfish",
+                                                  hypoph_carp = "hypoph_carp",
+                                                  milkfish = "milkfish",
+                                                  misc_diad = "misc_diad",
+                                                  misc_marine = "misc_marine",
+                                                  oth_carp = "oth_carp",
+                                                  plants = "plants",
+                                                  salmon = "salmon",
+                                                  shrimp = "shrimp",
+                                                  tilapia = "tilapia",
+                                                  trout = "trout")
 
 # Create NEW taxa model matrix for the studies to be predicted
 # Taxa categories:
@@ -347,20 +372,17 @@ X_taxa_new <- model.matrix(object = ~ 1 + taxa,
                            data = diesel_complete_predictors %>% select(taxa)) 
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
-X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(matrix(X_taxa[,-1]), MARGIN = 2, FUN = mean), scale=2*taxa_sd)
-# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
-colnames(X_taxa_new_scaled) <- colnames(X_taxa_new)[2:ncol(X_taxa_new)]
+X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(X_taxa[,-1], MARGIN = 2, FUN = mean), scale=2*taxa_sd)
 
-# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
 # System and Intensity variables:
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal_new <- diesel_complete_predictors %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  #select(intensity, system) %>%
-  select(system) %>%
+  select(intensity, system) %>%
+  #select(system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -373,6 +395,7 @@ brms_new_diesel_dat <- data.frame(cbind(X_taxa_new_scaled, X_ordinal_new_scaled)
 #predicted_diesel_dat <- predict(fit_no_na, newdata = brms_new_diesel_data)
 # Use tidybayes instead:
 predicted_diesel_dat <- add_predicted_draws(newdata = brms_new_diesel_dat, model = fit_diesel_no_na)
+#predicted_diesel_dat <- add_fitted_draws(newdata = brms_new_diesel_dat, model = fit_diesel_no_na)
 
 # Get point and interval estimates from predicted data
 # Select just the prediction columns
@@ -392,90 +415,112 @@ diesel_predictions <- diesel_dat_intervals %>%
   rename(diesel = .value)
 
 ######################################################################################################
-# Model diesel with intensity + system (no taxa)
+# Model diesel with intensity + system (no taxa) 
+# This section doesn't apply to diesel (all taxa have data)
 
 # Create dataframe for brms and rename feed variables
-diesel_brms_data_no_taxa <- data.frame(y = diesel_no_na$diesel, X_ordinal_scaled)
+# diesel_brms_data_no_taxa <- data.frame(y = diesel_no_na$diesel, X_ordinal_scaled)
+# 
+# names(diesel_brms_data_no_taxa)
+# 
+# # Set model formula
+# diesel_brms_no_taxa <- brmsformula(y ~ 1 + ., family = Gamma("log"))
+# 
+# # Use "resp = <response_variable>" to specify different priors for different response variables
+# all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
+#                 set_prior("normal(0,2.5)", class = "Intercept"),
+#                 set_prior("exponential(1)", class = "shape"))
+# 
+# # Model converges after increasing the adapt_delta and iterations from default values
+# # Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
+# # increasing max_treedepth is more about efficiency (instead of validity)
+# # See: https://mc-stan.org/misc/warnings.html
+# fit_diesel_no_taxa <- brm(diesel_brms_no_taxa, data = diesel_brms_data_no_taxa,
+#                         prior = all_priors, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
+# 
+# # Get stan code
+# #stancode(fit_diesel_no_taxa)
+# 
+# ######################################################################################################
+# # Use intensity + system model to predict diesel for taxa that were not part of the previous model
+# # Intensity must be non-NA
+# diesel_complete_predictors <- ghg_model_dat_categories %>%
+#   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>%
+#   filter(is.na(diesel)) # Now, filter to just the NAs
+# 
+# taxa_not_modeled <- setdiff(unique(diesel_complete_predictors$taxa), unique(diesel_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
+# 
+# # Only keep taxa that were not modeled previously
+# diesel_complete_predictors_no_taxa <- diesel_complete_predictors %>%
+#   filter(taxa %in% taxa_not_modeled)
+# 
+# # Format intensity and system as ordinal variable, then center and scale
+# X_ordinal_no_taxa <- diesel_complete_predictors_no_taxa %>%
+#   mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+#   mutate(intensity = as.numeric(intensity)) %>%
+#   mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed)
+#   mutate(system = as.numeric(system)) %>%
+#   select(intensity, system) %>%
+#   #select(system) %>%
+#   as.matrix()
+# 
+# # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
+# X_ordinal_scaled_no_taxa <- scale(X_ordinal_no_taxa, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
+# 
+# # Create dataframe for brms
+# brms_diesel_dat_no_taxa <- data.frame(X_ordinal_scaled_no_taxa)
+# 
+# # Make predictions
+# #predicted_diesel_dat <- predict(fit_no_na, newdata = brms_new_diesel_data)
+# # Use tidybayes instead:
+# predicted_diesel_dat_no_taxa <- add_predicted_draws(newdata = brms_diesel_dat_no_taxa, model = fit_diesel_no_taxa)
+# 
+# # Get point and interval estimates from predicted data
+# # Select just the prediction columns
+# # Join these with the modeled data (diesel_complete_predictors_no_taxa) to get metadata on taxa/intensity/syste,
+# diesel_dat_intervals_no_taxa <- predicted_diesel_dat_no_taxa %>%
+#   median_qi(.value = .prediction) %>% # Rename prediction to value
+#   ungroup() %>%
+#   select(contains("."))
+# 
+# # .row is equivalent to the row number in the modeled dataset (diesel_complete_predictors_no_taxa) - create a join column for this
+# diesel_metadat_no_taxa <- diesel_complete_predictors_no_taxa %>%
+#   select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
+#   mutate(.row = row_number())
+# 
+# diesel_predictions_no_taxa <- diesel_dat_intervals_no_taxa %>%
+#   left_join(diesel_metadat_no_taxa, by = ".row") %>%
+#   rename(diesel = .value)
 
-names(diesel_brms_data_no_taxa)
-
-# Set model formula
-diesel_brms_no_taxa <- brmsformula(y ~ 1 + ., family = Gamma("log"))
-
-# Use "resp = <response_variable>" to specify different priors for different response variables
-all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
-                set_prior("normal(0,2.5)", class = "Intercept"), 
-                set_prior("exponential(1)", class = "shape"))
-
-# Model converges after increasing the adapt_delta and iterations from default values
-# Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
-# increasing max_treedepth is more about efficiency (instead of validity)
-# See: https://mc-stan.org/misc/warnings.html
-fit_diesel_no_taxa <- brm(diesel_brms_no_taxa, data = diesel_brms_data_no_taxa,
-                        prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
-
-# Get stan code
-#stancode(fit_diesel_no_taxa)
-
-######################################################################################################
-# Use intensity + system model to predict diesel for taxa that were not part of the previous model
-# Intensity must be non-NA
-diesel_complete_predictors <- ghg_model_dat_categories %>%
-  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>%
-  filter(is.na(diesel)) # Now, filter to just the NAs
-
-taxa_not_modeled <- setdiff(unique(diesel_complete_predictors$taxa), unique(diesel_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
-
-# Only keep taxa that were not modeled previously
-diesel_complete_predictors_no_taxa <- diesel_complete_predictors %>%
-  filter(taxa %in% taxa_not_modeled) 
-
-# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
-# Format intensity and system as ordinal variable, then center and scale
-X_ordinal_no_taxa <- diesel_complete_predictors_no_taxa %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(intensity = as.numeric(intensity)) %>%
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
-  mutate(system = as.numeric(system)) %>%
-  #select(intensity, system) %>%
-  select(system) %>%
-  as.matrix()
-
-# Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
-X_ordinal_scaled_no_taxa <- scale(X_ordinal_no_taxa, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
-
-# Create dataframe for brms
-brms_diesel_dat_no_taxa <- data.frame(X_ordinal_scaled_no_taxa)
-
-# Make predictions
-#predicted_diesel_dat <- predict(fit_no_na, newdata = brms_new_diesel_data)
-# Use tidybayes instead:
-predicted_diesel_dat_no_taxa <- add_predicted_draws(newdata = brms_diesel_dat_no_taxa, model = fit_diesel_no_taxa)
-
-# Get point and interval estimates from predicted data
-# Select just the prediction columns
-# Join these with the modeled data (diesel_complete_predictors_no_taxa) to get metadata on taxa/intensity/syste,
-diesel_dat_intervals_no_taxa <- predicted_diesel_dat_no_taxa %>%
-  median_qi(.value = .prediction) %>% # Rename prediction to value
-  ungroup() %>%
-  select(contains("."))
-
-# .row is equivalent to the row number in the modeled dataset (diesel_complete_predictors_no_taxa) - create a join column for this
-diesel_metadat_no_taxa <- diesel_complete_predictors_no_taxa %>%
-  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
-  mutate(.row = row_number())
-
-diesel_predictions_no_taxa <- diesel_dat_intervals_no_taxa %>%
-  left_join(diesel_metadat_no_taxa, by = ".row") %>%
-  rename(diesel = .value)
-
+#######################################################################################################
 # Bind diesel_no_na (data), diesel_predictions, and diesel_predictions_no_taxa
 full_diesel_dat <- diesel_predictions %>%
   bind_rows(diesel_no_na) %>%
-  bind_rows(diesel_predictions_no_taxa) %>%
+  #bind_rows(diesel_predictions_no_taxa) %>%
   mutate(data_type = if_else(is.na(.point), true = "data", false = "prediction")) %>%
   arrange(taxa, intensity, system, clean_sci_name) %>%
   rownames_to_column() # Arrange by taxa first, then create dummy column for plotting 
+
+# Quick check: PLOT DATA + PREDICTIONS
+ggplot(full_diesel_dat, aes(x = diesel, y = taxa)) + geom_boxplot(outlier.shape = NA) + geom_jitter(aes(color = data_type))
+
+## FIX IT - temporary fix - filter out predictions with high uncertainty based on highest and lowest data values
+## shouldn't be predicting out of the range of observations
+min_dat <- full_diesel_dat %>%
+  filter(data_type == "data") %>%
+  pull(diesel) %>%
+  min()
+
+max_dat <- full_diesel_dat %>%
+  filter(data_type == "data") %>%
+  pull(diesel) %>%
+  max()
+
+full_diesel_dat <- full_diesel_dat %>%
+  filter(diesel <= max_dat & diesel >= min_dat)
+  
+# Check again: PLOT DATA + PREDICTIONS
+ggplot(full_diesel_dat, aes(x = diesel, y = taxa)) + geom_boxplot(outlier.shape = NA) + geom_jitter(aes(color = data_type))
 
 # NEXT: use plot_brms_gamma_regression to produce figures for SI
 
@@ -490,8 +535,8 @@ rm(list=ls()[!(ls() %in% c("datadir", "outdir",
 
 petrol_no_na <- ghg_model_dat_categories %>%
   filter(is.na(petrol)==FALSE)  %>% # Drop NAs (Keep zeroes)
-  mutate(petrol = if_else(petrol == 0, true = min(petrol[petrol!=0]), false = petrol)) %>% # Not modeling the zeroes, option 1: adjust these to the minimum value
-  #filter(petrol != 0) %>% # Not modeling the zeroes, option 2: drop zeroes
+  #mutate(petrol = if_else(petrol == 0, true = min(petrol[petrol!=0]), false = petrol)) %>% # Not modeling the zeroes, option 1: adjust these to the minimum value
+  filter(petrol != 0) %>% # Not modeling the zeroes, option 2: drop zeroes
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
   select(study_id, Country, iso3c, petrol, clean_sci_name, taxa, intensity, system)
 
@@ -499,20 +544,17 @@ petrol_no_na <- ghg_model_dat_categories %>%
 X_taxa <- model.matrix(object = ~ 1 + taxa, 
                        data = petrol_no_na %>% select(taxa)) 
 
-taxa_sd <- apply(matrix(X_taxa[,-1]), MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
-# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
-colnames(X_taxa_scaled) <- colnames(X_taxa)[2:ncol(X_taxa)]
 
-# FIX IT: only select predictors (intensity, system) if there is variation in it
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal <- petrol_no_na %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  #select(intensity, system) %>%
-  select(system) %>%
+  select(intensity, system) %>%
+  #select(system) %>%
   as.matrix()
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
@@ -524,10 +566,6 @@ names(petrol_brms_data)
 
 # Set model formula
 petrol_brms <- brmsformula(y ~ 1 + ., family = Gamma("log"))
-# Equivalent to:
-# petrol_brms <- brmsformula(y ~ 1 + taxatilapia + taxatrout +
-#                            intensity + system, family = Gamma("log"))
-
 
 # Use "resp = <response_variable>" to specify different priors for different response variables
 all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
@@ -539,7 +577,7 @@ all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response v
 # increasing max_treedepth is more about efficiency (instead of validity)
 # See: https://mc-stan.org/misc/warnings.html
 fit_petrol_no_na <- brm(petrol_brms, data = petrol_brms_data,
-                        prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+                        prior = all_priors, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
 
 # Get stan code
 #stancode(fit_petrol_no_na)
@@ -564,10 +602,21 @@ setdiff(unique(petrol_no_na$taxa), unique(petrol_complete_predictors$taxa))
 # If original model has taxa that are not part of petrol_complete_predictors, 
 # Use list of unique taxa in original model and use this to expand/assign levels manually - having trouble automating this
 # Include all levels here, but remember the first level won't show up in design matrix - instead, it's part of the "contrasts"
-# sort(unique(petrol_no_na$taxa))
-# petrol_complete_predictors <- petrol_complete_predictors %>%
-#   mutate(taxa = as.factor(taxa))
-# levels(petrol_complete_predictors$taxa) <- list(fresh_crust = "fresh_crust", misc_fresh = "misc_fresh", misc_marine = "misc_marine", oth_carp = "oth_carp", tilapia = "tilapia")
+sort(unique(petrol_no_na$taxa))
+petrol_complete_predictors <- petrol_complete_predictors %>%
+  mutate(taxa = as.factor(taxa))
+levels(petrol_complete_predictors$taxa) <- list(bivalves = "bivalves",
+                                                catfish = "catfish",
+                                                hypoph_carp = "hypoph_carp",
+                                                milkfish = "milkfish",
+                                                misc_diad = "misc_diad",
+                                                misc_marine = "misc_marine",
+                                                oth_carp = "oth_carp",
+                                                plants = "plants",
+                                                salmon = "salmon",
+                                                shrimp = "shrimp",
+                                                tilapia = "tilapia",
+                                                trout = "trout")
 
 # Create NEW taxa model matrix for the studies to be predicted
 # Taxa categories:
@@ -575,22 +624,18 @@ X_taxa_new <- model.matrix(object = ~ 1 + taxa,
                            data = petrol_complete_predictors %>% select(taxa)) 
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
-X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(matrix(X_taxa[,-1]), MARGIN = 2, FUN = mean), scale=2*taxa_sd)
-# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
-colnames(X_taxa_new_scaled) <- colnames(X_taxa_new)[2:ncol(X_taxa_new)]
+X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(X_taxa[,-1], MARGIN = 2, FUN = mean), scale=2*taxa_sd)
 
-
-# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
 # Format intensity and system as ordinal variable, then center and scale
 # System and Intensity variables:
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal_new <- petrol_complete_predictors %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  #select(intensity, system) %>%
-  select(system) %>%
+  select(intensity, system) %>%
+  #select(system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -623,90 +668,93 @@ petrol_predictions <- petrol_dat_intervals %>%
 
 ######################################################################################################
 # Model petrol with intensity + system (no taxa)
+# FOLLOWING SECTION NOT APPLICABLE
 
 # Create dataframe for brms and rename feed variables
-petrol_brms_data_no_taxa <- data.frame(y = petrol_no_na$petrol, X_ordinal_scaled)
-
-names(petrol_brms_data_no_taxa)
-
-# Set model formula
-petrol_brms_no_taxa <- brmsformula(y ~ 1 + ., family = Gamma("log"))
-
-# Use "resp = <response_variable>" to specify different priors for different response variables
-all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
-                set_prior("normal(0,2.5)", class = "Intercept"), 
-                set_prior("exponential(1)", class = "shape"))
-
-# Model converges after increasing the adapt_delta and iterations from default values
-# Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
-# increasing max_treedepth is more about efficiency (instead of validity)
-# See: https://mc-stan.org/misc/warnings.html
-fit_petrol_no_taxa <- brm(petrol_brms_no_taxa, data = petrol_brms_data_no_taxa,
-                          prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
-
-# Get stan code
-#stancode(fit_petrol_no_taxa)
+# petrol_brms_data_no_taxa <- data.frame(y = petrol_no_na$petrol, X_ordinal_scaled)
+# 
+# names(petrol_brms_data_no_taxa)
+# 
+# # Set model formula
+# petrol_brms_no_taxa <- brmsformula(y ~ 1 + ., family = Gamma("log"))
+# 
+# # Use "resp = <response_variable>" to specify different priors for different response variables
+# all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
+#                 set_prior("normal(0,2.5)", class = "Intercept"), 
+#                 set_prior("exponential(1)", class = "shape"))
+# 
+# # Model converges after increasing the adapt_delta and iterations from default values
+# # Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
+# # increasing max_treedepth is more about efficiency (instead of validity)
+# # See: https://mc-stan.org/misc/warnings.html
+# fit_petrol_no_taxa <- brm(petrol_brms_no_taxa, data = petrol_brms_data_no_taxa,
+#                           prior = all_priors, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
+# 
+# # Get stan code
+# #stancode(fit_petrol_no_taxa)
+# 
+# ######################################################################################################
+# # Use intensity + system model to predict petrol for taxa that were not part of the previous model
+# # Intensity must be non-NA
+# petrol_complete_predictors <- ghg_model_dat_categories %>%
+#   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>%
+#   filter(is.na(petrol)) # Now, filter to just the NAs
+# 
+# taxa_not_modeled <- setdiff(unique(petrol_complete_predictors$taxa), unique(petrol_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
+# 
+# # Only keep taxa that were not modeled previously
+# petrol_complete_predictors_no_taxa <- petrol_complete_predictors %>%
+#   filter(taxa %in% taxa_not_modeled) 
+# 
+# # Format intensity and system as ordinal variable, then center and scale
+# X_ordinal_no_taxa <- petrol_complete_predictors_no_taxa %>%
+#   mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+#   mutate(intensity = as.numeric(intensity)) %>%
+#   mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed)
+#   mutate(system = as.numeric(system)) %>%
+#   select(intensity, system) %>%
+#   #select(system) %>%
+#   as.matrix()
+# 
+# # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
+# X_ordinal_scaled_no_taxa <- scale(X_ordinal_no_taxa, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
+# 
+# # Create dataframe for brms
+# brms_petrol_dat_no_taxa <- data.frame(X_ordinal_scaled_no_taxa)
+# 
+# # Make predictions
+# #predicted_petrol_dat <- predict(fit_no_na, newdata = brms_new_petrol_data)
+# # Use tidybayes instead:
+# predicted_petrol_dat_no_taxa <- add_predicted_draws(newdata = brms_petrol_dat_no_taxa, model = fit_petrol_no_taxa)
+# 
+# # Get point and interval estimates from predicted data
+# # Select just the prediction columns
+# # Join these with the modeled data (petrol_complete_predictors_no_taxa) to get metadata on taxa/intensity/syste,
+# petrol_dat_intervals_no_taxa <- predicted_petrol_dat_no_taxa %>%
+#   median_qi(.value = .prediction) %>% # Rename prediction to value
+#   ungroup() %>%
+#   select(contains("."))
+# 
+# # .row is equivalent to the row number in the modeled dataset (petrol_complete_predictors_no_taxa) - create a join column for this
+# petrol_metadat_no_taxa <- petrol_complete_predictors_no_taxa %>%
+#   select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
+#   mutate(.row = row_number())
+# 
+# petrol_predictions_no_taxa <- petrol_dat_intervals_no_taxa %>%
+#   left_join(petrol_metadat_no_taxa, by = ".row") %>%
+#   rename(petrol = .value)
 
 ######################################################################################################
-# Use intensity + system model to predict petrol for taxa that were not part of the previous model
-# Intensity must be non-NA
-petrol_complete_predictors <- ghg_model_dat_categories %>%
-  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>%
-  filter(is.na(petrol)) # Now, filter to just the NAs
-
-taxa_not_modeled <- setdiff(unique(petrol_complete_predictors$taxa), unique(petrol_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
-
-# Only keep taxa that were not modeled previously
-petrol_complete_predictors_no_taxa <- petrol_complete_predictors %>%
-  filter(taxa %in% taxa_not_modeled) 
-
-
-# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
-# Format intensity and system as ordinal variable, then center and scale
-X_ordinal_no_taxa <- petrol_complete_predictors_no_taxa %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(intensity = as.numeric(intensity)) %>%
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
-  mutate(system = as.numeric(system)) %>%
-  #select(intensity, system) %>%
-  select(system) %>%
-  as.matrix()
-
-# Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
-X_ordinal_scaled_no_taxa <- scale(X_ordinal_no_taxa, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
-
-# Create dataframe for brms
-brms_petrol_dat_no_taxa <- data.frame(X_ordinal_scaled_no_taxa)
-
-# Make predictions
-#predicted_petrol_dat <- predict(fit_no_na, newdata = brms_new_petrol_data)
-# Use tidybayes instead:
-predicted_petrol_dat_no_taxa <- add_predicted_draws(newdata = brms_petrol_dat_no_taxa, model = fit_petrol_no_taxa)
-
-# Get point and interval estimates from predicted data
-# Select just the prediction columns
-# Join these with the modeled data (petrol_complete_predictors_no_taxa) to get metadata on taxa/intensity/syste,
-petrol_dat_intervals_no_taxa <- predicted_petrol_dat_no_taxa %>%
-  median_qi(.value = .prediction) %>% # Rename prediction to value
-  ungroup() %>%
-  select(contains("."))
-
-# .row is equivalent to the row number in the modeled dataset (petrol_complete_predictors_no_taxa) - create a join column for this
-petrol_metadat_no_taxa <- petrol_complete_predictors_no_taxa %>%
-  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
-  mutate(.row = row_number())
-
-petrol_predictions_no_taxa <- petrol_dat_intervals_no_taxa %>%
-  left_join(petrol_metadat_no_taxa, by = ".row") %>%
-  rename(petrol = .value)
-
 # Bind petrol_no_na (data), petrol_predictions, and petrol_predictions_no_taxa
 full_petrol_dat <- petrol_predictions %>%
   bind_rows(petrol_no_na) %>%
-  bind_rows(petrol_predictions_no_taxa) %>%
+  #bind_rows(petrol_predictions_no_taxa) %>%
   mutate(data_type = if_else(is.na(.point), true = "data", false = "prediction")) %>%
   arrange(taxa, intensity, system, clean_sci_name) %>%
   rownames_to_column() # Arrange by taxa first, then create dummy column for plotting 
+
+# Quick Check: PLOT DATA + PREDICTIONS
+ggplot(full_petrol_dat, aes(x = petrol, y = taxa)) + geom_boxplot(outlier.shape = NA) + geom_jitter(aes(color = data_type))
 
 # NEXT: use plot_brms_gamma_regression to produce figures for SI
 
@@ -720,31 +768,29 @@ rm(list=ls()[!(ls() %in% c("datadir", "outdir",
 
 natgas_no_na <- ghg_model_dat_categories %>%
   filter(is.na(natgas)==FALSE)  %>% # Drop NAs (Keep zeroes)
-  mutate(natgas = if_else(natgas == 0, true = min(natgas[natgas!=0]), false = natgas)) %>% # Not modeling the zeroes, option 1: adjust these to the minimum value
-  #filter(natgas != 0) %>% # Not modeling the zeroes option 2: drop zeroes
+  #mutate(natgas = if_else(natgas == 0, true = min(natgas[natgas!=0]), false = natgas)) %>% # Not modeling the zeroes, option 1: adjust these to the minimum value
+  filter(natgas != 0) %>% # Not modeling the zeroes option 2: drop zeroes
   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
   select(study_id, Country, iso3c, natgas, clean_sci_name, taxa, intensity, system)
-
-# NOPTE: option 2 (dropping zeroes) is not a viable option, after dropping zeroes, there's no varaition in taxa (all salmon), intensity (all intensive) or system (all open)
 
 # Create model matrix for taxa info, then center and scale
 X_taxa <- model.matrix(object = ~ 1 + taxa, 
                        data = natgas_no_na %>% select(taxa)) 
 
-taxa_sd <- apply(matrix(X_taxa[,-1]), MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+# If only one column, no need to use the apply() function
+taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
+#taxa_sd <- sd(X_taxa[,-1], na.rm = TRUE)
 X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
-# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
-colnames(X_taxa_scaled) <- colnames(X_taxa)[2:ncol(X_taxa)]
 
-# FIX IT: only select predictors (intensity, system) if there is variation in it
+# For natural gas, only select predictors system since there's no variation in intensity
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal <- natgas_no_na %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  #select(intensity, system) %>%
-  select(system) %>%
+  select(intensity, system) %>%
+  #select(system) %>%
   as.matrix()
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
@@ -771,7 +817,7 @@ all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response v
 # increasing max_treedepth is more about efficiency (instead of validity)
 # See: https://mc-stan.org/misc/warnings.html
 fit_natgas_no_na <- brm(natgas_brms, data = natgas_brms_data,
-                        prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
+                        prior = all_priors, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
 
 # Get stan code
 #stancode(fit_natgas_no_na)
@@ -796,31 +842,41 @@ setdiff(unique(natgas_no_na$taxa), unique(natgas_complete_predictors$taxa))
 # If original model has taxa that are not part of natgas_complete_predictors, 
 # Use list of unique taxa in original model and use this to expand/assign levels manually - having trouble automating this
 # Include all levels here, but remember the first level won't show up in design matrix - instead, it's part of the "contrasts"
-# sort(unique(natgas_no_na$taxa))
-# natgas_complete_predictors <- natgas_complete_predictors %>%
-#   mutate(taxa = as.factor(taxa))
-# levels(natgas_complete_predictors$taxa) <- list(fresh_crust = "fresh_crust", misc_fresh = "misc_fresh", misc_marine = "misc_marine", oth_carp = "oth_carp", tilapia = "tilapia")
+sort(unique(natgas_no_na$taxa))
+natgas_complete_predictors <- natgas_complete_predictors %>%
+   mutate(taxa = as.factor(taxa))
+levels(natgas_complete_predictors$taxa) <- list(bivalves = "bivalves",
+                                                catfish = "catfish",
+                                                hypoph_carp = "hypoph_carp",
+                                                milkfish = "milkfish",
+                                                misc_diad = "misc_diad",
+                                                misc_marine = "misc_marine",
+                                                oth_carp = "oth_carp",
+                                                plants = "plants",
+                                                salmon = "salmon",
+                                                shrimp = "shrimp",
+                                                tilapia = "tilapia",
+                                                trout = "trout")
+
 
 # Create NEW taxa model matrix for the studies to be predicted
 # Taxa categories:
 X_taxa_new <- model.matrix(object = ~ 1 + taxa, 
                            data = natgas_complete_predictors %>% select(taxa)) 
 
+# There's only one taxa column so don't need to use function apply()
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
-X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(matrix(X_taxa[,-1]), MARGIN = 2, FUN = mean), scale=2*taxa_sd)
-# Explicitly add column names - only needed if there is only one taxa column but this will also work for multiple columns
-colnames(X_taxa_new_scaled) <- colnames(X_taxa_new)[2:ncol(X_taxa_new)]
+X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(X_taxa[,-1], MARGIN = 2, FUN = mean), scale=2*taxa_sd)
 
-# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
 # System and Intensity variables:
 # Format intensity and system as ordinal variables, then center and scale
 X_ordinal_new <- natgas_complete_predictors %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed)
   mutate(intensity = as.numeric(intensity)) %>%
   mutate(system = as.numeric(system)) %>%
-  #select(intensity, system) %>%
-  select(system) %>%
+  select(intensity, system) %>%
+  #select(system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -853,89 +909,94 @@ natgas_predictions <- natgas_dat_intervals %>%
 
 ######################################################################################################
 # Model natgas with intensity + system (no taxa)
+# FOLLOWING SECTION NOT APPLICABLE
 
 # Create dataframe for brms and rename feed variables
-natgas_brms_data_no_taxa <- data.frame(y = natgas_no_na$natgas, X_ordinal_scaled)
-
-names(natgas_brms_data_no_taxa)
-
-# Set model formula
-natgas_brms_no_taxa <- brmsformula(y ~ 1 + ., family = Gamma("log"))
-
-# Use "resp = <response_variable>" to specify different priors for different response variables
-all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
-                set_prior("normal(0,2.5)", class = "Intercept"), 
-                set_prior("exponential(1)", class = "shape"))
-
-# Model converges after increasing the adapt_delta and iterations from default values
-# Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
-# increasing max_treedepth is more about efficiency (instead of validity)
-# See: https://mc-stan.org/misc/warnings.html
-fit_natgas_no_taxa <- brm(natgas_brms_no_taxa, data = natgas_brms_data_no_taxa,
-                          prior = all_priors, cores = 4, seed = "11729", iter = 20000, control = list(adapt_delta = 0.99))
-
-# Get stan code
-#stancode(fit_natgas_no_taxa)
+# natgas_brms_data_no_taxa <- data.frame(y = natgas_no_na$natgas, X_ordinal_scaled)
+# 
+# names(natgas_brms_data_no_taxa)
+# 
+# # Set model formula
+# natgas_brms_no_taxa <- brmsformula(y ~ 1 + ., family = Gamma("log"))
+# 
+# # Use "resp = <response_variable>" to specify different priors for different response variables
+# all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response variables
+#                 set_prior("normal(0,2.5)", class = "Intercept"), 
+#                 set_prior("exponential(1)", class = "shape"))
+# 
+# # Model converges after increasing the adapt_delta and iterations from default values
+# # Rule of thumb: bulk and tail effective sample sizes should be 100 x number of chains (i.e., at least 400)
+# # increasing max_treedepth is more about efficiency (instead of validity)
+# # See: https://mc-stan.org/misc/warnings.html
+# fit_natgas_no_taxa <- brm(natgas_brms_no_taxa, data = natgas_brms_data_no_taxa,
+#                           prior = all_priors, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
+# 
+# # Get stan code
+# #stancode(fit_natgas_no_taxa)
+# 
+# ######################################################################################################
+# # Use intensity + system model to predict natgas for taxa that were not part of the previous model
+# # Intensity must be non-NA
+# natgas_complete_predictors <- ghg_model_dat_categories %>%
+#   filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>%
+#   filter(is.na(natgas)) # Now, filter to just the NAs
+# 
+# taxa_not_modeled <- setdiff(unique(natgas_complete_predictors$taxa), unique(natgas_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
+# 
+# # Only keep taxa that were not modeled previously
+# natgas_complete_predictors_no_taxa <- natgas_complete_predictors %>%
+#   filter(taxa %in% taxa_not_modeled) 
+# 
+# # REMOVE INTENSITY - If predictor model did not include intensity or system, make sure not to include them here
+# # Format intensity and system as ordinal variable, then center and scale
+# X_ordinal_no_taxa <- natgas_complete_predictors_no_taxa %>%
+#   mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+#   mutate(intensity = as.numeric(intensity)) %>%
+#   mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed)
+#   mutate(system = as.numeric(system)) %>%
+#   #select(intensity, system) %>%
+#   select(system) %>%
+#   as.matrix()
+# 
+# # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
+# X_ordinal_scaled_no_taxa <- scale(X_ordinal_no_taxa, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
+# 
+# # Create dataframe for brms
+# brms_natgas_dat_no_taxa <- data.frame(X_ordinal_scaled_no_taxa)
+# 
+# # Make predictions
+# #predicted_natgas_dat <- predict(fit_no_na, newdata = brms_new_natgas_data)
+# # Use tidybayes instead:
+# predicted_natgas_dat_no_taxa <- add_predicted_draws(newdata = brms_natgas_dat_no_taxa, model = fit_natgas_no_taxa)
+# 
+# # Get point and interval estimates from predicted data
+# # Select just the prediction columns
+# # Join these with the modeled data (natgas_complete_predictors_no_taxa) to get metadata on taxa/intensity/syste,
+# natgas_dat_intervals_no_taxa <- predicted_natgas_dat_no_taxa %>%
+#   median_qi(.value = .prediction) %>% # Rename prediction to value
+#   ungroup() %>%
+#   select(contains("."))
+# 
+# # .row is equivalent to the row number in the modeled dataset (natgas_complete_predictors_no_taxa) - create a join column for this
+# natgas_metadat_no_taxa <- natgas_complete_predictors_no_taxa %>%
+#   select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
+#   mutate(.row = row_number())
+# 
+# natgas_predictions_no_taxa <- natgas_dat_intervals_no_taxa %>%
+#   left_join(natgas_metadat_no_taxa, by = ".row") %>%
+#   rename(natgas = .value)
 
 ######################################################################################################
-# Use intensity + system model to predict natgas for taxa that were not part of the previous model
-# Intensity must be non-NA
-natgas_complete_predictors <- ghg_model_dat_categories %>%
-  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>%
-  filter(is.na(natgas)) # Now, filter to just the NAs
-
-taxa_not_modeled <- setdiff(unique(natgas_complete_predictors$taxa), unique(natgas_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
-
-# Only keep taxa that were not modeled previously
-natgas_complete_predictors_no_taxa <- natgas_complete_predictors %>%
-  filter(taxa %in% taxa_not_modeled) 
-
-# FIX IT - If predictor model did not include intensity or system, make sure not to include them here
-# Format intensity and system as ordinal variable, then center and scale
-X_ordinal_no_taxa <- natgas_complete_predictors_no_taxa %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  mutate(intensity = as.numeric(intensity)) %>%
-  mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
-  mutate(system = as.numeric(system)) %>%
-  #select(intensity, system) %>%
-  select(system) %>%
-  as.matrix()
-
-# Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
-X_ordinal_scaled_no_taxa <- scale(X_ordinal_no_taxa, center=apply(X_ordinal, MARGIN = 2, FUN = mean), scale=2*ordinal_sd)
-
-# Create dataframe for brms
-brms_natgas_dat_no_taxa <- data.frame(X_ordinal_scaled_no_taxa)
-
-# Make predictions
-#predicted_natgas_dat <- predict(fit_no_na, newdata = brms_new_natgas_data)
-# Use tidybayes instead:
-predicted_natgas_dat_no_taxa <- add_predicted_draws(newdata = brms_natgas_dat_no_taxa, model = fit_natgas_no_taxa)
-
-# Get point and interval estimates from predicted data
-# Select just the prediction columns
-# Join these with the modeled data (natgas_complete_predictors_no_taxa) to get metadata on taxa/intensity/syste,
-natgas_dat_intervals_no_taxa <- predicted_natgas_dat_no_taxa %>%
-  median_qi(.value = .prediction) %>% # Rename prediction to value
-  ungroup() %>%
-  select(contains("."))
-
-# .row is equivalent to the row number in the modeled dataset (natgas_complete_predictors_no_taxa) - create a join column for this
-natgas_metadat_no_taxa <- natgas_complete_predictors_no_taxa %>%
-  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system) %>%
-  mutate(.row = row_number())
-
-natgas_predictions_no_taxa <- natgas_dat_intervals_no_taxa %>%
-  left_join(natgas_metadat_no_taxa, by = ".row") %>%
-  rename(natgas = .value)
-
 # Bind natgas_no_na (data), natgas_predictions, and natgas_predictions_no_taxa
 full_natgas_dat <- natgas_predictions %>%
   bind_rows(natgas_no_na) %>%
-  bind_rows(natgas_predictions_no_taxa) %>%
+  #bind_rows(natgas_predictions_no_taxa) %>%
   mutate(data_type = if_else(is.na(.point), true = "data", false = "prediction")) %>%
   arrange(taxa, intensity, system, clean_sci_name) %>%
   rownames_to_column() # Arrange by taxa first, then create dummy column for plotting 
+
+# PLOT DATA + PREDICTIONS
+ggplot(full_natgas_dat, aes(x = natgas, y = taxa)) + geom_boxplot(outlier.shape = NA) + geom_jitter(aes(color = data_type))
 
 # NEXT: use plot_brms_gamma_regression to produce figures for SI
 
@@ -944,6 +1005,14 @@ rm(list=ls()[!(ls() %in% c("datadir", "outdir",
                            "lca_dat_clean_groups","ghg_model_dat_categories", 
                            "electric_fp_dat", "other_energy_fp_dat", 
                            "full_electric_dat", "full_diesel_dat", "full_petrol_dat", "full_natgas_dat"))])
+
+######################################################################################################
+# RESTARTING POINT
+
+#save.image(file.path(outdir, paste(Sys.Date(), "_all-data-prior-to-aggregation.RData", sep = "")))
+# datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+# outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+# load(file.path(outdir, "2020-12-16_total-ghg-all-data-prior-to-aggregation.RData"))
 
 ######################################################################################################
 # Aggregate up to taxa level and estimate total feed footprint
@@ -967,6 +1036,7 @@ ghg_footprint_merge <- electric_dat_merge %>%
   full_join(diesel_dat_merge, by = intersect(names(electric_dat_merge), names(diesel_dat_merge))) %>%
   full_join(petrol_dat_merge, by = intersect(names(.), names(petrol_dat_merge))) %>%
   full_join(natgas_dat_merge, by = intersect(names(.), names(natgas_dat_merge))) %>%
+  drop_na() %>% # Make sure to drop na before creating sci and tx indices (otherwise some indices drop out)
   group_by(clean_sci_name) %>%
   mutate(n_in_sci = n()) %>%
   ungroup() %>%
@@ -977,30 +1047,62 @@ ghg_footprint_merge <- electric_dat_merge %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sci = as.numeric(clean_sci_name),
          taxa = as.factor(taxa),
-         tx = as.numeric(taxa))
+         tx = as.numeric(taxa)) 
 
 
 
 # Multiply energy use by their GHG footprint - in STAN model generated quantities will be just the sum of each energy source's footprint
 # (Electricity use * country-specific GHG of electricity) + (Diesel * GHG of diesel) + (Petrol * GHG of petrol) + (Natural gas * GHG of natural gas)
-# Get energy-specific greenhouse gas footprints:
 
+##### FIX IT - confirm with Patrik that electricity is in per kWh kg CO2-eq
+
+# Get farm-associated carbon footprints data
+# Add iso3c
+electric_fp_dat <- read.csv(file.path(datadir, "electricity_GWP.csv")) %>%
+  mutate(iso3c = countrycode(Country, origin = "country.name", destination = "iso3c"))
+other_energy_fp_dat <- read.csv(file.path(datadir, "energy_carriers_impact_factors.csv"))
+
+# units for diesel and petrol constants are in kg CO2-eq / L
 diesel_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Diesel") %>% pull(Value)
 petrol_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Petrol") %>% pull(Value)
-natgas_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Natural gas") %>% pull(Value)
 
+# NOTE: natural gas is in kg CO2-eq / m3, need to convert to kg CO2-eq / L - multiply by 0.001 m3 / L
+natgas_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Natural gas") %>% pull(Value) * 0.001
+  
 # Calculate GHG footprint for each energy source
 ghg_footprint_dat <- ghg_footprint_merge %>%
   # Calculate electriciy GHG footprint
   left_join(electric_fp_dat %>% select(-Country), by = "iso3c") %>% 
-  mutate(GWP_perkWh_CO2eq = if_else(is.na(GWP_perkWh_CO2eq), true = mean(GWP_perkWh_CO2eq, na.rm = TRUE), false = GWP_perkWh_CO2eq)) %>% # for studies with no country data, just use the average across countries
-  mutate(electric_ghg = electric * GWP_perkWh_CO2eq) %>%
+  mutate(GWP_perkWh_kgCO2eq = if_else(is.na(GWP_perkWh_kgCO2eq), true = mean(GWP_perkWh_kgCO2eq, na.rm = TRUE), false = GWP_perkWh_kgCO2eq)) %>% # for studies with no country data, just use the average across countries
+  mutate(electric_ghg = electric * GWP_perkWh_kgCO2eq) %>%
   # Calculate diesel GHG footprint
   mutate(diesel_ghg = diesel * diesel_fp) %>%
   # Calculate petrol GHG footprint
   mutate(petrol_ghg = petrol * petrol_fp) %>%
   # Calculate natural gas GHG footprint
-  mutate(natgas_ghg = natgas * natgas_fp)
+  mutate(natgas_ghg = natgas * natgas_fp) %>%
+  # Calculate sum total of GHG footprint
+  mutate(total_ghg = electric_ghg + diesel_ghg + petrol_ghg + natgas_ghg)
+
+sci_mu_vec_sizes <- ghg_footprint_dat %>% 
+  select(sci, tx) %>%
+  unique() %>%
+  group_by(tx) %>%
+  mutate(n_sci_in_tx = n()) %>%
+  ungroup() %>%
+  arrange(tx)
+
+# Get sci-level weightings for generating taxa-level quantities:
+# IMPORTANT arrange by clean_sci_name so that the order matches data
+sci_prod_weights <- read.csv(file.path(datadir, "aqua_prod_weightings.csv")) %>%
+  arrange(clean_sci_name)
+
+# Drop sci-names not found in the data
+sci_prod_weights <- sci_prod_weights %>%
+  filter(clean_sci_name %in% ghg_footprint_dat$clean_sci_name)
+
+# Check that the order of sci names in both weights and data are the same (sum = 0)
+sum(sci_prod_weights$clean_sci_name != unique(ghg_footprint_dat$clean_sci_name))
 
 # Set data
 N = nrow(ghg_footprint_dat)
@@ -1012,10 +1114,8 @@ sci_to_tx <- ghg_footprint_dat %>%
   select(sci, tx) %>%
   unique() %>%
   pull(tx)
-electric_ghg <- ghg_footprint_dat$electric_ghg
-diesel_ghg <- ghg_footprint_dat$diesel_ghg
-petrol_ghg <- ghg_footprint_dat$petrol_ghg
-natgas_ghg <- ghg_footprint_dat$natgas_ghg
+total_ghg <- ghg_footprint_dat$total_ghg
+sci_w <- sci_prod_weights$weighting
 
 stan_data <- list(N = N,
                   N_SCI = N_SCI, 
@@ -1023,181 +1123,178 @@ stan_data <- list(N = N,
                   N_TX = N_TX,
                   #n_to_tx = n_to_tx,
                   sci_to_tx = sci_to_tx,
-                  electric_ghg = electric_ghg, 
-                  diesel_ghg = diesel_ghg, 
-                  petrol_ghg = petrol_ghg, 
-                  natgas_ghg = natgas_ghg)
+                  total_ghg = total_ghg, 
+                  sci_w = sci_w)
 
-# GAMMA distribution hierarchical model - never finished writing this one
+# GAMMA distribution hierarchical model
 # stan_no_na <- 'data {
 #   // data for gamma model for FCR
 #   int<lower=0> N;  // number of observations
-#   vector<lower=0>[N] yield; // data
+#   vector<lower=0>[N] total_ghg; // data
 #   int N_TX; // number of taxa groups
 #   int N_SCI; // number of scientific names
 #   int n_to_sci[N]; // sciname index
-#   //int n_to_tx[N]; // taxa-group index
 #   int sci_to_tx[N_SCI]; // taxa-group indices
 # }
 # parameters {
 #   vector<lower=0>[N_TX] tx_mu;
-#   real<lower=0> tx_sigma;
+#   vector<lower=0>[N_SCI] sci_mu;
+#   vector<lower=0>[N_TX] tx_shape;
+#   vector<lower=0>[N_SCI] sci_shape;
+# }
+# transformed parameters {
+#   // define transofrmed params for gamma model for FCRs
+#   vector<lower=0>[N_SCI] sci_rate;
+#   vector<lower=0>[N_TX] tx_rate;
+# 
+#   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+#   for (n_tx in 1:N_TX){
+#     tx_rate[n_tx] = tx_shape[n_tx] / tx_mu[n_tx];
+#   }
+#   for (n_sci in 1:N_SCI){
+#     sci_rate[n_sci] = sci_shape[n_sci] / sci_mu[n_sci];
+#   }
+# 
+# }
+# model {
+#   // define priors for gamma model
+#   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+#   //tx_mu ~ uniform(0, 100); 
+#   //sci_mu ~ uniform(0, 100);
+#   //tx_sigma ~ uniform(0, 100); 
+#   //sci_sigma ~ uniform(0, 100);
+#   
+#   // weakly informative priors on shape params
+#   tx_shape ~ cauchy(0, 100);
+#   sci_shape ~ cauchy(0, 100);
+# 
+#   // likelihood
+#   // gamma model sci-name and taxa-level
+#   for (n in 1:N){
+#     total_ghg ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
+#   }
+#   for (n_sci in 1:N_SCI){
+#     sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
+#   }
+# }'
+
+#### LEFT OFF HERE - generated quantities species weightings
+#NORMAL distribution model - converges!
+stan_no_na <- 'data {
+  // data for gamma model for FCR
+  int<lower=0> N;  // number of observations
+  vector<lower=0>[N] total_ghg; // data
+  int N_TX; // number of taxa groups
+  int N_SCI; // number of scientific names
+  int n_to_sci[N]; // sciname index
+  int sci_to_tx[N_SCI]; // taxa-group indices
+  vector<lower=0>[N_SCI] sci_w; // sci-level production weights
+}
+parameters {
+  // total ghg
+  vector<lower=0>[N_TX] tx_mu;
+  real<lower=0> tx_sigma;
+  vector<lower=0>[N_SCI] sci_mu;
+  real<lower=0> sci_sigma;
+}
+model {
+  // define priors for gamma model
+  // Put priors on mu and sigma:
+  //tx_mu ~ uniform(0, 100); //
+  //sci_mu ~ uniform(0, 100);
+  //tx_sigma ~ uniform(0, 100);
+  
+  // Weakly informative prior on sigmas
+  sci_sigma ~ cauchy(0, 2500);
+
+  // likelihood
+  // normal model sci-name and taxa-level energy-specific ghg
+  total_ghg ~ normal(sci_mu[n_to_sci], sci_sigma);
+  sci_mu ~ normal(tx_mu[sci_to_tx], tx_sigma);
+
+  // if estimating individual inputs separately
+  //electric_ghg ~ normal(sci_mu_electric[n_to_sci], sci_sigma_electric);
+  //sci_mu_electric ~ normal(tx_mu_electric[sci_to_tx], tx_sigma_electric);
+
+  //diesel_ghg ~ normal(sci_mu_diesel[n_to_sci], sci_sigma_diesel);
+  //sci_mu_diesel ~ normal(tx_mu_diesel[sci_to_tx], tx_sigma_diesel);
+
+  //petrol_ghg ~ normal(sci_mu_petrol[n_to_sci], sci_sigma_petrol);
+  //sci_mu_petrol ~ normal(tx_mu_petrol[sci_to_tx], tx_sigma_petrol);
+
+  //natgas_ghg ~ normal(sci_mu_natgas[n_to_sci], sci_sigma_natgas);
+  //sci_mu_natgas ~ normal(tx_mu_natgas[sci_to_tx], tx_sigma_natgas);
+}
+generated quantities{
+vector[N_SCI] sci_mu_w; // weighted means
+vector[N_TX] tx_out; // weighted means pooled to taxa level
+vector[3] sci_mu_w_vec; // vector of sci_mu in tx level 1
+
+sci_mu_w[]
+
+for (n_tx in 1:N_TX){
+  sci_mu_w_vec = 
+  tx_out[n_tx] = sum(sci_mu_w[sci_to_tx[n_tx]==n_tx]); // currently this is a single value, sum(real) is invalid
+}
+
+}'
+
+
+# FIX IT - need to finish writing this out as total_ghg
+# GAMMA distribution model no levels
+# stan_no_na <- 'data {
+#   // data for gamma model for FCR
+#   int<lower=0> N;  // number of observations
+#   vector<lower=0>[N] total_ghg; // data
+#   int N_SCI; // number of scientific names
+#   int n_to_sci[N]; // sciname index
+# }
+# parameters {
+#   // total ghg
 #   vector<lower=0>[N_SCI] sci_mu;
 #   real<lower=0> sci_sigma;
 # }
 # transformed parameters {
 #   // define transofrmed params for gamma model for FCRs
-#   vector<lower=0>[N_SCI] sci_shape;
-#   vector<lower=0>[N_SCI] sci_rate;
-#   vector<lower=0>[N_TX] tx_shape;
-#   vector<lower=0>[N_TX] tx_rate;
-#
+#   vector<lower=0>[N_SCI] sci_shape_electric;
+#   vector<lower=0>[N_SCI] sci_rate_electric;
+#   vector<lower=0>[N_SCI] sci_shape_diesel;
+#   vector<lower=0>[N_SCI] sci_rate_diesel;
+#   vector<lower=0>[N_SCI] sci_shape_petrol;
+#   vector<lower=0>[N_SCI] sci_rate_petrol;
+#   vector<lower=0>[N_SCI] sci_shape_natgas;
+#   vector<lower=0>[N_SCI] sci_rate_natgas;
+# 
 #   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
-#   for (n_tx in 1:N_TX){
-#     tx_shape[n_tx] = square(tx_mu[n_tx]) / square(tx_sigma);
-#     tx_rate[n_tx] = tx_mu[n_tx] / square(tx_sigma);
-#   }
-#   for (n_sci in 1:N_SCI){
-#     sci_shape[n_sci] = square(sci_mu[n_sci]) / square(sci_sigma);
-#     sci_rate[n_sci] = sci_mu[n_sci] / square(sci_sigma);
-#   }
-#
+#   sci_shape_electric[n_to_sci] = square(sci_mu_electric[n_to_sci]) ./ square(sci_sigma_electric);
+#   sci_rate_electric[n_to_sci] = sci_mu_electric[n_to_sci] ./ square(sci_sigma_electric);
+# 
+#   sci_shape_diesel[n_to_sci] = square(sci_mu_diesel[n_to_sci]) ./ square(sci_sigma_diesel);
+#   sci_rate_diesel[n_to_sci] = sci_mu_diesel[n_to_sci] ./ square(sci_sigma_diesel);
+# 
+#   sci_shape_petrol[n_to_sci] = square(sci_mu_petrol[n_to_sci]) ./ square(sci_sigma_petrol);
+#   sci_rate_petrol[n_to_sci] = sci_mu_petrol[n_to_sci] ./ square(sci_sigma_petrol);
+# 
+#   sci_shape_natgas[n_to_sci] = square(sci_mu_natgas[n_to_sci]) ./ square(sci_sigma_natgas);
+#   sci_rate_natgas[n_to_sci] = sci_mu_natgas[n_to_sci] ./ square(sci_sigma_natgas);
+# 
 # }
 # model {
 #   // define priors for gamma model
-#   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-#   //tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
+#   // Put priors on mu and sigma:
+#   //tx_mu ~ uniform(0, 100); // 
 #   //sci_mu ~ uniform(0, 100);
-#   //tx_sigma ~ uniform(0, 100); // only need sigmas if calculating shape and rate with mu and sigma
-#   //sci_sigma ~ uniform(0, 100);
-#
+#   //tx_sigma ~ uniform(0, 100);
+# 
 #   // likelihood
 #   // gamma model sci-name and taxa-level
 #   for (n in 1:N){
-#     1/yield[n] ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
+#     electric_ghg[n] ~ gamma(sci_shape_electric[n_to_sci[n]], sci_rate_electric[n_to_sci[n]]);
+#     diesel_ghg[n] ~ gamma(sci_shape_diesel[n_to_sci[n]], sci_rate_diesel[n_to_sci[n]]);
+#     petrol_ghg[n] ~ gamma(sci_shape_petrol[n_to_sci[n]], sci_rate_petrol[n_to_sci[n]]);
+#     natgas_ghg[n] ~ gamma(sci_shape_natgas[n_to_sci[n]], sci_rate_natgas[n_to_sci[n]]);
 #   }
-#   for (n_sci in 1:N_SCI){
-#     sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
-#   }
-#
 # }'
-
-# NORMAL distribution model
-stan_no_na <- 'data {
-  // data for gamma model for FCR
-  int<lower=0> N;  // number of observations
-  vector<lower=0>[N] electric_ghg; // data
-  vector<lower=0>[N] diesel_ghg; // data
-  vector<lower=0>[N] petrol_ghg; // data
-  vector<lower=0>[N] natgas_ghg; // data
-  int N_TX; // number of taxa groups
-  int N_SCI; // number of scientific names
-  int n_to_sci[N]; // sciname index
-  int sci_to_tx[N_SCI]; // taxa-group indices
-}
-parameters {
-  // electric
-  vector<lower=0>[N_TX] tx_mu_electric;
-  real<lower=0> tx_sigma_electric;
-  vector<lower=0>[N_SCI] sci_mu_electric;
-  real<lower=0> sci_sigma_electric;
-  // diesel
-  vector<lower=0>[N_TX] tx_mu_diesel;
-  real<lower=0> tx_sigma_diesel;
-  vector<lower=0>[N_SCI] sci_mu_diesel;
-  real<lower=0> sci_sigma_diesel;
-  // petrol
-  vector<lower=0>[N_TX] tx_mu_petrol;
-  real<lower=0> tx_sigma_petrol;
-  vector<lower=0>[N_SCI] sci_mu_petrol;
-  real<lower=0> sci_sigma_petrol;
-  // natural gas
-  vector<lower=0>[N_TX] tx_mu_natgas;
-  real<lower=0> tx_sigma_natgas;
-  vector<lower=0>[N_SCI] sci_mu_natgas;
-  real<lower=0> sci_sigma_natgas;
-}
-model {
-  // define priors for gamma model
-  // Put priors on mu and sigma:
-  //tx_mu ~ uniform(0, 100); // 
-  //sci_mu ~ uniform(0, 100);
-  //tx_sigma ~ uniform(0, 100);
-
-  // likelihood
-  // normal model sci-name and taxa-level energy-specific ghg
-  electric_ghg ~ normal(sci_mu_electric[n_to_sci], sci_sigma_electric);
-  sci_mu_electric ~ normal(tx_mu_electric[sci_to_tx], tx_sigma_electric);
-  
-  diesel_ghg ~ normal(sci_mu_diesel[n_to_sci], sci_sigma_diesel);
-  sci_mu_electric ~ normal(tx_mu_diesel[sci_to_tx], tx_sigma_diesel);
-  
-  petrol_ghg ~ normal(sci_mu_petrol[n_to_sci], sci_sigma_petrol);
-  sci_mu_petrol ~ normal(tx_mu_petrol[sci_to_tx], tx_sigma_petrol);
-  
-  natgas_ghg ~ normal(sci_mu_natgas[n_to_sci], sci_sigma_natgas);
-  sci_mu_natgas ~ normal(tx_mu_natgas[sci_to_tx], tx_sigma_natgas);
-  
-}'
-
-# LEFT OFF HERE:
-# GAMMA distribution model no levels
-stan_no_na <- 'data {
-  // data for gamma model for FCR
-  int<lower=0> N;  // number of observations
-  vector<lower=0>[N] electric_ghg; // data
-  vector<lower=0>[N] diesel_ghg; // data
-  vector<lower=0>[N] petrol_ghg; // data
-  vector<lower=0>[N] natgas_ghg; // data
-  int N_TX; // number of taxa groups
-  int N_SCI; // number of scientific names
-  int n_to_sci[N]; // sciname index
-  int sci_to_tx[N_SCI]; // taxa-group indices
-}
-parameters {
-  // electric
-  vector<lower=0>[N_TX] tx_mu_electric;
-  real<lower=0> tx_sigma_electric;
-  vector<lower=0>[N_SCI] sci_mu_electric;
-  real<lower=0> sci_sigma_electric;
-  // diesel
-  vector<lower=0>[N_TX] tx_mu_diesel;
-  real<lower=0> tx_sigma_diesel;
-  vector<lower=0>[N_SCI] sci_mu_diesel;
-  real<lower=0> sci_sigma_diesel;
-  // petrol
-  vector<lower=0>[N_TX] tx_mu_petrol;
-  real<lower=0> tx_sigma_petrol;
-  vector<lower=0>[N_SCI] sci_mu_petrol;
-  real<lower=0> sci_sigma_petrol;
-  // natural gas
-  vector<lower=0>[N_TX] tx_mu_natgas;
-  real<lower=0> tx_sigma_natgas;
-  vector<lower=0>[N_SCI] sci_mu_natgas;
-  real<lower=0> sci_sigma_natgas;
-}
-model {
-  // define priors for gamma model
-  // Put priors on mu and sigma:
-  //tx_mu ~ uniform(0, 100); // 
-  //sci_mu ~ uniform(0, 100);
-  //tx_sigma ~ uniform(0, 100);
-
-  // likelihood
-  // normal model sci-name and taxa-level energy-specific ghg
-  electric_ghg ~ normal(sci_mu_electric[n_to_sci], sci_sigma_electric);
-  sci_mu_electric ~ normal(tx_mu_electric[sci_to_tx], tx_sigma_electric);
-  
-  diesel_ghg ~ normal(sci_mu_diesel[n_to_sci], sci_sigma_diesel);
-  sci_mu_electric ~ normal(tx_mu_diesel[sci_to_tx], tx_sigma_diesel);
-  
-  petrol_ghg ~ normal(sci_mu_petrol[n_to_sci], sci_sigma_petrol);
-  sci_mu_petrol ~ normal(tx_mu_petrol[sci_to_tx], tx_sigma_petrol);
-  
-  natgas_ghg ~ normal(sci_mu_natgas[n_to_sci], sci_sigma_natgas);
-  sci_mu_natgas ~ normal(tx_mu_natgas[sci_to_tx], tx_sigma_natgas);
-  
-}'
 
 
 no_na_mod <- stan_model(model_code = stan_no_na)
@@ -1208,8 +1305,61 @@ no_na_mod <- stan_model(model_code = stan_no_na)
 
 # Fit model:
 # Set seed while testing
-fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 100000, control = list(adapt_delta = 0.99))
+fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
 summary(fit_no_na)$summary
 
-launch_shinystan(fit_no_na)
+#launch_shinystan(fit_no_na)
 
+######################################################################################################
+# PLOTS
+plot_theme <- theme(title = element_text(size = 20),
+                    axis.title.x = element_text(size = 20),
+                    axis.text=element_text(size=16, color = "black"))
+
+var_title = "kg CO2-eq per tonne"
+groups_title = ""
+plot_title = "Aquaculture GHG emissions"
+
+# Plot data for model
+
+ggplot(ghg_footprint_dat, aes(x = total_ghg, y = taxa)) + 
+  geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(color = electric_data_type)) + # note: data type is the same across all variables
+  labs(x = var_title, y = groups_title, color = "data type", title = plot_title) +
+  theme_classic() +
+  plot_theme
+#ggsave(filename = file.path(outdir, paste("plot_total-ghg-data.png", sep = "")), height = 8.5, width = 11)
+
+# PLOT RESULTS
+# Key for naming sci and taxa levels
+index_key <- ghg_footprint_dat %>%
+  select(clean_sci_name, sci, taxa, tx) %>%
+  unique()
+
+# Use tidybayes + ggdist for finer control of aes mapping (instead of bayesplots) 
+get_variables(fit_no_na)
+
+# Sci-level footprints as point intervals:
+fit_no_na %>%
+  spread_draws(sci_mu[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = clean_sci_name, x = sci_mu, xmin = .lower, xmax = .upper)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = var_title, y = groups_title, title = plot_title)
+ggsave(filename = file.path(outdir, "plot_total-ghg-footprint_sci-level.png"), width = 11, height = 8.5)
+
+
+# Tx-level footprints as point intervals:
+fit_no_na %>%
+  spread_draws(tx_mu[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = taxa, x = tx_mu, xmin = .lower, xmax = .upper)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  plot_theme + 
+  labs(x = var_title, y = groups_title, title = plot_title)
+ggsave(filename = file.path(outdir, "plot_total-ghg-footprint_tx-level.png"), width = 11, height = 8.5)
