@@ -49,6 +49,35 @@ write.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"),
 # write.csv(data.frame(table(lca_dat_clean_groups$taxa_group_name)), file.path(outdir, "taxa_group_sample_size.csv"))
 # write.csv(lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name), file.path(outdir, "taxa_group_composition.csv"))
 
+# Add fish N and P content
+#calculate C,N,P content of fish (based on energy and fat content ) and compute discharge based on Czamanski et al 2011, Marine Biology,
+#Carbon, nitrogen and phosphorus elemental stoichiometry in aquacultured and wild-caught fish and consequences
+#for pelagic nutrient dynamics
+#And also a simplified NPZ method approach
+
+#N and P content of fish in % of DM
+#read Zach's data and make calculations using built functions
+fishNutrition <- read.csv(file.path(datadir, "AFCD_live.csv"), stringsAsFactors = FALSE)
+fishNutrition <-fishNutrition %>%filter(Processing=='r') %>%  #filter out all non raw observations (e.g. dried, cooked)
+  slice(c(1:1928))    #cut rows without names of species 
+fishNutrition1<-fishNutrition %>% mutate(N_C=fishN_via_C(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
+                                         ,P_C=fishP_via_C(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
+                                         ,N_fat=fishN_viaFat(Water,Fat.total)
+                                         ,P_fat=fishP_viaFat(Water,Fat.total)
+                                         ,N_built_in=Nitrogen.total*100/(100-Water),P_built_in=Phosphorus/1000*100/(100-Water)) #conversion to units of percentages in DM. Nitrogen.total is in units of g/100 edible gram; Phosphorous in the dataset is in mg/100 edible gram
+
+fishNutrition2<-fishNutrition1 %>% group_by(species) %>% summarise(P_byC=mean(P_C,na.rm = TRUE),N_byC=mean(N_C,na.rm = TRUE),
+                                                                   P_fat_1=mean(P_fat,na.rm = TRUE),N_fat_1=mean(N_fat,na.rm = TRUE),
+                                                                   P_built_in1=mean(P_built_in,na.rm = TRUE),N_built_in1=mean(N_built_in,na.rm = TRUE)) %>%                                 
+  rowwise() %>%                                                    
+  mutate(N_avg=mean(c(N_byC,N_fat_1,N_built_in1),na.rm = TRUE))%>%
+  mutate(P_avg=mean(c(P_byC,P_fat_1,P_built_in1),na.rm = TRUE))%>%
+  select(c("species","N_avg","P_avg"))
+
+# FIX IT: Currently there are 25 unmatched species. Emailed Alon Dec 17 to see if he can fix
+lca_dat_clean_groups_tmp <- lca_dat_clean_groups %>% 
+  left_join(fishNutrition2, by = c("Scientific.Name" = "species"))
+
 #________________________________________________________________________________________________________________________________________________________________#
 # Calculate production weightings for each taxa group
 #________________________________________________________________________________________________________________________________________________________________#
@@ -119,7 +148,7 @@ weightings <-  faostat %>%
 weighted_soy <- feed_fp %>% 
   filter(Input.type == "Soy") %>%
   left_join(weightings, by = "iso3c") %>%
-  group_by(Input.type, Impact.category, Allocation) %>%
+  group_by(Input.type, Impact.category, Allocation, Units) %>%
   # If weighting soy ingredient types, do here along with country weightings
   summarise(ave_stressor = sum(Value * weighting))
   
@@ -153,7 +182,7 @@ weightings <- faostat %>%
 weighted_crop <- feed_fp %>% 
   filter(Input.type == "Crop") %>%
   left_join(weightings, by = c("iso3c", "Input")) %>%
-  group_by(Input.type, Impact.category, Allocation) %>%
+  group_by(Input.type, Impact.category, Allocation, Units) %>%
   # Currently filtering out NAs weightings (no trade matched for corn gluten meal)
   filter(is.na(weighting) == FALSE) %>% 
   # If weighting soy ingredient types, do here along with country weightings
@@ -177,7 +206,7 @@ weightings <-  faostat %>%
 weighted_pig <- feed_fp %>% 
   filter(Input == "Pork blood meal") %>%
   left_join(weightings, by = "iso3c") %>%
-  group_by(Input.type, Impact.category, Allocation) %>%
+  group_by(Input.type, Impact.category, Allocation, Units) %>%
   # If weighting soy ingredient types, do here along with country weightings
   summarise(ave_stressor = sum(Value * weighting))
 
@@ -187,7 +216,8 @@ weightings <-  faostat %>%
   group_by(iso3c) %>%
   summarise(Exports = sum(Value, na.rm = TRUE)) %>%
   filter(Exports > 0) %>% 
-  left_join(feed_fp %>% filter(Input %in% c("Chicken by-product meal", "Chicken by-product oil")), by = c("iso3c")) %>%
+  left_join(feed_fp %>% 
+              filter(Input %in% c("Chicken by-product meal", "Chicken by-product oil")), by = c("iso3c")) %>%
   filter(is.na(Input.type) == FALSE) %>%
   group_by(iso3c) %>%
   summarise(Exports = sum(Exports, na.rm = TRUE)) %>%
@@ -195,24 +225,28 @@ weightings <-  faostat %>%
   select(iso3c, weighting)
 
 weighted_chicken <- feed_fp %>% 
-  filter(Input == "Pork blood meal") %>%
+  filter(Input %in% c("Chicken by-product meal", "Chicken by-product oil")) %>%
   left_join(weightings, by = "iso3c") %>%
-  group_by(Input.type, Impact.category, Allocation) %>%
+  group_by(Input.type, Impact.category, Allocation, Units) %>%
   # If weighting soy ingredient types, do here along with country weightings
-  summarise(ave_stressor = sum(Value * weighting))
+  summarise(ave_stressor = sum(Value * weighting, na.rm = TRUE))
+
+weighted_livestock <- weighted_pig %>%
+  bind_rows(weighted_chicken) %>%
+  group_by(Input.type, Impact.category, Allocation, Units) %>%
+  summarise(ave_stressor = mean(ave_stressor))
 
 # Fishery products (currently unweighted since fish products are not in FAOSTAT trade)
 weighted_fish <- feed_fp %>%
   filter(Input.type == "Fishery") %>%
-  group_by(Input.type, Impact.category, Allocation) %>%
+  group_by(Input.type, Impact.category, Allocation, Units) %>%
   # If weighting soy ingredient types, do here along with country weightings
   summarise(ave_stressor = mean(Value))
 
 # Combine data frames
 weighted_fp <- rbind(weighted_soy, weighted_crop)
-weighted_fp <- rbind(weighted_fp, weighted_pig)
-weighted_fp <- rbind(weighted_fp, weighted_chicken)
+weighted_fp <- rbind(weighted_fp, weighted_livestock)
 weighted_fp <- rbind(weighted_fp, weighted_fish)
 
-write.csv(weighted_fp, file.path(outdir, "20201209_weighted_feed_fp.csv"))
+write.csv(weighted_fp, file.path(datadir, "20201217_weighted_feed_fp.csv"), row.names = FALSE)
 
