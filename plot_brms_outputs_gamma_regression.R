@@ -1,6 +1,8 @@
 # Create visualizations of brms gamma regression outputs
 # Do not clear workspace at start
 
+#### FIX IT - turn this into a function plots_for_si()
+
 # Mac
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
@@ -16,14 +18,17 @@ library(brms)
 library(ggrepel)
 library(RColorBrewer)
 
-# After running brms regressions (e.g., bayes_gamma_regression.R)
+# SET THEME
+plot_theme <- theme(title = element_text(size = 20),
+                    axis.title.x = element_text(size = 20),
+                    axis.text=element_text(size=20, color = "black"))
 
-# identify model and data output and data variable to be used for visualizations
+
 
 # FCR
-name_of_fit <- "fit_fcr_no_na"
-name_of_data <- "full_fcr_dat"
-name_of_var <- "fcr"
+# name_of_fit <- "fit_fcr_no_na"
+# name_of_data <- "full_fcr_dat"
+# name_of_var <- "fcr"
 
 # Yield
 # name_of_fit <- "fit_yield_no_na"
@@ -46,9 +51,9 @@ name_of_var <- "fcr"
 # name_of_var <- "petrol"
 
 # Natural gas
-# name_of_fit <- "fit_natgas_no_na"
-# name_of_data <- "full_natgas_dat"
-# name_of_var <- "natgas"
+name_of_fit <- "fit_natgas_no_na"
+name_of_data <- "full_natgas_dat"
+name_of_var <- "natgas"
 
 compiled_dat_clean <- read.csv(file.path(datadir, "lca_clean_with_groups.csv"))
 brms_output <- get(name_of_fit)
@@ -65,10 +70,10 @@ summary(brms_output)
 # Specify response variable in resp
 pp_check(brms_output, resp = "y", nsamples = 50) + 
 ggtitle(paste("Posterior predictive check: ", name_of_var, sep = ""))
-ggsave(filename = file.path(outdir, paste("plot_gamma-regression_", name_of_var, "_post-pred-checks_density.png", sep = "")), width  = 11.5, height = 8)
+ggsave(filename = file.path(outdir, paste("plot_gamma-regression_", name_of_var, "_post-pred-checks_density.png", sep = "")), width  = 8, height = 11.5)
 pp_check(brms_output, type = "scatter_avg", nsamples = 1000, resp = "y") +
 ggtitle(paste("Posterior predictive check: ", name_of_var, sep = ""))
-ggsave(filename = file.path(outdir, paste("plot_gamma-regression_", name_of_var, "_post-pred-checks_scatter.png", sep = "")), width  = 11.5, height = 8)
+ggsave(filename = file.path(outdir, paste("plot_gamma-regression_", name_of_var, "_post-pred-checks_scatter.png", sep = "")), width  = 8, height = 11.5)
 
 # Other posterior predictive checks
 # pp_check(brms_output, type = "error_hist", nsamples = 5, resp = "y")
@@ -91,39 +96,18 @@ ggplot(data = coeff_data) +
   geom_point(aes(x = m, y = parameter, color = effect), size = 3) +
   labs(x = "", y = "", title = paste("Coefficients for ", name_of_var, sep = "")) +
   theme_classic() +
-  theme(axis.text = element_text(size = 16))
+  plot_theme
 
 ggsave(filename = file.path(outdir, paste("plot_gamma-regression_", name_of_var, "_coeffs.png", sep = "")), height = 8.5, width = 11)
+
+# Boxplot of data + predictions per taxa group
+ggplot(full_dat, aes(x = !!sym(name_of_var), y = taxa)) + 
+  geom_boxplot(outlier.shape = NA) + geom_jitter(aes(color = data_type)) +
+  theme_classic() +
+  plot_theme
   
+ggsave(filename = file.path(outdir, "plot-data_", name_of_var, "-ghg_tx-level.png"), width = 11, height = 8.5)
 
-# plot predictions of missing responses
-p <- ggplot() +
-  geom_pointinterval(aes(y = rowname, x = !!sym(name_of_var), xmin = .lower, xmax = .upper), size = 0.5, data = full_dat) +
-  geom_point(aes(y = rowname, x = !!sym(name_of_var), color = data_type), data = full_dat) +
-  #coord_cartesian(xlim = c(0, 10)) +
-  theme_classic() +
-  labs(x = name_of_var, y = "") +
-  theme(axis.text = element_text(size = 16),
-        axis.title = element_text(size = 20))
-plot(p)
-ggsave(filename = file.path(outdir, paste("plot_gamma-regression_", name_of_var, "_missing-dat-predictions.png", sep = "")), width = 8, height = 11.5)
-
-# Reorder by response value
-p <- ggplot(data = full_dat %>% 
-              mutate(rowname = as.factor(rowname)) %>%
-              mutate(rowname = fct_reorder(rowname, !!sym(name_of_var))) %>%
-              arrange(!!sym(name_of_var))) +
-  geom_pointinterval(aes(y = rowname, x = !!sym(name_of_var), xmin = .lower, xmax = .upper), size = 0.5) +
-  geom_point(aes(y = rowname, x = !!sym(name_of_var), color = data_type)) +
-  #coord_cartesian(xlim = c(0, 10)) +
-  theme_classic() +
-  labs(x = name_of_var, y = "") +
-  theme(axis.text = element_text(size = 16),
-        axis.title = element_text(size = 20),
-        axis.ticks.y = element_blank(),
-        axis.text.y = element_blank())
-plot(p)
-ggsave(filename = file.path(outdir, paste("plot_gamma-regression_", name_of_var, "_missing-dat-predictions-ordered.png", sep = "")), width = 8, height = 11.5)
 
 # plot predictions of missing responses with meta-data
 p <- ggplot(data = full_dat %>% 
@@ -142,7 +126,6 @@ p <- ggplot(data = full_dat %>%
 plot(p)
 file_i <- paste("plot_gamma-regression_", name_of_var, "_missing-dat-predictions-ordered-with-metadata", ".png", sep = "")
 ggsave(filename = file.path(outdir, file_i), width = 8, height = 11.5)
-
 
 # Make separate plot for each taxa group
 for (i in 1:length(unique(full_dat$taxa))){
@@ -164,7 +147,7 @@ for (i in 1:length(unique(full_dat$taxa))){
           axis.text.y = element_blank())
   plot(p)
   file_i <- paste("plot_gamma-regression_", name_of_var, "_missing-dat-predictions_taxa-", taxa_i, ".png", sep = "")
-  ggsave(filename = file.path(outdir, file_i), width = 11.5, height = 8)
+  ggsave(filename = file.path(outdir, file_i), width = 8, height = 11.5)
 }
 
 
