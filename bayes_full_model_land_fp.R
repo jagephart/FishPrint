@@ -1,6 +1,9 @@
 # Estimate land footprint from harvest and yield
 # Land = harvest / yield
 
+
+##################################### REMEMBER TO ONLY DO THIS FOR SYSTEM == PONDS or RECIRCULATING and TANKS
+
 # Step 0: Run process_data_for_analysis.R, then clear environment other than:
 rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups", "datadir", "outdir"))])
 
@@ -269,7 +272,8 @@ full_yield_dat <- yield_predictions %>%
 # Calculate n_in_sci and n_in_taxa in case we want to remove small sample sizes
 land_footprint_dat <- full_yield_dat %>%
   select(study_id, clean_sci_name, taxa, intensity, data_type, yield) %>%
-  group_by(clean_sci_name) %>%
+  drop_na() %>% # Make sure to drop na before creating sci and tx indices (otherwise some indices drop out)
+  group_by(clean_sci_name) %>%  
   mutate(n_in_sci = n()) %>%
   ungroup() %>%
   group_by(taxa) %>%
@@ -281,7 +285,8 @@ land_footprint_dat <- full_yield_dat %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sci = as.numeric(clean_sci_name),
          taxa = as.factor(taxa),
-         tx = as.numeric(taxa))
+         tx = as.numeric(taxa)) %>%
+
 
 # Set data
 N = nrow(land_footprint_dat)

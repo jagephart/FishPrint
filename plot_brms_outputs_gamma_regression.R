@@ -26,9 +26,9 @@ plot_theme <- theme(title = element_text(size = 20),
 
 
 # FCR
-# name_of_fit <- "fit_fcr_no_na"
-# name_of_data <- "full_fcr_dat"
-# name_of_var <- "fcr"
+name_of_fit <- "fit_fcr_no_na"
+name_of_data <- "full_fcr_dat"
+name_of_var <- "fcr"
 
 # Yield
 # name_of_fit <- "fit_yield_no_na"
@@ -51,9 +51,9 @@ plot_theme <- theme(title = element_text(size = 20),
 # name_of_var <- "petrol"
 
 # Natural gas
-name_of_fit <- "fit_natgas_no_na"
-name_of_data <- "full_natgas_dat"
-name_of_var <- "natgas"
+# name_of_fit <- "fit_natgas_no_na"
+# name_of_data <- "full_natgas_dat"
+# name_of_var <- "natgas"
 
 compiled_dat_clean <- read.csv(file.path(datadir, "lca_clean_with_groups.csv"))
 brms_output <- get(name_of_fit)
@@ -106,7 +106,7 @@ ggplot(full_dat, aes(x = !!sym(name_of_var), y = taxa)) +
   theme_classic() +
   plot_theme
   
-ggsave(filename = file.path(outdir, "plot-data_", name_of_var, "-ghg_tx-level.png"), width = 11, height = 8.5)
+ggsave(filename = file.path(outdir, paste("plot-data_", name_of_var, "-ghg_tx-level.png", sep = "")), width = 11, height = 8.5)
 
 
 # plot predictions of missing responses with meta-data

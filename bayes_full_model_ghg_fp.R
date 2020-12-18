@@ -1009,10 +1009,10 @@ rm(list=ls()[!(ls() %in% c("datadir", "outdir",
 ######################################################################################################
 # RESTARTING POINT
 
-#save.image(file.path(outdir, paste(Sys.Date(), "_all-data-prior-to-aggregation.RData", sep = "")))
+#save.image(file.path(outdir, paste(Sys.Date(), "_on-farm-ghg-all-data-prior-to-aggregation.RData", sep = "")))
 # datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 # outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
-# load(file.path(outdir, "2020-12-16_total-ghg-all-data-prior-to-aggregation.RData"))
+# load(file.path(outdir, "2020-12-16_on-farm-ghg-all-data-prior-to-aggregation.RData"))
 
 ######################################################################################################
 # Aggregate up to taxa level and estimate total feed footprint

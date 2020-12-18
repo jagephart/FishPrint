@@ -57,6 +57,12 @@ summary(brms_output)
 
 get_variables(brms_output)
 
+
+# SET THEME
+plot_theme <- theme(title = element_text(size = 20),
+                    axis.title.x = element_text(size = 20),
+                    axis.text=element_text(size=20, color = "black"))
+
 # Plot coefficients (separate for each feed component)
 feed_coeffs <- c("b_mufeedcrops", "b_mufeedfmfo", "b_mufeedanimal")
 for (i in 1:length(feed_coeffs)){
@@ -71,36 +77,69 @@ for (i in 1:length(feed_coeffs)){
     geom_point(aes(x = m, y = parameter, color = effect), size = 3) +
     labs(x = "", y = "") +
     theme_classic() +
-    theme(axis.text = element_text(size = 16))
+    plot_theme
   plot(p_custom)
   
   ggsave(filename = file.path(outdir, paste("plot_dirichlet-regression_coeffs_", feed_coeffs[i], ".png", sep = "")), height = 8.5, width = 11)
 }
 
 
+# feed proportion all taxa
+feed_vars <- c("soy", "crops", "fmfo", "animal")
+for (i in 1:length(feed_vars)) {
+  p <- ggplot(data = full_feed_dat %>% 
+                filter(str_detect(.category, feed_vars[i])), aes(y = taxa, x = feed_proportion)) +
+    geom_boxplot(outlier.shape = NA) +
+    #geom_violin(aes(color = taxa), scale = "width") +
+    geom_jitter(aes(color = data_type), size = 3) +
+    theme_classic() +
+    plot_theme +
+    labs(title = paste("Boxplots of ", feed_vars[i], " feed proportions", sep = ""),
+         x = "",
+         y = "")  +
+    theme(axis.text.x = element_text(hjust = 1))
+  print(p)
+  ggsave(file.path(outdir, paste("boxplot_feed-prop_", feed_vars[i], ".png", sep = "")), height = 8, width = 11.5)
+}
+
+# Feed proportions with facet_wrap
+p <- ggplot(data = full_feed_dat, aes(y = taxa, x = feed_proportion)) +
+  geom_boxplot(outlier.shape = NA) +
+  #geom_violin(aes(color = taxa), scale = "width") +
+  geom_jitter(aes(color = data_type), size = 3) +
+  theme_classic() +
+  plot_theme +
+  labs(title = paste("Boxplots of all feed proportions", sep = ""),
+       x = "",
+       y = "")  +
+  facet_wrap(~.category, nrow = 1)
+print(p)
+ggsave(file.path(outdir, "boxplot_feed-prop_all-feeds.png"), height = 8, width = 11.5)
+
+
 # Make separate plot of data and predictions for each taxa group
 # feed_cols <- c("feed_soy", "feed_crops", "feed_fmfo", "feed_animal")
-for (i in 1:length(unique(full_dat$taxa))){
-  taxa_i <- unique(full_dat$taxa)[i]
-  #feed_j <- feed_cols[j]
-  dat_taxa_i <- full_dat %>%
-    filter(taxa == taxa_i) %>%
-    #filter(.category == feed_j) %>%
-    mutate(y = row_number()) %>%
-    replace_na(replace = list(taxa = "unknown", intensity = "unknown", system = "unknown"))
-  p <- ggplot() +
-    geom_pointinterval(aes(y = y, x = feed_proportion, xmin = .lower, xmax = .upper, shape = system, point_color = intensity), size = 2, data = dat_taxa_i) +
-    geom_point(aes(y = y, x = feed_proportion, shape = system, color = intensity), data = dat_taxa_i, size = 3) +
-    #scale_interval_shape(drop = FALSE) +
-    scale_shape_discrete(drop = FALSE) +
-    #coord_cartesian(xlim = c(0, 10)) +
-    theme_classic() +
-    labs(x = "Feed proportion", y = "", title = taxa_i) +
-    theme(axis.text = element_text(size = 16),
-          axis.title = element_text(size = 20),
-          axis.text.y = element_blank()) +
-    facet_wrap(~.category, ncol = 1)
-  plot(p)
-  file_i <- paste("plot_dirichlet-regression_missing-dat-predictions_taxa-", taxa_i, ".png", sep = "")
-  ggsave(filename = file.path(outdir, file_i), width = 8, height = 11.5)
-}
+# for (i in 1:length(unique(full_dat$taxa))){
+#   taxa_i <- unique(full_dat$taxa)[i]
+#   #feed_j <- feed_cols[j]
+#   dat_taxa_i <- full_dat %>%
+#     filter(taxa == taxa_i) %>%
+#     #filter(.category == feed_j) %>%
+#     mutate(y = row_number()) %>%
+#     replace_na(replace = list(taxa = "unknown", intensity = "unknown", system = "unknown"))
+#   p <- ggplot() +
+#     geom_pointinterval(aes(y = y, x = feed_proportion, xmin = .lower, xmax = .upper, shape = system, point_color = intensity), size = 2, data = dat_taxa_i) +
+#     geom_point(aes(y = y, x = feed_proportion, shape = system, color = intensity), data = dat_taxa_i, size = 3) +
+#     #scale_interval_shape(drop = FALSE) +
+#     scale_shape_discrete(drop = FALSE) +
+#     #coord_cartesian(xlim = c(0, 10)) +
+#     theme_classic() +
+#     labs(x = "Feed proportion", y = "", title = taxa_i) +
+#     theme(axis.text = element_text(size = 16),
+#           axis.title = element_text(size = 20),
+#           axis.text.y = element_blank()) +
+#     facet_wrap(~.category, ncol = 1)
+#   plot(p)
+#   file_i <- paste("plot_dirichlet-regression_missing-dat-predictions_taxa-", taxa_i, ".png", sep = "")
+#   ggsave(filename = file.path(outdir, file_i), width = 8, height = 11.5)
+# }
