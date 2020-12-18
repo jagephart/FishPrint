@@ -1054,8 +1054,6 @@ ghg_footprint_merge <- electric_dat_merge %>%
 # Multiply energy use by their GHG footprint - in STAN model generated quantities will be just the sum of each energy source's footprint
 # (Electricity use * country-specific GHG of electricity) + (Diesel * GHG of diesel) + (Petrol * GHG of petrol) + (Natural gas * GHG of natural gas)
 
-##### FIX IT - confirm with Patrik that electricity is in per kWh kg CO2-eq
-
 # Get farm-associated carbon footprints data
 # Add iso3c
 electric_fp_dat <- read.csv(file.path(datadir, "electricity_GWP.csv")) %>%
@@ -1084,14 +1082,6 @@ ghg_footprint_dat <- ghg_footprint_merge %>%
   # Calculate sum total of GHG footprint
   mutate(total_ghg = electric_ghg + diesel_ghg + petrol_ghg + natgas_ghg)
 
-sci_mu_vec_sizes <- ghg_footprint_dat %>% 
-  select(sci, tx) %>%
-  unique() %>%
-  group_by(tx) %>%
-  mutate(n_sci_in_tx = n()) %>%
-  ungroup() %>%
-  arrange(tx)
-
 # Get sci-level weightings for generating taxa-level quantities:
 # IMPORTANT arrange by clean_sci_name so that the order matches data
 sci_prod_weights <- read.csv(file.path(datadir, "aqua_prod_weightings.csv")) %>%
@@ -1103,6 +1093,8 @@ sci_prod_weights <- sci_prod_weights %>%
 
 # Check that the order of sci names in both weights and data are the same (sum = 0)
 sum(sci_prod_weights$clean_sci_name != unique(ghg_footprint_dat$clean_sci_name))
+
+
 
 # Set data
 N = nrow(ghg_footprint_dat)
@@ -1117,6 +1109,22 @@ sci_to_tx <- ghg_footprint_dat %>%
 total_ghg <- ghg_footprint_dat$total_ghg
 sci_w <- sci_prod_weights$weighting
 
+# Need the following for generating ragged array in STAN - indexing vector of sci_mu's based on their taxa identity (each slice will have a different length)
+where_tx <- order(sci_to_tx) # i.e., give the positions in sci_to_tx in order of their taxa level (where in sci_to_tx is taxa level 1, followed by taxa level 2, etc)
+# How many sci are in each taxa - need this to declare length of each sci_mu vector
+n_sci_in_tx <- ghg_footprint_dat %>%
+  select(sci, tx) %>%
+  unique() %>%
+  group_by(tx) %>%
+  mutate(n_sci_in_tx = n()) %>%
+  ungroup() %>%
+  arrange(tx) %>%
+  select(tx, n_sci_in_tx) %>%
+  unique() %>%
+  pull(n_sci_in_tx)
+slice_where_tx <- cumsum(n_sci_in_tx) # These are the breaks in where_tx corresponding to each taxa level - need this to split up where_tx
+slice_where_tx <- c(0, slice_where_tx)
+
 stan_data <- list(N = N,
                   N_SCI = N_SCI, 
                   n_to_sci = n_to_sci,
@@ -1124,7 +1132,10 @@ stan_data <- list(N = N,
                   #n_to_tx = n_to_tx,
                   sci_to_tx = sci_to_tx,
                   total_ghg = total_ghg, 
-                  sci_w = sci_w)
+                  sci_w = sci_w, 
+                  where_tx = where_tx,
+                  n_sci_in_tx = n_sci_in_tx,
+                  slice_where_tx = slice_where_tx)
 
 # GAMMA distribution hierarchical model
 # stan_no_na <- 'data {
@@ -1189,6 +1200,9 @@ stan_no_na <- 'data {
   int n_to_sci[N]; // sciname index
   int sci_to_tx[N_SCI]; // taxa-group indices
   vector<lower=0>[N_SCI] sci_w; // sci-level production weights
+  int where_tx[N_SCI]; // order sci_to_tx by taxa-level
+  int n_sci_in_tx[N_TX]; // number of sci in each taxa-level, ordered by taxa-level
+  int slice_where_tx[N_TX + 1]; // breaks in where_tx by taxa-level
 }
 parameters {
   // total ghg
@@ -1228,13 +1242,26 @@ model {
 generated quantities{
 vector[N_SCI] sci_mu_w; // weighted means
 vector[N_TX] tx_out; // weighted means pooled to taxa level
-vector[3] sci_mu_w_vec; // vector of sci_mu in tx level 1
 
-sci_mu_w[]
+// test for single taxa
+//real tx_out; // weighted means pooled to taxa level
+//vector[3] sci_mu_w_vec; // vector of sci_mu in tx level 1
+//int indxs[3] = {6, 20, 21};
+//sci_mu_w = sci_mu .* sci_w; // weighted sci-level means
+//sci_mu_w_vec = sci_mu_w[indxs];
+//tx_out = sum(sci_mu_w_vec);
 
+// test for single output ragged array
+//real tx_out; 
+//vector[n_sci_in_tx[1]] sci_mu_w_vec; // j = 3 is first element of n_sci_in_tx
+//sci_mu_w_vec = sci_mu_w[where_tx[1:slice_where_tx[1]]]; // 
+//tx_out = sum(sci_mu_w_vec);
+
+sci_mu_w = sci_mu .* sci_w; // weighted sci-level means
 for (n_tx in 1:N_TX){
-  sci_mu_w_vec = 
-  tx_out[n_tx] = sum(sci_mu_w[sci_to_tx[n_tx]==n_tx]); // currently this is a single value, sum(real) is invalid
+  vector[n_sci_in_tx[n_tx]] sci_mu_w_vec; // declare vector of sci_mu in taxa-level n_tx
+  sci_mu_w_vec = sci_mu_w[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
+  tx_out[n_tx] = sum(sci_mu_w_vec); // sum sci_mu_w_vec to pool to taxa-level
 }
 
 }'
