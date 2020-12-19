@@ -1,6 +1,6 @@
-# Estimate land footprint from harvest and yield
-# Land = harvest / yield
+# Impute on-farm LAND impacts then combine with off-farm (feed) LAND impacts 
 
+# Calculate on-farm (non-feed associated) land impact as: 1 / yield
 
 ##################################### REMEMBER TO ONLY DO THIS FOR SYSTEM == PONDS or RECIRCULATING and TANKS
 
@@ -15,10 +15,6 @@ rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups", "datadir", "outdir"))])
 # Check that no entries report both units:
 # lca_dat_clean %>%
 #   filter(is.na(Yield_t_per_Ha)==FALSE & is.na(Yield_kg_per_m3)==FALSE)
-
-# FIX IT: volume to area not possible without assumptions
-# lca_dat_clean %>%
-#   mutate(Yield_t_per_Ha == if_else(is.na(Yield_kg_per_m3)==FALSE, true = ))
 
 # Get model-specific data:
 # SELECT STUDY ID COLUMN - use this for rejoining outputs from multiple regression models back together
