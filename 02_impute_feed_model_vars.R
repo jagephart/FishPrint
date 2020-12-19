@@ -505,6 +505,6 @@ rm(list=ls()[!(ls() %in% c("datadir", "outdir",
                            "full_feed_dat", "full_fcr_dat"))])
 # When data is finalized, write to CSV
 #write.csv()
-#save.image(file.path(outdir, paste(Sys.Date(), "_feed-impacts-all-data-prior-to-aggregation.RData", sep = "")))
+#save.image(file.path(outdir, paste(Sys.Date(), "_off-farm-all-impacts-all-data-prior-to-aggregation.RData", sep = "")))
 
 ######################################################################################################

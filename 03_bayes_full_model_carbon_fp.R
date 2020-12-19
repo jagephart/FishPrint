@@ -1011,23 +1011,22 @@ rm(list=ls()[!(ls() %in% c("datadir", "outdir",
 
 
 #save.image(file.path(outdir, paste(Sys.Date(), "_on-farm-carbon-all-data-prior-to-aggregation.RData", sep = "")))
-# datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-# outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
-# load(file.path(outdir, "2020-12-16_on-farm-ghg-all-data-prior-to-aggregation.RData"))
 
 ######################################################################################################
 # RESTARTING POINT
+#datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+#outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # Load on-farm carbon (GHG) variables
-# load(file.path(outdir, "2020-12-16_on-farm-ghg-all-data-prior-to-aggregation.RData"))
+# load(file.path(outdir, "2020-12-16_on-farm-carbon-all-data-prior-to-aggregation.RData"))
 
 # Load off-farm (feed-associated) variables
-load(file.path(outdir, "2020-12-17_feed-impacts-all-data-prior-to-aggregation.RData"))
+#load(file.path(outdir, "2020-12-17_off-farm-all-impacts-all-data-prior-to-aggregation.RData"))
 ######################################################################################################
-
 # STEP 3 - aggregate up to taxa level and estimate total feed footprint
 # Set data for model
 
+# Organize on-farm feed data (FCR and feed proportions)
 # FIX IT - change clean.lca in Functions.R so no less than 0.01
 # Adjust feed proportions to be no less than 0.01
 # TEMPORARY FIX:
@@ -1035,7 +1034,6 @@ load(file.path(outdir, "2020-12-17_feed-impacts-all-data-prior-to-aggregation.RD
 full_feed_dat <- full_feed_dat %>%
   mutate(feed_proportion = if_else(feed_proportion < 0.01, true = 0.0105, false = feed_proportion))
 
-# Merge fcr and feed datasets by study_id, remove interval info, only use medians for rest of analysis
 # Format feed_dat
 # Standardize number of significant digits (round to digist = 3)
 # Re-scale so rowsums equals 1
@@ -1052,16 +1050,48 @@ feed_dat_merge <- full_feed_dat %>%
          feed_fmfo = feed_fmfo / new_scale,
          feed_animal = feed_animal / new_scale)
 
-
-
 # Format FCR dat
 # Rename data_type to keep track of both feed vs fcr data types
 fcr_dat_merge <- full_fcr_dat %>%
   select(study_id, clean_sci_name, taxa, intensity, system, fcr_data_type = data_type, fcr)
 
-# MERGE
-feed_footprint_dat <- feed_dat_merge %>%
+# Organize off-farm carbon data
+# Merge electric, diesel, petrol, and natgas datasets
+electric_dat_merge <- full_electric_dat %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, electric_data_type = data_type, electric)
+
+diesel_dat_merge <- full_diesel_dat %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, diesel_data_type = data_type, diesel)
+
+petrol_dat_merge <- full_petrol_dat %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, petrol_data_type = data_type, petrol)
+
+natgas_dat_merge <- full_natgas_dat %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, natgas_data_type = data_type, natgas)
+
+# Merge and format off-farm data
+# Calculate n_in_sci and n_in_taxa in case we want to remove small sample sizes
+ghg_footprint_merge <- electric_dat_merge %>%
+  full_join(diesel_dat_merge, by = intersect(names(electric_dat_merge), names(diesel_dat_merge))) %>%
+  full_join(petrol_dat_merge, by = intersect(names(.), names(petrol_dat_merge))) %>%
+  full_join(natgas_dat_merge, by = intersect(names(.), names(natgas_dat_merge))) %>%
+  drop_na() %>% # Make sure to drop na before creating sci and tx indices (otherwise some indices drop out)
+  group_by(clean_sci_name) %>%
+  mutate(n_in_sci = n()) %>%
+  ungroup() %>%
+  group_by(taxa) %>%
+  mutate(n_in_taxa = n()) %>%
+  ungroup() %>%
+  arrange(clean_sci_name, taxa) %>%
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sci = as.numeric(clean_sci_name),
+         taxa = as.factor(taxa),
+         tx = as.numeric(taxa)) 
+
+# MERGE on and off-farm data
+carbon_footprint_dat_raw <- feed_dat_merge %>%
   full_join(fcr_dat_merge, by = intersect(names(feed_dat_merge), names(fcr_dat_merge))) %>%
+  full_join(ghg_footprint_merge, by = intersect(names(ghg_footprint_merge), names(.))) %>%
   drop_na() %>%  # Make sure to drop na before creating sci and tx indices (otherwise some indices drop out)
   arrange(clean_sci_name, taxa) %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
@@ -1069,110 +1099,97 @@ feed_footprint_dat <- feed_dat_merge %>%
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
 
-# Set data
-# overall model:
-N = nrow(feed_footprint_dat)
-N_SCI <- length(unique(feed_footprint_dat$sci))
-n_to_sci <- feed_footprint_dat$sci
-N_TX <- length(unique(feed_footprint_dat$tx))
-sci_to_tx = feed_footprint_dat %>%
-  select(sci, tx) %>%
-  unique() %>%
-  pull(tx)
+# OUTPUT data used for analysis:
+write.csv(carbon_footprint_dat_raw, file.path(outdir, "dat_for_bayesian-carbon.csv"), row.names = FALSE)
 
+# Multiply energy use by their GHG footprint - in STAN model generated quantities will be just the sum of each energy source's footprint
+# (Electricity use * country-specific GHG of electricity) + (Diesel * GHG of diesel) + (Petrol * GHG of petrol) + (Natural gas * GHG of natural gas)
 
-# for FCR model:
-x <- feed_footprint_dat$fcr
+# Get farm-associated carbon footprints data
+# Add iso3c
+electric_fp_dat <- read.csv(file.path(datadir, "electricity_GWP.csv")) %>%
+  mutate(iso3c = countrycode(Country, origin = "country.name", destination = "iso3c"))
+other_energy_fp_dat <- read.csv(file.path(datadir, "energy_carriers_impact_factors.csv"))
 
-# for Feed proportion model:
+# units for diesel and petrol constants are in kg CO2-eq / L
+diesel_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Diesel") %>% pull(Value)
+petrol_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Petrol") %>% pull(Value)
+
+# NOTE: natural gas is in kg CO2-eq / m3, need to convert to kg CO2-eq / L - multiply by 0.001 m3 / L
+natgas_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Natural gas") %>% pull(Value) * 0.001
+
+# Calculate GHG footprint for each energy source
+carbon_footprint_dat <- carbon_footprint_dat_raw %>%
+  # Calculate electriciy GHG footprint
+  left_join(electric_fp_dat %>% select(-Country), by = "iso3c") %>% 
+  mutate(GWP_perkWh_kgCO2eq = if_else(is.na(GWP_perkWh_kgCO2eq), true = mean(GWP_perkWh_kgCO2eq, na.rm = TRUE), false = GWP_perkWh_kgCO2eq)) %>% # for studies with no country data, just use the average across countries
+  mutate(electric_ghg = electric * GWP_perkWh_kgCO2eq) %>%
+  # Calculate diesel GHG footprint
+  mutate(diesel_ghg = diesel * diesel_fp) %>%
+  # Calculate petrol GHG footprint
+  mutate(petrol_ghg = petrol * petrol_fp) %>%
+  # Calculate natural gas GHG footprint
+  mutate(natgas_ghg = natgas * natgas_fp) %>%
+  # Calculate sum total of GHG footprint
+  mutate(total_ghg = electric_ghg + diesel_ghg + petrol_ghg + natgas_ghg)
+
+######################################################################################################
+# END all cleaning: carbon_footprint_dat is the data used for Bayesian
+
+# FIX IT - Reorder this section as: Data, indices, weights, constants?
+
+# VARIABLE-SPECIFIC DATA:
+
+# For on_farm ghg
+farm_c <- carbon_footprint_dat$total_ghg
+# For FCR model:
+fcr <- carbon_footprint_dat$fcr
+# For Feed proportion model:
 K = 4
-feed_weights <- feed_footprint_dat %>%
+feed_weights <- carbon_footprint_dat %>%
   select(feed_soy, feed_crops, feed_fmfo, feed_animal) %>%
   as.matrix()
-
-# Get counts per sci name and counts per taxa group (also included as data in the model):
-sci_kappa <- feed_footprint_dat %>% 
+# Also needed for feed proportion dirichlet: counts per sci name and counts per taxa group (also included as data in the model):
+sci_kappa <- carbon_footprint_dat %>% 
   group_by(sci) %>% 
   summarise(n_obs = n()) %>%
   ungroup() %>%
   arrange(sci) %>%
   pull(n_obs)
-
-tx_kappa <- feed_footprint_dat %>% 
+tx_kappa <- carbon_footprint_dat %>% 
   group_by(tx) %>% 
   summarise(n_obs = n()) %>%
   ungroup() %>%
   arrange(tx) %>%
   pull(n_obs)
 
-# Get footprint data
-# DECISION: Choose allocation method
-# IMPORTANT - multiply all values by 1000 to convert to kg CO2 per tonne (currently in kg CO2 per kg)
+# INDICES:
+N = nrow(carbon_footprint_dat)
+N_SCI <- length(unique(carbon_footprint_dat$sci))
+n_to_sci <- carbon_footprint_dat$sci
+n_to_tx <- carbon_footprint_dat$tx
+N_TX <- length(unique(carbon_footprint_dat$tx))
+sci_to_tx <- carbon_footprint_dat %>%
+  select(sci, tx) %>%
+  unique() %>%
+  pull(tx)
 
-set_allocation <- "Mass"
-
-fp_dat <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv")) %>%
-  filter(Allocation == set_allocation) %>%
-  mutate(ave_stressor_per_tonne = ave_stressor * 1000)
-
-# ORDER OF feed_weights data vector: soy, crops, fmfo, animal
-head(feed_weights)
-# ORDER of footprint data vector should match this:
-set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
-
-fp_c_dat <- fp_dat %>%
-  filter(Impact.category == "Global warming potential") %>% 
-  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
-  select(ave_stressor_per_tonne) %>%
-  as.matrix() %>%
-  c()
-
-fp_n_dat <- fp_dat %>%
-  filter(Impact.category == "Marine eutrophication") %>% 
-  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
-  select(ave_stressor_per_tonne) %>%
-  as.matrix() %>%
-  c()
-
-fp_p_dat <- fp_dat %>%
-  filter(Impact.category == "Freshwater eutrophication") %>% 
-  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
-  select(ave_stressor_per_tonne) %>%
-  as.matrix() %>%
-  c()
-
-fp_land_dat <- fp_dat %>%
-  filter(Impact.category == "Land use") %>% 
-  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
-  select(ave_stressor_per_tonne) %>%
-  as.matrix() %>%
-  c()
-
-fp_water_dat <- fp_dat %>%
-  filter(Impact.category == "Water consumption") %>% 
-  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
-  select(ave_stressor_per_tonne) %>%
-  as.matrix() %>%
-  c()
-
+# WEIGHTS:
 # Get sci-level weightings for generating taxa-level quantities:
 # IMPORTANT arrange by clean_sci_name so that the order matches data
 sci_prod_weights <- read.csv(file.path(datadir, "aqua_prod_weightings.csv")) %>%
   arrange(clean_sci_name)
-
 # Drop sci-names not found in the data
 sci_prod_weights <- sci_prod_weights %>%
-  filter(clean_sci_name %in% feed_footprint_dat$clean_sci_name)
-
+  filter(clean_sci_name %in% carbon_footprint_dat$clean_sci_name)
 # Check that the order of sci names in both weights and data are the same (sum = 0)
-sum(sci_prod_weights$clean_sci_name != unique(feed_footprint_dat$clean_sci_name))
+sum(sci_prod_weights$clean_sci_name != unique(carbon_footprint_dat$clean_sci_name))
 sci_w <- sci_prod_weights$weighting
-
 
 # Need the following for generating ragged array in STAN - indexing vector of sci_mu's based on their taxa identity (each slice will have a different length)
 where_tx <- order(sci_to_tx) # i.e., give the positions in sci_to_tx in order of their taxa level (where in sci_to_tx is taxa level 1, followed by taxa level 2, etc)
 # How many sci are in each taxa - need this to declare length of each sci_mu vector
-n_sci_in_tx <- feed_footprint_dat %>%
+n_sci_in_tx <- carbon_footprint_dat %>%
   select(sci, tx) %>%
   unique() %>%
   group_by(tx) %>%
@@ -1185,21 +1202,42 @@ n_sci_in_tx <- feed_footprint_dat %>%
 slice_where_tx <- cumsum(n_sci_in_tx) # These are the breaks in where_tx corresponding to each taxa level - need this to split up where_tx
 slice_where_tx <- c(0, slice_where_tx)
 
+# CONSTANTS:
+# DECISION: Choose allocation method
+# Choose Impact.category
+# IMPORTANT - multiply all values by 1000 to convert to kg CO2 per tonne (currently in kg CO2 per kg)
+impact <- "Global warming potential" # i.e., Carbon impact
+set_allocation <- "Mass"
+
+fp_dat <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv")) %>%
+  filter(Allocation == set_allocation) %>%
+  mutate(ave_stressor_per_tonne = ave_stressor * 1000)
+
+# ORDER OF feed_weights data vector: soy, crops, fmfo, animal
+head(feed_weights)
+# ORDER of footprint data vector should match this:
+set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
+
+fp_constant <- fp_dat %>%
+  filter(Impact.category == impact) %>% 
+  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
+  select(ave_stressor_per_tonne) %>%
+  as.matrix() %>%
+  c()
+
+# Set data for stan:
 stan_data <- list(N = N,
                   N_SCI = N_SCI, 
                   n_to_sci = n_to_sci,
                   N_TX = N_TX,
                   sci_to_tx = sci_to_tx,
-                  x = x,
+                  fcr = fcr,
                   K = K,
                   feed_weights = feed_weights,
+                  farm_c = farm_c,
                   sci_kappa = sci_kappa,
                   tx_kappa = tx_kappa,
-                  fp_c_dat = fp_c_dat,
-                  fp_n_dat = fp_n_dat,
-                  fp_p_dat = fp_p_dat,
-                  fp_land_dat = fp_land_dat,
-                  fp_water_dat = fp_water_dat, 
+                  fp_constant = fp_constant,
                   sci_w = sci_w,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
@@ -1376,26 +1414,25 @@ stan_data <- list(N = N,
 
 # NORMAL distribution hierarchical model
 stan_no_na <- 'data {
-  // data for normal model for FCR
+  // indices
   int<lower=0> N;  // number of observations
-  vector<lower=0>[N] x; // fcr data
   int N_TX; // number of taxa groups
   int N_SCI; // number of scientific names
   int n_to_sci[N]; // sciname index
   int sci_to_tx[N_SCI]; // taxa-group indices
 
-  // data for dirichlet model for feed
+  // data for feed footrpint
+  vector<lower=0>[N] fcr; // fcr data
   int K; // number of feed types
   simplex[K] feed_weights[N]; // array of observed feed weights simplexes
   int sci_kappa[N_SCI]; // number of observations per sci-name
   int tx_kappa[N_TX]; // number of observations per taxa group
+  
+  // data for on-farm footrpint
+  vector<lower=0>[N] farm_c; // data
 
-  // constants for generated quantities
-  vector[K] fp_c_dat;
-  //vector[K] fp_n_dat;
-  //vector[K] fp_p_dat;
-  //vector[K] fp_land_dat;
-  //vector[K] fp_water_dat;
+  // constants to apply to feed footrpint
+  vector[K] fp_constant;
   
   // data for slicing vectors for calculating weighted means
   vector<lower=0>[N_SCI] sci_w; // sci-level production weights
@@ -1404,20 +1441,25 @@ stan_no_na <- 'data {
   int slice_where_tx[N_TX + 1]; // breaks in where_tx by taxa-level
 }
 parameters {
-  // FCR model:
-  vector<lower=0>[N_TX] tx_mu;
-  vector<lower=0>[N_SCI] sci_mu;
-  vector<lower=0>[N_TX] tx_sigma;
-  vector<lower=0>[N_SCI] sci_sigma;
-  //real<lower=0> tx_sigma;
-  //real<lower=0> sci_sigma;
+  // FCR model
+  vector<lower=0>[N_TX] tx_mu_feed;
+  vector<lower=0>[N_SCI] sci_mu_feed;
+  real<lower=0> tx_sigma_feed;
+  real<lower=0> sci_sigma_feed;
+  //vector<lower=0>[N_TX] tx_sigma_feed;
+  //vector<lower=0>[N_SCI] sci_sigma_feed;
   
-
   // Feed proportion model:
   simplex[K] sci_phi[N_SCI];
   simplex[K] sci_theta[N_SCI]; // vectors of estimated sci-level feed weight simplexes
   simplex[K] tx_phi[N_TX];
   simplex[K] tx_theta[N_TX];
+  
+  // On farm model
+  vector<lower=0>[N_TX] tx_mu_farm;
+  vector<lower=0>[N_SCI] sci_mu_farm;
+  real<lower=0> tx_sigma_farm;
+  real<lower=0> sci_sigma_farm;
 }
 transformed parameters {
   // define params for dirichlet model for feed proportions
@@ -1447,16 +1489,16 @@ model {
   // sci_phi[2][1] ~ normal(0.13, 5); // mean for Oncorhynhchus mykiss soy feed
 
   // likelihood
-  // normal model sci-name and taxa-level
+  // normal model sci-name and taxa-level for FCR
   for (n in 1:N){
-    x[n] ~ normal(sci_mu[n_to_sci[n]], sci_sigma[n_to_sci[n]]);
+    fcr[n] ~ normal(sci_mu_feed[n_to_sci[n]], sci_sigma_feed);
   }
 
   for (n_sci in 1:N_SCI){
-    sci_mu[n_sci] ~ normal(tx_mu[sci_to_tx[n_sci]], tx_sigma[sci_to_tx[n_sci]]);
+    sci_mu_feed[n_sci] ~ normal(tx_mu_feed[sci_to_tx[n_sci]], tx_sigma_feed);
   }
 
-  // dirichlet model
+  // dirichlet model for feed proportions
   // use data to estimate sci-level dirichlet shape param (alphas)
   for (n in 1:N) {
     feed_weights[n] ~ dirichlet(to_vector(sci_alpha[n_to_sci[n]]));
@@ -1465,102 +1507,49 @@ model {
   for (n_sci in 1:N_SCI) {
     sci_theta[n_sci] ~ dirichlet(to_vector(tx_alpha[sci_to_tx[n_sci]]));
   }
+  
+  // normal model for sci and taxa-level on-farm footrpint
+  for (n in 1:N){
+    farm_c[n] ~ normal(sci_mu_farm[n_to_sci[n]], sci_sigma_farm);
+  }
+
+  for (n_sci in 1:N_SCI){
+    sci_mu_farm[n_sci] ~ normal(tx_mu_farm[sci_to_tx[n_sci]], tx_sigma_farm);
+  }
 }
 generated quantities {
-  // Carbon
-  vector[N_TX] tx_c_fp;
-  vector[N_SCI] sci_c_fp;
-
-  // Nitrogen
-  //vector[N_TX] tx_n_fp;
-  //vector[N_SCI] sci_n_fp;
-
-  // Phosphorus
-  //vector[N_TX] tx_p_fp;
-  //vector[N_SCI] sci_p_fp;
-
-  // Land
-  //vector[N_TX] tx_land_fp;
-  //vector[N_SCI] sci_land_fp;
-
-  // Water
-  //vector[N_TX] tx_water_fp;
-  //vector[N_SCI] sci_water_fp;
-  
   // Declare vectors for weightings
-// Carbon
-vector[N_SCI] sci_mu_w_c; // weighted means
-vector[N_TX] tx_out_c; // weighted means pooled to taxa level
+  vector[N_TX] tx_feed_fp;
+  vector[N_SCI] sci_feed_fp;
+  vector[N_SCI] sci_total_fp; // unweighted sci-level
+  vector[N_TX] tx_total_fp; // 
+  vector[N_SCI] sci_total_fp_w; // weighted sci-level 
+  vector[N_TX] tx_total_fp_w; // weighted tx-level 
 
-// Nitrogen
-//vector[N_SCI] sci_mu_w_n; // weighted means
-//vector[N_TX] tx_out_n; // weighted means pooled to taxa level
-
-// Phosphorus
-//vector[N_SCI] sci_mu_w_p; // weighted means
-//vector[N_TX] tx_out_p; // weighted means pooled to taxa level
-
-// Land
-//vector[N_SCI] sci_mu_w_land; // weighted means
-//vector[N_TX] tx_out_land; // weighted means pooled to taxa level
-
-// Water
-//vector[N_SCI] sci_mu_w_water; // weighted means
-//vector[N_TX] tx_out_water; // weighted means pooled to taxa level
-
-
-  // Calculations
+  // Feed footrpint calculations
   for (n_tx in 1:N_TX) {
-    tx_c_fp[n_tx] = tx_mu[n_tx] * sum(fp_c_dat .* tx_theta[n_tx]);
-    //tx_n_fp[n_tx] = tx_mu[n_tx] * sum(fp_n_dat .* tx_theta[n_tx]);
-    //tx_p_fp[n_tx] = tx_mu[n_tx] * sum(fp_p_dat .* tx_theta[n_tx]);
-    //tx_land_fp[n_tx] = tx_mu[n_tx] * sum(fp_land_dat .* tx_theta[n_tx]);
-    //tx_water_fp[n_tx] = tx_mu[n_tx] * sum(fp_water_dat .* tx_theta[n_tx]);
+    tx_feed_fp[n_tx] = tx_mu_feed[n_tx] * sum(fp_constant .* tx_theta[n_tx]);
   }
   for (n_sci in 1:N_SCI) {
-    sci_c_fp[n_sci] = sci_mu[n_sci] * sum(fp_c_dat .* sci_theta[n_sci]);
-    //sci_n_fp[n_sci] = sci_mu[n_sci] * sum(fp_n_dat .* sci_theta[n_sci]);
-    //sci_p_fp[n_sci] = sci_mu[n_sci] * sum(fp_p_dat .* sci_theta[n_sci]);
-    //sci_land_fp[n_sci] = sci_mu[n_sci] * sum(fp_land_dat .* sci_theta[n_sci]);
-    //sci_water_fp[n_sci] = sci_mu[n_sci] * sum(fp_water_dat .* sci_theta[n_sci]);
+    sci_feed_fp[n_sci] = sci_mu_feed[n_sci] * sum(fp_constant .* sci_theta[n_sci]);
+  }
+  
+  // Sum off farm (feed) and on farm footprints (UNWEIGHTED sci and tx-level outputs)
+  for (n_sci in 1:N_SCI) {
+    sci_total_fp[n_sci] = sci_feed_fp[n_sci] + sci_mu_farm[n_sci];
+  }
+  for (n_tx in 1:N_TX) {
+    tx_total_fp[n_tx] = tx_feed_fp[n_tx] + tx_mu_farm[n_tx];
   }
 
-// Apply weightings
-sci_mu_w_c = sci_c_fp .* sci_w; // weighted sci-level means
-//sci_mu_w_n = sci_n_fp .* sci_w; // weighted sci-level means
-//sci_mu_w_p = sci_p_fp .* sci_w; // weighted sci-level means
-//sci_mu_w_land = sci_land_fp .* sci_w; // weighted sci-level means
-//sci_mu_w_water = sci_water_fp .* sci_w; // weighted sci-level means
+  // Apply weightings
+  sci_total_fp_w = sci_total_fp .* sci_w; // WEIGHTED sci-level outputs
 
-
-for (n_tx in 1:N_TX){
-  vector[n_sci_in_tx[n_tx]] sci_mu_w_vec_c; // declare vector of sci_mu in taxa-level n_tx
-  //vector[n_sci_in_tx[n_tx]] sci_mu_w_vec_n; // declare vector of sci_mu in taxa-level n_tx
-  //vector[n_sci_in_tx[n_tx]] sci_mu_w_vec_p; // declare vector of sci_mu in taxa-level n_tx
-  //vector[n_sci_in_tx[n_tx]] sci_mu_w_vec_land; // declare vector of sci_mu in taxa-level n_tx
-  //vector[n_sci_in_tx[n_tx]] sci_mu_w_vec_water; // declare vector of sci_mu in taxa-level n_tx
-  
-  // Carbon
-  sci_mu_w_vec_c = sci_mu_w_c[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
-  tx_out_c[n_tx] = sum(sci_mu_w_vec_c); // sum sci_mu_w_vec to pool to taxa-level
-  
-  // Nitrogen
-  //sci_mu_w_vec_n = sci_mu_w_n[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
-  //tx_out_n[n_tx] = sum(sci_mu_w_vec_n); // sum sci_mu_w_vec to pool to taxa-level
-  
-  // Phosphorus
-  //sci_mu_w_vec_p = sci_mu_w_p[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
-  //tx_out_p[n_tx] = sum(sci_mu_w_vec_p); // sum sci_mu_w_vec to pool to taxa-level
-  
-  // Land
-  //sci_mu_w_vec_land = sci_mu_w_land[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
-  //tx_out_land[n_tx] = sum(sci_mu_w_vec_land); // sum sci_mu_w_vec to pool to taxa-level
-  
-  // Water
-  //sci_mu_w_vec_water = sci_mu_w_water[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
-  //tx_out_water[n_tx] = sum(sci_mu_w_vec_c); // sum sci_mu_w_vec to pool to taxa-level
-}
-
+  for (n_tx in 1:N_TX){
+    vector[n_sci_in_tx[n_tx]] sci_mu_w_vec; // declare vector of sci_mu in taxa-level n_tx
+    sci_mu_w_vec = sci_total_fp_w[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
+    tx_total_fp_w[n_tx] = sum(sci_mu_w_vec); // sum sci_mu_w_vec to get WEIGHTED tx-level outputs
+  }
 }'
 
 
@@ -1579,14 +1568,15 @@ summary(fit_no_na)$summary
 #launch_shinystan(fit_no_na)
 ######################################################################################################
 # RESTARTING POINT
+# FIX IT - which objects to clear before saving?
 # rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
 #                            "lca_dat_clean_groups", "feed_model_dat_categories",
 #                            "full_feed_dat", "full_fcr_dat", "feed_footprint_dat", "fit_no_na"))])
-#save.image(file.path(outdir, paste(Sys.Date(), "_feed-impacts_", set_allocation, "-allocation_all-data-prior-to-plotting.RData", sep = "")))
+#save.image(file.path(outdir, paste(Sys.Date(), "_full-model_", impact, "_", set_allocation, "-allocation_all-data-prior-to-plotting.RData", sep = "")))
 
 # datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 # outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
-# load(file.path(outdir, "2020-12-17_feed-impacts_Mass-allocation_all-data-prior-to-plotting.RData"))
+# load(file.path(outdir, "<file-name>.RData"))
 # set_allocation <- "Mass"
 ######################################################################################################
 # PLOT RESULTS
