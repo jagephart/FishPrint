@@ -58,3 +58,25 @@ ggplot(mm_risk_aveghg, aes(x = ghg.ave, y = fishery, colour = factor(risk))) +
   facet_wrap(~risk) +
   labs(y = "", x = "kg CO2-eq per tonne", size = "N. Species", colour = "Risk") +
   theme_clean()
+
+# Plots with combined biodiversity risk index
+mm_riskindex_aveghg <- mm_risk_aveghg %>%
+  mutate(risk.index = ifelse(risk == "low", 1*n.species,
+                             ifelse(risk == "medium", 2*n.species,
+                                    ifelse(risk == "high", 3*n.species, NA)))) %>%
+  group_by(fishery, mm_species, gear, ghg.ave, ghg.se) %>%
+  summarise(risk.index = sum(risk.index))
+
+ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index)) +
+  geom_point() +
+  geom_errorbar(aes(xmin=ghg.ave-(1.96*ghg.se), xmax=ghg.ave+(1.96*ghg.se)), width=.1) +
+  labs(y = "", x = "kg CO2-eq per tonne", size = "N. Species", colour = "Risk") +
+  theme_clean() +
+  facet_wrap(~gear, nrow = length(unique(mm_riskindex_aveghg$gear)))
+
+ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index, colour = factor(gear))) +
+  geom_point() +
+  geom_errorbar(aes(xmin=ghg.ave-(1.96*ghg.se), xmax=ghg.ave+(1.96*ghg.se)), width=.1) +
+  labs(y = "", x = "kg CO2-eq per tonne", size = "N. Species", colour = "Risk") +
+  theme_clean() 
+
