@@ -13,6 +13,7 @@ datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 wild_dat <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>%
+  filter(species_group != "Finfish") %>%
   mutate(species = as.factor(species)) %>%
   mutate(species_group = as.factor(species_group)) %>%
   mutate(sci = as.numeric(species)) %>%

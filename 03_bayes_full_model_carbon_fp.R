@@ -1,4 +1,6 @@
-# Calculate (non-feed associated) greenhouse gas footprint
+# Impute on-farm CARBON impacts then combine with off-farm (feed) CARBON impacts 
+
+# Calculate on-farm (non-feed associated) carbon footprint as:
 # (Electricity use * country-specific GHG of electricity) + (Diesel * GHG of diesel) + (Petrol * GHG of petrol) + (Natural gas * GHG of natural gas)
 
 # DECISION: adjusting zeroes to be very small amount for all energy datasets
@@ -73,7 +75,7 @@ all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response v
 # increasing max_treedepth is more about efficiency (instead of validity)
 # See: https://mc-stan.org/misc/warnings.html
 fit_electric_no_na <- brm(electric_brms, data = electric_brms_data,
-                       prior = all_priors, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
+                          prior = all_priors, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
 
 # Get stan code
 #stancode(fit_electric_no_na)
@@ -324,7 +326,7 @@ all_priors <- c(set_prior("normal(0,5)", class = "b"), # priors for y response v
 # increasing max_treedepth is more about efficiency (instead of validity)
 # See: https://mc-stan.org/misc/warnings.html
 fit_diesel_no_na <- brm(diesel_brms, data = diesel_brms_data,
-                      prior = all_priors, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
+                        prior = all_priors, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
 
 # Get stan code
 #stancode(fit_diesel_no_na)
@@ -354,17 +356,17 @@ diesel_complete_predictors <- diesel_complete_predictors %>%
   mutate(taxa = as.factor(taxa))
 
 levels(diesel_complete_predictors$taxa) <- list(bivalves = "bivalves",
-                                                  catfish = "catfish",
-                                                  hypoph_carp = "hypoph_carp",
-                                                  milkfish = "milkfish",
-                                                  misc_diad = "misc_diad",
-                                                  misc_marine = "misc_marine",
-                                                  oth_carp = "oth_carp",
-                                                  plants = "plants",
-                                                  salmon = "salmon",
-                                                  shrimp = "shrimp",
-                                                  tilapia = "tilapia",
-                                                  trout = "trout")
+                                                catfish = "catfish",
+                                                hypoph_carp = "hypoph_carp",
+                                                milkfish = "milkfish",
+                                                misc_diad = "misc_diad",
+                                                misc_marine = "misc_marine",
+                                                oth_carp = "oth_carp",
+                                                plants = "plants",
+                                                salmon = "salmon",
+                                                shrimp = "shrimp",
+                                                tilapia = "tilapia",
+                                                trout = "trout")
 
 # Create NEW taxa model matrix for the studies to be predicted
 # Taxa categories:
@@ -518,7 +520,7 @@ max_dat <- full_diesel_dat %>%
 
 full_diesel_dat <- full_diesel_dat %>%
   filter(diesel <= max_dat & diesel >= min_dat)
-  
+
 # Check again: PLOT DATA + PREDICTIONS
 ggplot(full_diesel_dat, aes(x = diesel, y = taxa)) + geom_boxplot(outlier.shape = NA) + geom_jitter(aes(color = data_type))
 
@@ -844,7 +846,7 @@ setdiff(unique(natgas_no_na$taxa), unique(natgas_complete_predictors$taxa))
 # Include all levels here, but remember the first level won't show up in design matrix - instead, it's part of the "contrasts"
 sort(unique(natgas_no_na$taxa))
 natgas_complete_predictors <- natgas_complete_predictors %>%
-   mutate(taxa = as.factor(taxa))
+  mutate(taxa = as.factor(taxa))
 levels(natgas_complete_predictors$taxa) <- list(bivalves = "bivalves",
                                                 catfish = "catfish",
                                                 hypoph_carp = "hypoph_carp",
@@ -1006,81 +1008,152 @@ rm(list=ls()[!(ls() %in% c("datadir", "outdir",
                            "electric_fp_dat", "other_energy_fp_dat", 
                            "full_electric_dat", "full_diesel_dat", "full_petrol_dat", "full_natgas_dat"))])
 
-######################################################################################################
-# RESTARTING POINT
 
-#save.image(file.path(outdir, paste(Sys.Date(), "_on-farm-ghg-all-data-prior-to-aggregation.RData", sep = "")))
+
+#save.image(file.path(outdir, paste(Sys.Date(), "_on-farm-carbon-all-data-prior-to-aggregation.RData", sep = "")))
 # datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 # outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # load(file.path(outdir, "2020-12-16_on-farm-ghg-all-data-prior-to-aggregation.RData"))
 
 ######################################################################################################
-# Aggregate up to taxa level and estimate total feed footprint
+# RESTARTING POINT
 
-# Merge electric, diesel, petrol, and natgas datasets
-electric_dat_merge <- full_electric_dat %>%
-  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, electric_data_type = data_type, electric)
+# Load on-farm carbon (GHG) variables
+# load(file.path(outdir, "2020-12-16_on-farm-ghg-all-data-prior-to-aggregation.RData"))
 
-diesel_dat_merge <- full_diesel_dat %>%
-  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, diesel_data_type = data_type, diesel)
+# Load off-farm (feed-associated) variables
+load(file.path(outdir, "2020-12-17_feed-impacts-all-data-prior-to-aggregation.RData"))
+######################################################################################################
 
-petrol_dat_merge <- full_petrol_dat %>%
-  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, petrol_data_type = data_type, petrol)
+# STEP 3 - aggregate up to taxa level and estimate total feed footprint
+# Set data for model
 
-natgas_dat_merge <- full_natgas_dat %>%
-  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, natgas_data_type = data_type, natgas)
+# FIX IT - change clean.lca in Functions.R so no less than 0.01
+# Adjust feed proportions to be no less than 0.01
+# TEMPORARY FIX:
+# Normalize the FINAL feed proportion values to be greater than 0 and no less than 0.01
+full_feed_dat <- full_feed_dat %>%
+  mutate(feed_proportion = if_else(feed_proportion < 0.01, true = 0.0105, false = feed_proportion))
 
-# Merge and format data for model
-# Calculate n_in_sci and n_in_taxa in case we want to remove small sample sizes
-ghg_footprint_merge <- electric_dat_merge %>%
-  full_join(diesel_dat_merge, by = intersect(names(electric_dat_merge), names(diesel_dat_merge))) %>%
-  full_join(petrol_dat_merge, by = intersect(names(.), names(petrol_dat_merge))) %>%
-  full_join(natgas_dat_merge, by = intersect(names(.), names(natgas_dat_merge))) %>%
-  drop_na() %>% # Make sure to drop na before creating sci and tx indices (otherwise some indices drop out)
-  group_by(clean_sci_name) %>%
-  mutate(n_in_sci = n()) %>%
-  ungroup() %>%
-  group_by(taxa) %>%
-  mutate(n_in_taxa = n()) %>%
-  ungroup() %>%
+# Merge fcr and feed datasets by study_id, remove interval info, only use medians for rest of analysis
+# Format feed_dat
+# Standardize number of significant digits (round to digist = 3)
+# Re-scale so rowsums equals 1
+feed_dat_merge <- full_feed_dat %>%
+  select(study_id, clean_sci_name, taxa, intensity, system, feed_data_type = data_type, .category, contains("feed")) %>%
+  pivot_wider(names_from = .category, values_from = feed_proportion) %>%
+  mutate(feed_soy = round(feed_soy, digits = 4),
+         feed_crops = round(feed_crops, digits = 4),
+         feed_fmfo = round(feed_fmfo, digits = 4),
+         feed_animal = round(feed_animal, digits = 4)) %>%
+  mutate(new_scale = feed_soy + feed_crops + feed_fmfo + feed_animal) %>%
+  mutate(feed_soy = feed_soy / new_scale,
+         feed_crops = feed_crops / new_scale,
+         feed_fmfo = feed_fmfo / new_scale,
+         feed_animal = feed_animal / new_scale)
+
+
+
+# Format FCR dat
+# Rename data_type to keep track of both feed vs fcr data types
+fcr_dat_merge <- full_fcr_dat %>%
+  select(study_id, clean_sci_name, taxa, intensity, system, fcr_data_type = data_type, fcr)
+
+# MERGE
+feed_footprint_dat <- feed_dat_merge %>%
+  full_join(fcr_dat_merge, by = intersect(names(feed_dat_merge), names(fcr_dat_merge))) %>%
+  drop_na() %>%  # Make sure to drop na before creating sci and tx indices (otherwise some indices drop out)
   arrange(clean_sci_name, taxa) %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sci = as.numeric(clean_sci_name),
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
 
+# Set data
+# overall model:
+N = nrow(feed_footprint_dat)
+N_SCI <- length(unique(feed_footprint_dat$sci))
+n_to_sci <- feed_footprint_dat$sci
+N_TX <- length(unique(feed_footprint_dat$tx))
+sci_to_tx = feed_footprint_dat %>%
+  select(sci, tx) %>%
+  unique() %>%
+  pull(tx)
 
 
-# Multiply energy use by their GHG footprint - in STAN model generated quantities will be just the sum of each energy source's footprint
-# (Electricity use * country-specific GHG of electricity) + (Diesel * GHG of diesel) + (Petrol * GHG of petrol) + (Natural gas * GHG of natural gas)
+# for FCR model:
+x <- feed_footprint_dat$fcr
 
-# Get farm-associated carbon footprints data
-# Add iso3c
-electric_fp_dat <- read.csv(file.path(datadir, "electricity_GWP.csv")) %>%
-  mutate(iso3c = countrycode(Country, origin = "country.name", destination = "iso3c"))
-other_energy_fp_dat <- read.csv(file.path(datadir, "energy_carriers_impact_factors.csv"))
+# for Feed proportion model:
+K = 4
+feed_weights <- feed_footprint_dat %>%
+  select(feed_soy, feed_crops, feed_fmfo, feed_animal) %>%
+  as.matrix()
 
-# units for diesel and petrol constants are in kg CO2-eq / L
-diesel_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Diesel") %>% pull(Value)
-petrol_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Petrol") %>% pull(Value)
+# Get counts per sci name and counts per taxa group (also included as data in the model):
+sci_kappa <- feed_footprint_dat %>% 
+  group_by(sci) %>% 
+  summarise(n_obs = n()) %>%
+  ungroup() %>%
+  arrange(sci) %>%
+  pull(n_obs)
 
-# NOTE: natural gas is in kg CO2-eq / m3, need to convert to kg CO2-eq / L - multiply by 0.001 m3 / L
-natgas_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Natural gas") %>% pull(Value) * 0.001
-  
-# Calculate GHG footprint for each energy source
-ghg_footprint_dat <- ghg_footprint_merge %>%
-  # Calculate electriciy GHG footprint
-  left_join(electric_fp_dat %>% select(-Country), by = "iso3c") %>% 
-  mutate(GWP_perkWh_kgCO2eq = if_else(is.na(GWP_perkWh_kgCO2eq), true = mean(GWP_perkWh_kgCO2eq, na.rm = TRUE), false = GWP_perkWh_kgCO2eq)) %>% # for studies with no country data, just use the average across countries
-  mutate(electric_ghg = electric * GWP_perkWh_kgCO2eq) %>%
-  # Calculate diesel GHG footprint
-  mutate(diesel_ghg = diesel * diesel_fp) %>%
-  # Calculate petrol GHG footprint
-  mutate(petrol_ghg = petrol * petrol_fp) %>%
-  # Calculate natural gas GHG footprint
-  mutate(natgas_ghg = natgas * natgas_fp) %>%
-  # Calculate sum total of GHG footprint
-  mutate(total_ghg = electric_ghg + diesel_ghg + petrol_ghg + natgas_ghg)
+tx_kappa <- feed_footprint_dat %>% 
+  group_by(tx) %>% 
+  summarise(n_obs = n()) %>%
+  ungroup() %>%
+  arrange(tx) %>%
+  pull(n_obs)
+
+# Get footprint data
+# DECISION: Choose allocation method
+# IMPORTANT - multiply all values by 1000 to convert to kg CO2 per tonne (currently in kg CO2 per kg)
+
+set_allocation <- "Mass"
+
+fp_dat <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv")) %>%
+  filter(Allocation == set_allocation) %>%
+  mutate(ave_stressor_per_tonne = ave_stressor * 1000)
+
+# ORDER OF feed_weights data vector: soy, crops, fmfo, animal
+head(feed_weights)
+# ORDER of footprint data vector should match this:
+set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
+
+fp_c_dat <- fp_dat %>%
+  filter(Impact.category == "Global warming potential") %>% 
+  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
+  select(ave_stressor_per_tonne) %>%
+  as.matrix() %>%
+  c()
+
+fp_n_dat <- fp_dat %>%
+  filter(Impact.category == "Marine eutrophication") %>% 
+  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
+  select(ave_stressor_per_tonne) %>%
+  as.matrix() %>%
+  c()
+
+fp_p_dat <- fp_dat %>%
+  filter(Impact.category == "Freshwater eutrophication") %>% 
+  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
+  select(ave_stressor_per_tonne) %>%
+  as.matrix() %>%
+  c()
+
+fp_land_dat <- fp_dat %>%
+  filter(Impact.category == "Land use") %>% 
+  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
+  select(ave_stressor_per_tonne) %>%
+  as.matrix() %>%
+  c()
+
+fp_water_dat <- fp_dat %>%
+  filter(Impact.category == "Water consumption") %>% 
+  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
+  select(ave_stressor_per_tonne) %>%
+  as.matrix() %>%
+  c()
 
 # Get sci-level weightings for generating taxa-level quantities:
 # IMPORTANT arrange by clean_sci_name so that the order matches data
@@ -1089,30 +1162,17 @@ sci_prod_weights <- read.csv(file.path(datadir, "aqua_prod_weightings.csv")) %>%
 
 # Drop sci-names not found in the data
 sci_prod_weights <- sci_prod_weights %>%
-  filter(clean_sci_name %in% ghg_footprint_dat$clean_sci_name)
+  filter(clean_sci_name %in% feed_footprint_dat$clean_sci_name)
 
 # Check that the order of sci names in both weights and data are the same (sum = 0)
-sum(sci_prod_weights$clean_sci_name != unique(ghg_footprint_dat$clean_sci_name))
-
-
-
-# Set data
-N = nrow(ghg_footprint_dat)
-N_SCI <- length(unique(ghg_footprint_dat$sci))
-n_to_sci <- ghg_footprint_dat$sci
-n_to_tx <- ghg_footprint_dat$tx
-N_TX <- length(unique(ghg_footprint_dat$tx))
-sci_to_tx <- ghg_footprint_dat %>%
-  select(sci, tx) %>%
-  unique() %>%
-  pull(tx)
-total_ghg <- ghg_footprint_dat$total_ghg
+sum(sci_prod_weights$clean_sci_name != unique(feed_footprint_dat$clean_sci_name))
 sci_w <- sci_prod_weights$weighting
+
 
 # Need the following for generating ragged array in STAN - indexing vector of sci_mu's based on their taxa identity (each slice will have a different length)
 where_tx <- order(sci_to_tx) # i.e., give the positions in sci_to_tx in order of their taxa level (where in sci_to_tx is taxa level 1, followed by taxa level 2, etc)
 # How many sci are in each taxa - need this to declare length of each sci_mu vector
-n_sci_in_tx <- ghg_footprint_dat %>%
+n_sci_in_tx <- feed_footprint_dat %>%
   select(sci, tx) %>%
   unique() %>%
   group_by(tx) %>%
@@ -1129,199 +1189,379 @@ stan_data <- list(N = N,
                   N_SCI = N_SCI, 
                   n_to_sci = n_to_sci,
                   N_TX = N_TX,
-                  #n_to_tx = n_to_tx,
                   sci_to_tx = sci_to_tx,
-                  total_ghg = total_ghg, 
-                  sci_w = sci_w, 
+                  x = x,
+                  K = K,
+                  feed_weights = feed_weights,
+                  sci_kappa = sci_kappa,
+                  tx_kappa = tx_kappa,
+                  fp_c_dat = fp_c_dat,
+                  fp_n_dat = fp_n_dat,
+                  fp_p_dat = fp_p_dat,
+                  fp_land_dat = fp_land_dat,
+                  fp_water_dat = fp_water_dat, 
+                  sci_w = sci_w,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
                   slice_where_tx = slice_where_tx)
 
+# Estimate foot print for all scientific names and taxa groups (removed the "all-seafood" level for simplicity)
 # GAMMA distribution hierarchical model
 # stan_no_na <- 'data {
 #   // data for gamma model for FCR
 #   int<lower=0> N;  // number of observations
-#   vector<lower=0>[N] total_ghg; // data
+#   vector<lower=0>[N] x; // data
 #   int N_TX; // number of taxa groups
 #   int N_SCI; // number of scientific names
 #   int n_to_sci[N]; // sciname index
 #   int sci_to_tx[N_SCI]; // taxa-group indices
+# 
+#   // data for dirichlet model for feed
+#   int K; // number of feed types
+#   simplex[K] feed_weights[N]; // array of observed feed weights simplexes
+#   int sci_kappa[N_SCI]; // number of observations per sci-name
+#   int tx_kappa[N_TX]; // number of observations per taxa group
+# 
+#   // constants for generated quantities
+#   vector[K] fp_c_dat;
+#   vector[K] fp_n_dat;
+#   vector[K] fp_p_dat;
+#   vector[K] fp_land_dat;
+#   vector[K] fp_water_dat;
 # }
 # parameters {
+#   // FCR model:
 #   vector<lower=0>[N_TX] tx_mu;
 #   vector<lower=0>[N_SCI] sci_mu;
-#   vector<lower=0>[N_TX] tx_shape;
-#   vector<lower=0>[N_SCI] sci_shape;
+#   // only need sigmas if defining shape and rate with mu and sigma
+#   //real<lower=0> tx_sigma;
+#   //real<lower=0> sci_sigma;
+#   // if using variance instead of st dev
+#   real<lower=0> tx_sigma_sq;
+#   real<lower=0> sci_sigma_sq;
+# 
+#   // Feed proportion model:
+#   simplex[K] sci_phi[N_SCI];
+#   simplex[K] sci_theta[N_SCI]; // vectors of estimated sci-level feed weight simplexes
+#   simplex[K] tx_phi[N_TX];
+#   simplex[K] tx_theta[N_TX];
+# 
+#   // Params for the dirichlet priors:
+#   // real<lower=0> sigma_1;
+#   // real<lower=0> sigma_2;
 # }
 # transformed parameters {
 #   // define transofrmed params for gamma model for FCRs
+#   vector<lower=0>[N_SCI] sci_shape;
 #   vector<lower=0>[N_SCI] sci_rate;
+#   vector<lower=0>[N_TX] tx_shape;
 #   vector<lower=0>[N_TX] tx_rate;
 # 
-#   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+#   // define params for dirichlet model for feed proportions
+#   vector<lower=0>[K] sci_alpha[N_SCI];
+#   vector<lower=0>[K] tx_alpha[N_TX];
+# 
+#   // gamma model reparameterization
+#   // option 1: reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
+#   // taxa group level
+#   //for (n_tx in 1:N_TX){
+#   //  tx_shape[n_tx] = square(tx_mu[n_tx]) ./ square(tx_sigma);
+#   //  tx_rate[n_tx] = tx_mu[n_tx] ./ square(tx_sigma);
+#   //}
+# 
+#   // sci level
+#   //for (n_sci in 1:N_SCI){
+#   //  sci_shape[n_sci] = square(sci_mu[n_sci]) ./ square(sci_sigma);
+#   //  sci_rate[n_sci] = sci_mu[n_sci] ./ square(sci_sigma);
+#   //}
+# 
+#   // option 2: reparameterize gamma to get just mu
+#   //for (n_tx in 1:N_TX){
+#   //  tx_rate[n_tx] = tx_shape[n_tx] ./ tx_mu[n_tx];
+#   //}
+#   // sci level
+#   //for (n_sci in 1:N_SCI){
+#   //  sci_rate[n_sci] = sci_shape[n_sci] ./ sci_mu[n_sci];
+#   //}
+#   
+#   // option 3: reparameterize shape and rate as inverse(va) and inverse(va)/mu
 #   for (n_tx in 1:N_TX){
-#     tx_rate[n_tx] = tx_shape[n_tx] / tx_mu[n_tx];
+#     tx_shape[n_tx] = 1 / tx_sigma_sq;
+#     tx_rate[n_tx] = 1 / (tx_sigma_sq * tx_mu[n_tx]);
 #   }
 #   for (n_sci in 1:N_SCI){
-#     sci_rate[n_sci] = sci_shape[n_sci] / sci_mu[n_sci];
+#     sci_shape[n_sci] = 1 / sci_sigma_sq;
+#     sci_rate[n_sci] = 1 / (sci_sigma_sq * sci_mu[n_sci]);
+#   }
+#   
+#   
+#   // dirichlet model reparameterization
+#   // reparameterize alphas as a vector of means (phi) and counts (kappas)
+#   // theta is expected value of mean feed weights
+#   // kappa is strength of the prior measured in number of prior observations (minus K)
+#   for (n_tx in 1:N_TX) {
+#     tx_alpha[n_tx] = tx_kappa[n_tx] * tx_theta[n_tx];
 #   }
 # 
+#   for (n_sci in 1:N_SCI) {
+#     sci_alpha[n_sci] = sci_kappa[n_sci] * sci_theta[n_sci];
+#   }
 # }
 # model {
-#   // define priors for gamma model
+#   // define priors for gamma model for FCRs
 #   // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-#   //tx_mu ~ uniform(0, 100); 
-#   //sci_mu ~ uniform(0, 100);
-#   //tx_sigma ~ uniform(0, 100); 
+#   tx_mu ~ uniform(0, 100); // note: uniform(0,100) for all of these doesnt help much with convergence
+#   sci_mu ~ uniform(0, 100);
+#   //tx_sigma ~ uniform(0, 100); // only need sigmas if calculating shape and rate with mu and sigma
 #   //sci_sigma ~ uniform(0, 100);
-#   
-#   // weakly informative priors on shape params
-#   tx_shape ~ cauchy(0, 100);
-#   sci_shape ~ cauchy(0, 100);
+# 
+#   // define priors for dirichlet model for feed proportions
+#   // sci_phi defined as sci_phi[n_to_sci][K]
+# 
+#   // option 1: define feed proportion priors as lower upper bounds
+#   // sci_phi[2][1] ~ uniform(0.1, 0.2); // hypothetical lower and upper bounds for Oncorhynchus mykiss soy
+# 
+#   // option 2: define feed proportions as means (need to define sigmas in parameters block: real<lower=0> sigma_1, sigma_2 etc;)
+#   // sci_phi[2][1] ~ normal(0.13, sigma_1); // mean for Oncorhynhchus mykiss soy feed
 # 
 #   // likelihood
 #   // gamma model sci-name and taxa-level
 #   for (n in 1:N){
-#     total_ghg ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
+#     x[n] ~ gamma(sci_shape[n_to_sci[n]], sci_rate[n_to_sci[n]]);
 #   }
+# 
 #   for (n_sci in 1:N_SCI){
 #     sci_mu[n_sci] ~ gamma(tx_shape[sci_to_tx[n_sci]], tx_rate[sci_to_tx[n_sci]]);
 #   }
+# 
+#   // dirichlet model
+#   // use data to estimate sci-level dirichlet shape param (alphas)
+#   for (n in 1:N) {
+#     feed_weights[n] ~ dirichlet(to_vector(sci_alpha[n_to_sci[n]]));
+#   }
+#   // use sci-level thetas to estimate taxa-level dirichlet shape param (alphas)
+#   for (n_sci in 1:N_SCI) {
+#     sci_theta[n_sci] ~ dirichlet(to_vector(tx_alpha[sci_to_tx[n_sci]]));
+#   }
+# }
+# generated quantities {
+#   // Carbon
+#   vector[N_TX] tx_c_fp;
+#   vector[K] tx_feed_c_fp[N_TX]; // array of k feeds and N_TX taxa groups
+#   vector[N_TX] tx_sum_feed_c_fp;
+#   vector[N_SCI] sci_c_fp;
+#   vector[K] sci_feed_c_fp[N_SCI];
+#   vector[N_SCI] sci_sum_feed_c_fp;
+#   // Nitrogen
+# 
+#   // Phosphorus
+# 
+#   // Land
+# 
+#   // Water
+# 
+#   // Calculations
+#   for (n_tx in 1:N_TX) {
+#     tx_feed_c_fp[n_tx] = fp_c_dat .* tx_theta[n_tx];
+#     tx_sum_feed_c_fp[n_tx] = sum(tx_feed_c_fp[n_tx]);
+#     tx_c_fp[n_tx] = tx_mu[n_tx] * tx_sum_feed_c_fp[n_tx];
+#   }
+#   for (n_sci in 1:N_SCI) {
+#     sci_feed_c_fp[n_sci] = fp_c_dat .* sci_theta[n_sci];
+#     sci_sum_feed_c_fp[n_sci] = sum(sci_feed_c_fp[n_sci]);
+#     sci_c_fp[n_sci] = sci_mu[n_sci] * sci_sum_feed_c_fp[n_sci];
+#   }
 # }'
 
-#### LEFT OFF HERE - generated quantities species weightings
-#NORMAL distribution model - converges!
+
+# NORMAL distribution hierarchical model
 stan_no_na <- 'data {
-  // data for gamma model for FCR
+  // data for normal model for FCR
   int<lower=0> N;  // number of observations
-  vector<lower=0>[N] total_ghg; // data
+  vector<lower=0>[N] x; // fcr data
   int N_TX; // number of taxa groups
   int N_SCI; // number of scientific names
   int n_to_sci[N]; // sciname index
   int sci_to_tx[N_SCI]; // taxa-group indices
+
+  // data for dirichlet model for feed
+  int K; // number of feed types
+  simplex[K] feed_weights[N]; // array of observed feed weights simplexes
+  int sci_kappa[N_SCI]; // number of observations per sci-name
+  int tx_kappa[N_TX]; // number of observations per taxa group
+
+  // constants for generated quantities
+  vector[K] fp_c_dat;
+  //vector[K] fp_n_dat;
+  //vector[K] fp_p_dat;
+  //vector[K] fp_land_dat;
+  //vector[K] fp_water_dat;
+  
+  // data for slicing vectors for calculating weighted means
   vector<lower=0>[N_SCI] sci_w; // sci-level production weights
   int where_tx[N_SCI]; // order sci_to_tx by taxa-level
   int n_sci_in_tx[N_TX]; // number of sci in each taxa-level, ordered by taxa-level
   int slice_where_tx[N_TX + 1]; // breaks in where_tx by taxa-level
 }
 parameters {
-  // total ghg
+  // FCR model:
   vector<lower=0>[N_TX] tx_mu;
-  real<lower=0> tx_sigma;
   vector<lower=0>[N_SCI] sci_mu;
-  real<lower=0> sci_sigma;
+  vector<lower=0>[N_TX] tx_sigma;
+  vector<lower=0>[N_SCI] sci_sigma;
+  //real<lower=0> tx_sigma;
+  //real<lower=0> sci_sigma;
+  
+
+  // Feed proportion model:
+  simplex[K] sci_phi[N_SCI];
+  simplex[K] sci_theta[N_SCI]; // vectors of estimated sci-level feed weight simplexes
+  simplex[K] tx_phi[N_TX];
+  simplex[K] tx_theta[N_TX];
+}
+transformed parameters {
+  // define params for dirichlet model for feed proportions
+  vector<lower=0>[K] sci_alpha[N_SCI];
+  vector<lower=0>[K] tx_alpha[N_TX];
+
+  // dirichlet model reparameterization
+  // reparameterize alphas as a vector of means (phi) and counts (kappas)
+  // theta is expected value of mean feed weights
+  // kappa is strength of the prior measured in number of prior observations (minus K)
+  for (n_tx in 1:N_TX) {
+    tx_alpha[n_tx] = tx_kappa[n_tx] * tx_theta[n_tx];
+  }
+
+  for (n_sci in 1:N_SCI) {
+    sci_alpha[n_sci] = sci_kappa[n_sci] * sci_theta[n_sci];
+  }
 }
 model {
-  // define priors for gamma model
-  // Put priors on mu and sigma:
-  //tx_mu ~ uniform(0, 100); //
-  //sci_mu ~ uniform(0, 100);
+  // example priors for gamma model for FCRs
+  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+  //tx_mu ~ uniform(0, 100);
   //tx_sigma ~ uniform(0, 100);
-  
-  // Weakly informative prior on sigmas
-  sci_sigma ~ cauchy(0, 2500);
+
+  // example priors for dirichlet model for feed proportions
+  // sci_phi defined as sci_phi[n_to_sci][K]
+  // sci_phi[2][1] ~ normal(0.13, 5); // mean for Oncorhynhchus mykiss soy feed
 
   // likelihood
-  // normal model sci-name and taxa-level energy-specific ghg
-  total_ghg ~ normal(sci_mu[n_to_sci], sci_sigma);
-  sci_mu ~ normal(tx_mu[sci_to_tx], tx_sigma);
+  // normal model sci-name and taxa-level
+  for (n in 1:N){
+    x[n] ~ normal(sci_mu[n_to_sci[n]], sci_sigma[n_to_sci[n]]);
+  }
 
-  // if estimating individual inputs separately
-  //electric_ghg ~ normal(sci_mu_electric[n_to_sci], sci_sigma_electric);
-  //sci_mu_electric ~ normal(tx_mu_electric[sci_to_tx], tx_sigma_electric);
+  for (n_sci in 1:N_SCI){
+    sci_mu[n_sci] ~ normal(tx_mu[sci_to_tx[n_sci]], tx_sigma[sci_to_tx[n_sci]]);
+  }
 
-  //diesel_ghg ~ normal(sci_mu_diesel[n_to_sci], sci_sigma_diesel);
-  //sci_mu_diesel ~ normal(tx_mu_diesel[sci_to_tx], tx_sigma_diesel);
-
-  //petrol_ghg ~ normal(sci_mu_petrol[n_to_sci], sci_sigma_petrol);
-  //sci_mu_petrol ~ normal(tx_mu_petrol[sci_to_tx], tx_sigma_petrol);
-
-  //natgas_ghg ~ normal(sci_mu_natgas[n_to_sci], sci_sigma_natgas);
-  //sci_mu_natgas ~ normal(tx_mu_natgas[sci_to_tx], tx_sigma_natgas);
+  // dirichlet model
+  // use data to estimate sci-level dirichlet shape param (alphas)
+  for (n in 1:N) {
+    feed_weights[n] ~ dirichlet(to_vector(sci_alpha[n_to_sci[n]]));
+  }
+  // use sci-level thetas to estimate taxa-level dirichlet shape param (alphas)
+  for (n_sci in 1:N_SCI) {
+    sci_theta[n_sci] ~ dirichlet(to_vector(tx_alpha[sci_to_tx[n_sci]]));
+  }
 }
-generated quantities{
-vector[N_SCI] sci_mu_w; // weighted means
-vector[N_TX] tx_out; // weighted means pooled to taxa level
+generated quantities {
+  // Carbon
+  vector[N_TX] tx_c_fp;
+  vector[N_SCI] sci_c_fp;
 
-// test for single taxa
-//real tx_out; // weighted means pooled to taxa level
-//vector[3] sci_mu_w_vec; // vector of sci_mu in tx level 1
-//int indxs[3] = {6, 20, 21};
-//sci_mu_w = sci_mu .* sci_w; // weighted sci-level means
-//sci_mu_w_vec = sci_mu_w[indxs];
-//tx_out = sum(sci_mu_w_vec);
+  // Nitrogen
+  //vector[N_TX] tx_n_fp;
+  //vector[N_SCI] sci_n_fp;
 
-// test for single output ragged array
-//real tx_out; 
-//vector[n_sci_in_tx[1]] sci_mu_w_vec; // j = 3 is first element of n_sci_in_tx
-//sci_mu_w_vec = sci_mu_w[where_tx[1:slice_where_tx[1]]]; // 
-//tx_out = sum(sci_mu_w_vec);
+  // Phosphorus
+  //vector[N_TX] tx_p_fp;
+  //vector[N_SCI] sci_p_fp;
 
-sci_mu_w = sci_mu .* sci_w; // weighted sci-level means
+  // Land
+  //vector[N_TX] tx_land_fp;
+  //vector[N_SCI] sci_land_fp;
+
+  // Water
+  //vector[N_TX] tx_water_fp;
+  //vector[N_SCI] sci_water_fp;
+  
+  // Declare vectors for weightings
+// Carbon
+vector[N_SCI] sci_mu_w_c; // weighted means
+vector[N_TX] tx_out_c; // weighted means pooled to taxa level
+
+// Nitrogen
+//vector[N_SCI] sci_mu_w_n; // weighted means
+//vector[N_TX] tx_out_n; // weighted means pooled to taxa level
+
+// Phosphorus
+//vector[N_SCI] sci_mu_w_p; // weighted means
+//vector[N_TX] tx_out_p; // weighted means pooled to taxa level
+
+// Land
+//vector[N_SCI] sci_mu_w_land; // weighted means
+//vector[N_TX] tx_out_land; // weighted means pooled to taxa level
+
+// Water
+//vector[N_SCI] sci_mu_w_water; // weighted means
+//vector[N_TX] tx_out_water; // weighted means pooled to taxa level
+
+
+  // Calculations
+  for (n_tx in 1:N_TX) {
+    tx_c_fp[n_tx] = tx_mu[n_tx] * sum(fp_c_dat .* tx_theta[n_tx]);
+    //tx_n_fp[n_tx] = tx_mu[n_tx] * sum(fp_n_dat .* tx_theta[n_tx]);
+    //tx_p_fp[n_tx] = tx_mu[n_tx] * sum(fp_p_dat .* tx_theta[n_tx]);
+    //tx_land_fp[n_tx] = tx_mu[n_tx] * sum(fp_land_dat .* tx_theta[n_tx]);
+    //tx_water_fp[n_tx] = tx_mu[n_tx] * sum(fp_water_dat .* tx_theta[n_tx]);
+  }
+  for (n_sci in 1:N_SCI) {
+    sci_c_fp[n_sci] = sci_mu[n_sci] * sum(fp_c_dat .* sci_theta[n_sci]);
+    //sci_n_fp[n_sci] = sci_mu[n_sci] * sum(fp_n_dat .* sci_theta[n_sci]);
+    //sci_p_fp[n_sci] = sci_mu[n_sci] * sum(fp_p_dat .* sci_theta[n_sci]);
+    //sci_land_fp[n_sci] = sci_mu[n_sci] * sum(fp_land_dat .* sci_theta[n_sci]);
+    //sci_water_fp[n_sci] = sci_mu[n_sci] * sum(fp_water_dat .* sci_theta[n_sci]);
+  }
+
+// Apply weightings
+sci_mu_w_c = sci_c_fp .* sci_w; // weighted sci-level means
+//sci_mu_w_n = sci_n_fp .* sci_w; // weighted sci-level means
+//sci_mu_w_p = sci_p_fp .* sci_w; // weighted sci-level means
+//sci_mu_w_land = sci_land_fp .* sci_w; // weighted sci-level means
+//sci_mu_w_water = sci_water_fp .* sci_w; // weighted sci-level means
+
+
 for (n_tx in 1:N_TX){
-  vector[n_sci_in_tx[n_tx]] sci_mu_w_vec; // declare vector of sci_mu in taxa-level n_tx
-  sci_mu_w_vec = sci_mu_w[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
-  tx_out[n_tx] = sum(sci_mu_w_vec); // sum sci_mu_w_vec to pool to taxa-level
+  vector[n_sci_in_tx[n_tx]] sci_mu_w_vec_c; // declare vector of sci_mu in taxa-level n_tx
+  //vector[n_sci_in_tx[n_tx]] sci_mu_w_vec_n; // declare vector of sci_mu in taxa-level n_tx
+  //vector[n_sci_in_tx[n_tx]] sci_mu_w_vec_p; // declare vector of sci_mu in taxa-level n_tx
+  //vector[n_sci_in_tx[n_tx]] sci_mu_w_vec_land; // declare vector of sci_mu in taxa-level n_tx
+  //vector[n_sci_in_tx[n_tx]] sci_mu_w_vec_water; // declare vector of sci_mu in taxa-level n_tx
+  
+  // Carbon
+  sci_mu_w_vec_c = sci_mu_w_c[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
+  tx_out_c[n_tx] = sum(sci_mu_w_vec_c); // sum sci_mu_w_vec to pool to taxa-level
+  
+  // Nitrogen
+  //sci_mu_w_vec_n = sci_mu_w_n[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
+  //tx_out_n[n_tx] = sum(sci_mu_w_vec_n); // sum sci_mu_w_vec to pool to taxa-level
+  
+  // Phosphorus
+  //sci_mu_w_vec_p = sci_mu_w_p[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
+  //tx_out_p[n_tx] = sum(sci_mu_w_vec_p); // sum sci_mu_w_vec to pool to taxa-level
+  
+  // Land
+  //sci_mu_w_vec_land = sci_mu_w_land[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
+  //tx_out_land[n_tx] = sum(sci_mu_w_vec_land); // sum sci_mu_w_vec to pool to taxa-level
+  
+  // Water
+  //sci_mu_w_vec_water = sci_mu_w_water[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
+  //tx_out_water[n_tx] = sum(sci_mu_w_vec_c); // sum sci_mu_w_vec to pool to taxa-level
 }
 
 }'
-
-
-# FIX IT - need to finish writing this out as total_ghg
-# GAMMA distribution model no levels
-# stan_no_na <- 'data {
-#   // data for gamma model for FCR
-#   int<lower=0> N;  // number of observations
-#   vector<lower=0>[N] total_ghg; // data
-#   int N_SCI; // number of scientific names
-#   int n_to_sci[N]; // sciname index
-# }
-# parameters {
-#   // total ghg
-#   vector<lower=0>[N_SCI] sci_mu;
-#   real<lower=0> sci_sigma;
-# }
-# transformed parameters {
-#   // define transofrmed params for gamma model for FCRs
-#   vector<lower=0>[N_SCI] sci_shape_electric;
-#   vector<lower=0>[N_SCI] sci_rate_electric;
-#   vector<lower=0>[N_SCI] sci_shape_diesel;
-#   vector<lower=0>[N_SCI] sci_rate_diesel;
-#   vector<lower=0>[N_SCI] sci_shape_petrol;
-#   vector<lower=0>[N_SCI] sci_rate_petrol;
-#   vector<lower=0>[N_SCI] sci_shape_natgas;
-#   vector<lower=0>[N_SCI] sci_rate_natgas;
-# 
-#   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
-#   sci_shape_electric[n_to_sci] = square(sci_mu_electric[n_to_sci]) ./ square(sci_sigma_electric);
-#   sci_rate_electric[n_to_sci] = sci_mu_electric[n_to_sci] ./ square(sci_sigma_electric);
-# 
-#   sci_shape_diesel[n_to_sci] = square(sci_mu_diesel[n_to_sci]) ./ square(sci_sigma_diesel);
-#   sci_rate_diesel[n_to_sci] = sci_mu_diesel[n_to_sci] ./ square(sci_sigma_diesel);
-# 
-#   sci_shape_petrol[n_to_sci] = square(sci_mu_petrol[n_to_sci]) ./ square(sci_sigma_petrol);
-#   sci_rate_petrol[n_to_sci] = sci_mu_petrol[n_to_sci] ./ square(sci_sigma_petrol);
-# 
-#   sci_shape_natgas[n_to_sci] = square(sci_mu_natgas[n_to_sci]) ./ square(sci_sigma_natgas);
-#   sci_rate_natgas[n_to_sci] = sci_mu_natgas[n_to_sci] ./ square(sci_sigma_natgas);
-# 
-# }
-# model {
-#   // define priors for gamma model
-#   // Put priors on mu and sigma:
-#   //tx_mu ~ uniform(0, 100); // 
-#   //sci_mu ~ uniform(0, 100);
-#   //tx_sigma ~ uniform(0, 100);
-# 
-#   // likelihood
-#   // gamma model sci-name and taxa-level
-#   for (n in 1:N){
-#     electric_ghg[n] ~ gamma(sci_shape_electric[n_to_sci[n]], sci_rate_electric[n_to_sci[n]]);
-#     diesel_ghg[n] ~ gamma(sci_shape_diesel[n_to_sci[n]], sci_rate_diesel[n_to_sci[n]]);
-#     petrol_ghg[n] ~ gamma(sci_shape_petrol[n_to_sci[n]], sci_rate_petrol[n_to_sci[n]]);
-#     natgas_ghg[n] ~ gamma(sci_shape_natgas[n_to_sci[n]], sci_rate_natgas[n_to_sci[n]]);
-#   }
-# }'
 
 
 no_na_mod <- stan_model(model_code = stan_no_na)
@@ -1332,74 +1572,347 @@ no_na_mod <- stan_model(model_code = stan_no_na)
 
 # Fit model:
 # Set seed while testing
-fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 5000, control = list(adapt_delta = 0.99))
+fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 2500, control = list(adapt_delta = 0.99))
+#fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 5000, control = list(adapt_delta = 0.99))
 summary(fit_no_na)$summary
 
 #launch_shinystan(fit_no_na)
-
 ######################################################################################################
-# PLOTS
-plot_theme <- theme(title = element_text(size = 20),
-                    axis.title.x = element_text(size = 20),
-                    axis.text=element_text(size=16, color = "black"))
+# RESTARTING POINT
+# rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
+#                            "lca_dat_clean_groups", "feed_model_dat_categories",
+#                            "full_feed_dat", "full_fcr_dat", "feed_footprint_dat", "fit_no_na"))])
+#save.image(file.path(outdir, paste(Sys.Date(), "_feed-impacts_", set_allocation, "-allocation_all-data-prior-to-plotting.RData", sep = "")))
 
-var_title = "kg CO2-eq per tonne"
-groups_title = ""
-plot_title = "Aquaculture GHG emissions"
-
-# Plot data for model
-
-ggplot(ghg_footprint_dat, aes(x = total_ghg, y = taxa)) + 
-  geom_boxplot(outlier.shape = NA) + 
-  geom_jitter(aes(color = electric_data_type)) + # note: data type is the same across all variables
-  labs(x = var_title, y = groups_title, color = "data type", title = plot_title) +
-  theme_classic() +
-  plot_theme
-#ggsave(filename = file.path(outdir, paste("plot_total-ghg-data.png", sep = "")), height = 8.5, width = 11)
-
+# datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+# outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+# load(file.path(outdir, "2020-12-17_feed-impacts_Mass-allocation_all-data-prior-to-plotting.RData"))
+# set_allocation <- "Mass"
+######################################################################################################
 # PLOT RESULTS
+
+# SET THEME
+sci_plot_theme <- theme(title = element_text(size = 18),
+                    axis.title.x = element_text(size = 16),
+                    axis.text=element_text(size=14, color = "black"))
+tx_plot_theme <- theme(title = element_text(size = 20),
+                        axis.title.x = element_text(size = 20),
+                        axis.text=element_text(size=20, color = "black"))
+
 # Key for naming sci and taxa levels
-index_key <- ghg_footprint_dat %>%
-  select(clean_sci_name, sci, taxa, tx) %>%
-  unique()
+# Get full taxa group names back
+index_key <- feed_footprint_dat %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_obs = n()) %>%
+  ungroup() %>%
+  select(clean_sci_name, sci, taxa, tx, n_obs) %>%
+  unique() %>%
+  arrange(taxa) %>%
+  mutate(taxa = as.character(taxa),
+         full_taxa_name = case_when(taxa == "hypoph_carp" ~ "bighead/silverhead carp",
+                                    taxa == "misc_marine" ~ "misc marine fishes",
+                                    taxa == "misc_fresh" ~ "misc freshwater fishes",
+                                    taxa == "misc_diad" ~ "misc diadromous fishes",
+                                    taxa == "fresh_crust" ~ "freshwater crustaceans",
+                                    TRUE ~ taxa),
+         taxa = as.factor(taxa),
+         full_taxa_name = as.factor(full_taxa_name))
 
 # Use tidybayes + ggdist for finer control of aes mapping (instead of bayesplots) 
 get_variables(fit_no_na)
 
-# Sci-level footprints as point intervals:
+# WEIGHTED OUTPUTS:
+# Sci-level feed footprints as point intervals:
+# Carbon
 fit_no_na %>%
-  spread_draws(sci_mu[sci]) %>%
+  spread_draws(sci_mu_w_c[sci]) %>%
   median_qi(.width = 0.95) %>%
   left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
-  ggplot(aes(y = clean_sci_name, x = sci_mu, xmin = .lower, xmax = .upper)) +
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_mu_w_c, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
   theme_classic() + 
-  plot_theme + 
-  labs(x = var_title, y = groups_title, title = plot_title)
-ggsave(filename = file.path(outdir, "plot_total-ghg-footprint_sci-level.png"), width = 11, height = 8.5)
+  sci_plot_theme + 
+  labs(x = "kg CO2-eq per tonne", y = "", title = "Carbon", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_carbon_", set_allocation, "-allocation_sci-level-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
-
-# Tx-level UNWEIGHTED footprints as point intervals:
+# Nitrogen
 fit_no_na %>%
-  spread_draws(tx_mu[tx]) %>%
+  spread_draws(sci_mu_w_n[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_mu_w_n, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = "kg N-eq per tonne", y = "", title = "Nitrogen", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_nitrogen_", set_allocation, "-allocation_sci-level-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+# Phosphorus
+fit_no_na %>%
+  spread_draws(sci_mu_w_p[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_mu_w_p, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = "kg P-eq per tonne", y = "", title = "Phosphorus", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_phosphorus_", set_allocation, "-allocation_sci-level-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+# Land
+fit_no_na %>%
+  spread_draws(sci_mu_w_land[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_mu_w_land, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = bquote('m'^2~'a per tonne'), y = "", title = "Land", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_land_", set_allocation, "-allocation_sci-level-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+# Water
+fit_no_na %>%
+  spread_draws(sci_mu_w_water[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_mu_w_water, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = bquote('m'^3~'per tonne'), y = "", title = "Water", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_water_", set_allocation, "-allocation_sci-level-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+# Taxa-level feed footprints as point intervals:
+# Carbon
+fit_no_na %>%
+  spread_draws(tx_out_c[tx]) %>%
   median_qi(.width = 0.95) %>%
   left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  ggplot(aes(y = taxa, x = tx_mu, xmin = .lower, xmax = .upper)) +
+  ggplot(aes(y = full_taxa_name, x = tx_out_c, xmin = .lower, xmax = .upper)) +
   geom_pointinterval() +
+  #stat_halfeye(aes(slab_fill = full_taxa_name)) +
   theme_classic() + 
-  plot_theme + 
-  labs(x = var_title, y = groups_title, title = plot_title)
-ggsave(filename = file.path(outdir, "plot_total-ghg-footprint_tx-level-UNWEIGHTED.png"), width = 11, height = 8.5)
+  tx_plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg CO2-eq per tonne", y = "", title = "Carbon")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_carbon_", set_allocation, "-allocation_taxa-level-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
-# Tx-level WEIGHTED footprints as point intervals:
+# Nitrogen
 fit_no_na %>%
-  spread_draws(tx_out[tx]) %>%
+  spread_draws(tx_out_n[tx]) %>%
   median_qi(.width = 0.95) %>%
   left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  ggplot(aes(y = taxa, x = tx_out, xmin = .lower, xmax = .upper)) +
+  ggplot(aes(y = full_taxa_name, x = tx_out_n, xmin = .lower, xmax = .upper)) +
+  geom_pointinterval() +
+  #stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  tx_plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg N-eq per tonne", y = "", title = "Nitrogen")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_nitrogen_", set_allocation, "-allocation_taxa-level-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+
+# Phosphorus
+fit_no_na %>%
+  spread_draws(tx_out_p[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_out_p, xmin = .lower, xmax = .upper)) +
+  geom_pointinterval() +
+  #stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  tx_plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg P-eq per tonne", y = "", title = "Phosphorus")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_phosphorus_", set_allocation, "-allocation_taxa-level-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+
+# Land
+fit_no_na %>%
+  spread_draws(tx_out_land[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_out_land, xmin = .lower, xmax = .upper)) +
+  geom_pointinterval() +
+  #stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  tx_plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = bquote('m'^2~'a per tonne'), y = "", title = "Land")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_land_", set_allocation, "-allocation_taxa-level-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+# Water
+fit_no_na %>%
+  spread_draws(tx_out_water[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_out_water, xmin = .lower, xmax = .upper)) +
+  geom_pointinterval() +
+  #stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  tx_plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = bquote('m'^3~'per tonne'), y = "", title = "Water")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_water_", set_allocation, "-allocation_taxa-level-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+
+
+# UNWEIGHTED OUTPUTS:
+# Sci-level feed footprints as point intervals:
+# Carbon
+fit_no_na %>%
+  spread_draws(sci_c_fp[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_c_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
   theme_classic() + 
-  plot_theme + 
-  labs(x = var_title, y = groups_title, title = plot_title)
-ggsave(filename = file.path(outdir, "plot_total-ghg-footprint_tx-level-WEIGHTED.png"), width = 11, height = 8.5)
+  sci_plot_theme + 
+  labs(x = "kg CO2-eq per tonne", y = "", title = "Carbon", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_carbon_", set_allocation, "-allocation_sci-level.png", sep = "")), width = 11, height = 8.5)
+
+# Nitrogen
+fit_no_na %>%
+  spread_draws(sci_n_fp[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_n_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = "kg N-eq per tonne", y = "", title = "Nitrogen", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_nitrogen_", set_allocation, "-allocation_sci-level.png", sep = "")), width = 11, height = 8.5)
+
+# Phosphorus
+fit_no_na %>%
+  spread_draws(sci_p_fp[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_p_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = "kg P-eq per tonne", y = "", title = "Phosphorus", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_phosphorus_", set_allocation, "-allocation_sci-level.png", sep = "")), width = 11, height = 8.5)
+
+# Land
+fit_no_na %>%
+  spread_draws(sci_land_fp[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_land_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = bquote('m'^2~'a per tonne'), y = "", title = "Land", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_land_", set_allocation, "-allocation_sci-level.png", sep = "")), width = 11, height = 8.5)
+
+# Water
+fit_no_na %>%
+  spread_draws(sci_water_fp[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_water_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = bquote('m'^3~'per tonne'), y = "", title = "Water", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_water_", set_allocation, "-allocation_sci-level.png", sep = "")), width = 11, height = 8.5)
+
+# Taxa-level feed footprints as point intervals:
+# Carbon
+fit_no_na %>%
+  spread_draws(tx_c_fp[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_c_fp, xmin = .lower, xmax = .upper)) +
+  geom_pointinterval() +
+  #stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  tx_plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg CO2-eq per tonne", y = "", title = "Carbon")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_carbon_", set_allocation, "-allocation_taxa-level.png", sep = "")), width = 11, height = 8.5)
+
+# Nitrogen
+fit_no_na %>%
+  spread_draws(tx_n_fp[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_n_fp, xmin = .lower, xmax = .upper)) +
+  geom_pointinterval() +
+  #stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  tx_plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg N-eq per tonne", y = "", title = "Nitrogen")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_nitrogen_", set_allocation, "-allocation_taxa-level.png", sep = "")), width = 11, height = 8.5)
+
+
+# Phosphorus
+fit_no_na %>%
+  spread_draws(tx_p_fp[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_p_fp, xmin = .lower, xmax = .upper)) +
+  geom_pointinterval() +
+  #stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  tx_plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = "kg P-eq per tonne", y = "", title = "Phosphorus")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_phosphorus_", set_allocation, "-allocation_taxa-level.png", sep = "")), width = 11, height = 8.5)
+
+
+# Land
+fit_no_na %>%
+  spread_draws(tx_land_fp[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_land_fp, xmin = .lower, xmax = .upper)) +
+  geom_pointinterval() +
+  #stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  tx_plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = bquote('m'^2~'a per tonne'), y = "", title = "Land")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_land_", set_allocation, "-allocation_taxa-level.png", sep = "")), width = 11, height = 8.5)
+
+# Water
+fit_no_na %>%
+  spread_draws(tx_water_fp[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_water_fp, xmin = .lower, xmax = .upper)) +
+  geom_pointinterval() +
+  #stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  theme_classic() + 
+  tx_plot_theme + 
+  theme(legend.position = "none") +
+  labs(x = bquote('m'^3~'per tonne'), y = "", title = "Water")
+ggsave(filename = file.path(outdir, paste("plot_feed-impact_water_", set_allocation, "-allocation_taxa-level.png", sep = "")), width = 11, height = 8.5)
+
+
+
+
+
+# OPTION 2: Taxa-level plots with color themes:
+# If we want to mimic bayesplot color schemes, can get hexadecimal colors and input manually to stat_halfeye aesthetics
+color_scheme_get("blue")
+color_scheme_get("green")
+
+
+
+
 
