@@ -242,7 +242,7 @@ weighted_livestock <- weighted_pig %>%
 
 # Fishery products (currently unweighted since fish products are not in FAOSTAT trade)
 weighted_fish <- feed_fp %>%
-  filter(Input.type == "Fishery") %>%
+  filter(Input.type == "Fishery") %>% 
   group_by(Input.type, Impact.category, Allocation, Units) %>%
   # If weighting soy ingredient types, do here along with country weightings
   summarise(ave_stressor = mean(Value))
