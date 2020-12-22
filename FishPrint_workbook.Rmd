@@ -96,6 +96,7 @@ knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
 library(countrycode)
 library(ggplot2)
+library(stringr)
 
 source("Functions.R")
 
@@ -131,7 +132,9 @@ feed_fp <- clean.feedFP(feed_fp)
 
 # N and P content of fish in % of DM
 fishNutrition <- read.csv(file.path(datadir, "FishGenus.csv"), stringsAsFactors = FALSE)
+
 fishNutrition <-fishNutrition %>%filter(Preparation=='raw')   #filter out all non raw observations (e.g. dried, cooked)
+
 
 fishNutrition <- fishNutrition %>%
   mutate(
@@ -141,13 +144,17 @@ fishNutrition <- fishNutrition %>%
     P_fat = fishP_viaFat(Water,Fat.total),
     N_built_in = Nitrogen.total*100/(100-Water),
     P_built_in = Phosphorus/1000*100/(100-Water)) %>% #conversion to units of percentages. Nitrogen.total is in units of g/100 edible gram; Phosphorous in the dataset is in mg/100 edible gram
-  group_by(Scientific.Name) %>%
+  group_by(Scientific.Name, Genus) %>%
   summarise(N = mean(N, na.rm = TRUE), P = mean(P, na.rm = TRUE), 
             N_fat = mean(N_fat, na.rm = TRUE), P_fat = mean(P_fat, na.rm = TRUE), 
-            N_built_in = mean(N_built_in, na.rm = TRUE), .groups = "drop") 
+            N_built_in = mean(N_built_in, na.rm = TRUE), .groups = "drop")
+
+           
+
+
 
 lca <- lca %>%
-  left_join(fishNutrition, by = "Scientific.Name")
+  left_join(fishNutrition, by = c("clean_sci_name" = "Scientific.Name"))
 
 #N and P content of feed in % of DM (read from feed composition tables, USDA 1982)
 feedNutrition <-clean_feedNutrition(feedNutrition_data = 
