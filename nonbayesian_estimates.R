@@ -6,6 +6,7 @@
 library(tidyverse)
 library(ggplot2)
 library(ggthemes)
+library(countrycode)
 
 source("Functions.R")
 
@@ -122,13 +123,16 @@ df_onfarm_NP <- df %>%
   pivot_longer(feed_soy:feed_animal, names_to = c("drop", "feed_type"), names_sep = "_", values_to = "feed_proportion") %>%
   select(-drop) %>%
   left_join(feed_NP, by = "feed_type") %>%
-  mutate(feed_N = feed_proportion*(N/100), feed_P = feed_proportion*(P/100)) %>%
+  mutate(feed_N = feed_proportion*(N/100), 
+         feed_P = feed_proportion*(P/100)) %>%
   select(-c("feed_proportion", "N", "P")) %>%
   group_by(study_id,Country, iso3c, clean_sci_name, taxa, intensity, system, fcr) %>%
-  summarise(feed_N = fcr*sum(feed_N), feed_P = fcr*sum(feed_P)) %>%
+  summarise(feed_N = fcr*sum(feed_N), 
+            feed_P = fcr*sum(feed_P)) %>%
   # Subtract product N and P
   left_join(fish_NP, by = c("clean_sci_name" = "Scientific.Name")) %>%
-  mutate(N_emissions_kg_per_t = 1000*(feed_N - N_t_liveweight_t), P_emissions_kg_per_t = 1000*(feed_P - P_t_liveweight_t))
+  mutate(N_emissions_kg_per_t = 1000*(feed_N - N_t_liveweight_t), 
+         P_emissions_kg_per_t = 1000*(feed_P - P_t_liveweight_t))
 
 # FIX IT: These values seem quite high. Talk to Alon about going through feed N and P code and for someone to double check all units
 
@@ -149,25 +153,25 @@ df_onfarm_land_taxa <- df_onfarm_land %>%
 #_______________________________________________________________________________________________________________________#
 # Calculate on-farm water
 #_______________________________________________________________________________________________________________________#
-evap <- read.csv("Data/clim_summarise_by_country.csv")
+evap <- read.csv(file.path(datadir, "20201222_clim_summarise_by_country.csv"))
 evap$iso3c <- countrycode(evap$admin, origin = "country.name", destination = "iso3c")
 evap <- evap %>%
-  rename(evap_rate = country_level_mean) %>%
-  select(iso3c, evap_rate) %>%
+  mutate(evap_rate_m3_per_m2 = mean_evap_mm/1000) %>%
   filter(!is.na(iso3c))
 
 # Bring back country codes
 cc <- df %>%
   select(study_id, iso3c)
 
-fw_taxa <- c("oth_carp", "catfish", "hypoph_carp", "tilapia")
+fw_taxa <- c("oth_carp", "catfish", "hypoph_carp", "tilapia", "trouts", "fresh_crust")
   
 # FIX IT: Units currently unknown
 df_onfarm_water <- df_onfarm_land %>%
   left_join(cc, by = "study_id") %>%
   left_join(evap, by = "iso3c") %>%
   # Apply evap only to freshwater ponds
-  mutate(on_farm_water = ifelse(taxa %in% fw_taxa & system == "Ponds", yield*evap_rate, 0))
+  mutate(on_farm_water = ifelse(taxa %in% fw_taxa & system %in% c("Ponds", "Recirculating and tanks"), 
+                                yield*evap_rate_m3_per_m2, 0))
 
 df_onfarm_water_taxa <- df_onfarm_water %>% 
   group_by(taxa) %>% 
