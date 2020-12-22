@@ -70,13 +70,13 @@ mm_riskindex_aveghg <- mm_risk_aveghg %>%
 ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index)) +
   geom_point() +
   geom_errorbar(aes(xmin=ghg.ave-(1.96*ghg.se), xmax=ghg.ave+(1.96*ghg.se)), width=.1) +
-  labs(y = "", x = "kg CO2-eq per tonne", size = "N. Species", colour = "Risk") +
+  labs(y = "Risk index", x = "kg CO2-eq per tonne", size = "N. Species", colour = "Risk") +
   theme_clean() +
   facet_wrap(~gear, nrow = length(unique(mm_riskindex_aveghg$gear)))
 
 ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index, colour = factor(gear))) +
   geom_point() +
   geom_errorbar(aes(xmin=ghg.ave-(1.96*ghg.se), xmax=ghg.ave+(1.96*ghg.se)), width=.1) +
-  labs(y = "", x = "kg CO2-eq per tonne", size = "N. Species", colour = "Risk") +
+  labs(y = "Risk index", x = "kg CO2-eq per tonne", size = "N. Species", colour = "Risk") +
   theme_clean() 
 
