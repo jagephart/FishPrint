@@ -21,45 +21,17 @@ rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups", "datadir", "outdir"))])
 # Select relevant data columns and arrange by categorical info
 # Clean harvest data (do all data cleaning like this up top) or move this to Functions.R
 land_model_dat_categories <- lca_dat_clean_groups %>%
-  select(study_id, yield = Yield_t_per_Ha, harvest_raw = Product, clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
-  arrange(clean_sci_name, taxa, intensity, system) %>%
-  # First remove any harvest_raw entries that don't make sense
-  mutate(harvest_raw = case_when(harvest_raw == "t tonne fresh" ~ "",
-                                 harvest_raw != "" ~ harvest_raw)) %>% # insert NAs for missing data (case_when inserts NAs when no cases match)
-  # convert "tonne" and "tonnes" to "t"
-  mutate(harvest_raw = str_replace(harvest_raw, pattern = "\\btonne\\b|\\btonnes\\b", replacement = "t")) %>% # \\b indicate word boundaries
-  # Separate tonnage and kg from state/presentation description
-  separate(col = harvest_raw, into = c("weight", "state_presentation"), sep = "(?<=\\bt\\b)|(?<=\\bkg\\b)", remove = FALSE) %>%
-  # Find entries that have to be dealt with manually
-  #filter(is.na(weight)==FALSE & is.na(state_presentation))
-  mutate(weight = case_when(str_detect(harvest_raw, "= 460 g") ~ "0.46 kg",
-                            TRUE ~ weight)) %>%
-  mutate(state_presentation = case_when(str_detect(harvest_raw, "= 460 g") ~ "live weight",
-                                        TRUE ~ state_presentation)) %>%
-  # Now separate column weight into weight and weight_unit
-  separate(weight, into = c("weight", "weight_unit"), sep = " ", remove = TRUE) %>%
-  # Create standardized column "weight" (in units tonnes)
-  mutate(weight = as.numeric(weight, na.rm = TRUE)) %>%
-  mutate(weight = case_when(weight_unit == "t" ~ weight,
-                            weight_unit == "kg" ~ weight / 1000,
-                            TRUE ~ NA_real_)) %>%
-  # FIX IT - Create standardized unit "harvest" by multiplying weight by conversion factor?? does it matter?
-  #mutate(harvest = case_when(str_detect(state_presentation, pattern = "fresh|live" ~ weight)))
-  # For now, just use weight:
-  rename(harvest = weight)
-
-# Get feed footprint data
-source("Functions.R")
-fp_dat <- read.csv(file.path(datadir, "Feed_impact_factors_20201203.csv"))
-fp_clean <- clean.feedFP(fp_dat)
+  select(study_id, yield = Yield_m2_per_t, clean_sci_name, taxa, intensity = Intensity, system = Production_system_group) %>%
+  filter(system %in% c("Ponds", "Recirculating and tanks")) %>%
+  arrange(clean_sci_name, taxa, intensity, system)
 
 ######################################################################################################
-# Step 1: Model yield as taxa + intensity (no system because these are all the same systems)
+# Step 1: Model yield as taxa + intensity + system
 # Remove all NAs and model these data, then use the model to predict yield for those data with a complete set of predictors
 yield_no_na <- land_model_dat_categories %>%
   filter(yield != 0)  %>% # This also automatically drops yield == NA
-  filter(is.na(intensity)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
-  select(study_id, yield, clean_sci_name, taxa, intensity)
+  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>% # complete predictors - i.e., both intensity AND system are non-NA
+  select(study_id, yield, clean_sci_name, taxa, intensity, system)
 
 # See which ones have missing predictors: land_model_dat_categories %>% filter(is.na(yield)==FALSE & (is.na(intensity) | is.na(system)))
 
@@ -71,12 +43,13 @@ X_taxa <- model.matrix(object = ~ 1 + taxa,
 taxa_sd <- apply(X_taxa[,-1], MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_taxa_scaled <- scale(X_taxa[,-1], center=TRUE, scale=2*taxa_sd)
 
-# Not including system since there's no variation in available data
-# Format intensity as ordinal variable, then center and scale
+# Format intensity and system as ordinal variable, then center and scale
 X_ordinal <- yield_no_na %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed) 
   mutate(intensity = as.numeric(intensity)) %>%
-  select(intensity) %>%
+  mutate(system = as.numeric(system)) %>%
+  select(intensity, system) %>%
   as.matrix()
 ordinal_sd<-apply(X_ordinal, MARGIN=2, FUN=sd, na.rm=TRUE) # Center all non-intercept variables and scale by 2 standard deviations (ignoring NAs)
 X_ordinal_scaled <- scale(X_ordinal, center=TRUE, scale=2*ordinal_sd)
@@ -106,10 +79,9 @@ fit_yield_no_na <- brm(yield_brms, data = yield_brms_data,
 
 ######################################################################################################
 # Use model to predict NAs for studies with complete set of predictors
-# Intensity must be non-NA
+# Intensity and system must be non-NA
 yield_complete_predictors <- land_model_dat_categories %>%
-  filter(yield != 0 | is.na(yield))  %>% # First drop the zeroes; Have to explicitly include is.na(yield) otherwise NA's get dropped by yield != 0
-  filter(is.na(intensity)==FALSE) %>%
+  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>%
   filter(is.na(yield)) # Now, filter to just the NAs
 
 taxa_not_modeled <- setdiff(unique(yield_complete_predictors$taxa), unique(yield_no_na$taxa)) # these taxa were never modeled so they can't be predicted below
@@ -127,7 +99,15 @@ setdiff(unique(yield_no_na$taxa), unique(yield_complete_predictors$taxa))
 sort(unique(yield_no_na$taxa))
 yield_complete_predictors <- yield_complete_predictors %>%
   mutate(taxa = as.factor(taxa))
-levels(yield_complete_predictors$taxa) <- list(fresh_crust = "fresh_crust", misc_fresh = "misc_fresh", misc_marine = "misc_marine", oth_carp = "oth_carp", shrimp = "shrimp", tilapia = "tilapia")
+levels(yield_complete_predictors$taxa) <- list(catfish = "catfish",
+                                               hypoph_carp = "hypoph_carp",
+                                               milkfish = "milkfish",
+                                               misc_marine = "misc_marine",
+                                               oth_carp = "oth_carp", 
+                                               salmon = "salmon", 
+                                               shrimp = "shrimp",
+                                               tilapia = "tilapia",
+                                               trout = "trout")
 
 # Create NEW taxa model matrix for the studies whose feeds need to be predicted
 # Taxa categories:
@@ -140,11 +120,11 @@ X_taxa_new_scaled <- scale(X_taxa_new[,-1], center=apply(X_taxa[,-1], MARGIN = 2
 # Still only using intensity (no system)
 # Format intensity as ordinal variable, then center and scale
 X_ordinal_new <- yield_complete_predictors %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
-  #mutate(system = factor(system, levels = c("open", "semi", "closed"))) %>% # set order of factors (low = open, high = closed)
+  mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed) 
   mutate(intensity = as.numeric(intensity)) %>%
-  #mutate(system = as.numeric(system)) %>%
-  select(intensity) %>%
+  mutate(system = as.numeric(system)) %>%
+  select(intensity, system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -176,7 +156,7 @@ yield_predictions <- yield_dat_intervals %>%
   rename(yield = .value)
 
 ######################################################################################################
-# Step 2: Model yield with intensity (no taxa, no system)
+# Step 2: Model yield with intensity + system (no taxa)
 
 # Create dataframe for brms
 yield_brms_data_no_taxa <- data.frame(y = yield_no_na$yield, X_ordinal_scaled)
@@ -202,11 +182,10 @@ fit_yield_no_taxa <- brm(yield_brms_no_taxa, data = yield_brms_data_no_taxa,
 #stancode(fit_yield_no_taxa)
 
 ######################################################################################################
-# Use model (of just intensity) to predict yield for taxa that were not part of the previous model
+# Use model of intensity + system to predict yield for taxa that were not part of the previous model
 # Intensity must be non-NA
 yield_complete_predictors <- land_model_dat_categories %>%
-  filter(yield != 0 | is.na(yield))  %>% # First drop the zeroes; Have to explicitly include is.na(yield) otherwise NA's get dropped by yield != 0
-  filter(is.na(intensity)==FALSE) %>%
+  filter(is.na(intensity)==FALSE & is.na(system)==FALSE) %>%
   filter(is.na(yield)) # Now, filter to just the NAs
 
 # PROBLEM: lca_complete predictors has more taxa than originally model:
@@ -218,9 +197,11 @@ yield_complete_predictors_no_taxa <- yield_complete_predictors %>%
 
 # Format intensity as ordinal variable, then center and scale
 X_ordinal_no_taxa <- yield_complete_predictors_no_taxa %>%
-  mutate(intensity = factor(intensity, levels = c("extensive", "semi", "intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(intensity = factor(intensity, levels = c("Extensive", "Imp. extensive", "Semi-intensive", "Intensive"))) %>% # set order of factors (low = extensive, high = intensive)
+  mutate(system = factor(system, levels = c("On- and off-bottom", "Cages & pens", "Ponds", "Recirculating and tanks"))) %>% # set order of factors (low = open, high = closed) 
   mutate(intensity = as.numeric(intensity)) %>%
-  select(intensity) %>%
+  mutate(system = as.numeric(system)) %>%
+  select(intensity, system) %>%
   as.matrix()
 
 # Center and Scale: BUT now center by the mean of the original modeled dataset above AND scale by the same 2*SD calculated from the original, modeled dataset above
@@ -259,29 +240,111 @@ full_yield_dat <- yield_predictions %>%
   arrange(taxa, intensity, system, clean_sci_name) %>%
   rownames_to_column() # Arrange by taxa first, then create dummy column for plotting 
 
+# Quick check: PLOT DATA + PREDICTIONS
+ggplot(full_yield_dat, aes(x = yield, y = taxa)) + geom_boxplot(outlier.shape = NA) + geom_jitter(aes(color = data_type))
+
 # NEXT: use plot_brms_gamma_regression to produce figures for SI
+
+
+# Clear all memory except for final stan model:
+rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
+                           "lca_dat_clean_groups",
+                           "land_model_dat_categories",
+                           "full_yield_dat"))])
+
+#save.image(file.path(outdir, paste(Sys.Date(), "_on-farm-land-all-data-prior-to-aggregation.RData", sep = "")))
+
+######################################################################################################
+# RESTARTING POINT
+#datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+#outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+
+# Load on-farm land variables
+# load(file.path(outdir, "<insert Date>_on-farm-land-all-data-prior-to-aggregation.RData.RData"))
 
 ######################################################################################################
 # Aggregate up to taxa level and estimate total feed footprint
 
-# Format data for model
+
+# Load off-farm (feed-associated) variables
+load(file.path(outdir, "2020-12-20_off-farm-all-impacts-all-data-prior-to-aggregation.RData"))
+
+# Organize off-farm feed data (FCR and feed proportions)
+# FIX IT - change clean.lca in Functions.R so no less than 0.01
+# Adjust feed proportions to be no less than 0.01
+# TEMPORARY FIX:
+# Normalize the FINAL feed proportion values to be greater than 0 and no less than 0.01
+full_feed_dat <- full_feed_dat %>%
+  mutate(feed_proportion = if_else(feed_proportion < 0.01, true = 0.0105, false = feed_proportion))
+
+# Format feed_dat
+# Standardize number of significant digits (round to digist = 3)
+# Re-scale so rowsums equals 1
+feed_dat_merge <- full_feed_dat %>%
+  select(study_id, clean_sci_name, taxa, intensity, system, feed_data_type = data_type, .category, contains("feed")) %>%
+  pivot_wider(names_from = .category, values_from = feed_proportion) %>%
+  mutate(feed_soy = round(feed_soy, digits = 4),
+         feed_crops = round(feed_crops, digits = 4),
+         feed_fmfo = round(feed_fmfo, digits = 4),
+         feed_animal = round(feed_animal, digits = 4)) %>%
+  mutate(new_scale = feed_soy + feed_crops + feed_fmfo + feed_animal) %>%
+  mutate(feed_soy = feed_soy / new_scale,
+         feed_crops = feed_crops / new_scale,
+         feed_fmfo = feed_fmfo / new_scale,
+         feed_animal = feed_animal / new_scale)
+
+# Format FCR dat
+# Rename data_type to keep track of both feed vs fcr data types
+fcr_dat_merge <- full_fcr_dat %>%
+  select(study_id, clean_sci_name, taxa, intensity, system, fcr_data_type = data_type, fcr)
+
+# Format on-farm land data
 # Calculate n_in_sci and n_in_taxa in case we want to remove small sample sizes
-land_footprint_dat <- full_yield_dat %>%
-  select(study_id, clean_sci_name, taxa, intensity, data_type, yield) %>%
+land_footprint_merge <- full_yield_dat %>%
+  select(study_id, clean_sci_name, taxa, intensity, system, data_type, yield) %>%
   drop_na() %>% # Make sure to drop na before creating sci and tx indices (otherwise some indices drop out)
   group_by(clean_sci_name) %>%  
   mutate(n_in_sci = n()) %>%
   ungroup() %>%
   group_by(taxa) %>%
   mutate(n_in_taxa = n()) %>%
-  ungroup() %>%
-  #filter(n_in_taxa > 3) %>%
-  filter(n_in_sci > 3) %>%
+  ungroup() 
+
+# MERGE on and off-farm data
+land_footprint_dat <- feed_dat_merge %>%
+  full_join(fcr_dat_merge, by = intersect(names(feed_dat_merge), names(fcr_dat_merge))) %>%
+  full_join(land_footprint_merge, by = intersect(names(land_footprint_merge), names(.))) %>%
+  # FOR HIERARCHICAL LAND MODEL, NA's are actually zeroes (all Cages & Pens left out of LAND REGRESSION MODEL should be assigned to zero here)
+  # But adjust zeroes upward to allow gamma model to work
+  mutate(yield = if_else(is.na(yield), true = 0.1, false = yield)) %>%
   arrange(clean_sci_name, taxa) %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sci = as.numeric(clean_sci_name),
          taxa = as.factor(taxa),
-         tx = as.numeric(taxa)) %>%
+         tx = as.numeric(taxa)) 
+
+# FEED IMPACT CONSTANTS:
+# Choose allocation method
+# Choose Impact.category
+# IMPORTANT - multiply all values by 1000 to convert to kg CO2 per tonne (currently in kg CO2 per kg)
+impact <- "Global warming potential" # i.e., Carbon impact
+set_allocation <- "Mass"
+
+fp_dat <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv")) %>%
+  filter(Allocation == set_allocation) %>%
+  mutate(ave_stressor_per_tonne = ave_stressor * 1000)
+
+# ORDER OF feed_weights data vector: soy, crops, fmfo, animal
+head(feed_weights)
+# ORDER of footprint data vector should match this:
+set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
+
+fp_constant <- fp_dat %>%
+  filter(Impact.category == impact) %>% 
+  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
+  select(ave_stressor_per_tonne) %>%
+  as.matrix() %>%
+  c()
 
 
 # Set data
