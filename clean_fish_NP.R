@@ -20,7 +20,7 @@ source("Functions.R")
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 
 # If not loaded, load and clean lca data
-lca <- clean.lca(LCA_data = read.csv(file.path(datadir, "LCA_compiled_20201214.csv"), stringsAsFactors = FALSE))
+lca <- read.csv(file.path(datadir, "lca_clean_with_groups.csv"))
 # Select species in lca database
 lca_species <- lca %>% 
   select(clean_sci_name, Common.Name) %>%

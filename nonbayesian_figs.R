@@ -18,13 +18,13 @@ ggplot(df_feed_taxa_unweighted %>% filter(Impact.category == "Global warming pot
 ggplot(df_feed_taxa_unweighted %>% filter(Impact.category == "Marine eutrophication"), 
        aes(x = weighted_stressor, y = taxa, fill = Allocation)) +
   geom_bar(position="dodge", stat="identity") + 
-  labs(x = "kg N-eq/t", y = "", title = "Nitrogen") +
+  labs(x = "Feed-associated N (kg N-eq/t)", y = "", title = "Nitrogen") +
   theme_clean()
 
 ggplot(df_feed_taxa_unweighted %>% filter(Impact.category == "Freshwater eutrophication"), 
        aes(x = weighted_stressor, y = taxa, fill = Allocation)) +
   geom_bar(position="dodge", stat="identity") + 
-  labs(x = "kg P-eq/t", y = "", title = "Phosphorus") +
+  labs(x = "Feed-associated P (kg P-eq/t)", y = "", title = "Phosphorus") +
   theme_clean()
 
 ggplot(df_feed_taxa_unweighted %>% filter(Impact.category == "Land use"), 
