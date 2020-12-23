@@ -1471,7 +1471,8 @@ lca_dat_imputed <- feed_dat_merge %>%
   full_join(diesel_dat_merge, by = intersect(names(.), names(diesel_dat_merge))) %>%
   full_join(petrol_dat_merge, by = intersect(names(.), names(petrol_dat_merge))) %>%
   full_join(natgas_dat_merge, by = intersect(names(.), names(natgas_dat_merge))) %>%
-  full_join(yield_dat_merge, by = intersect(names(.), names(yield_dat_merge))) 
+  full_join(yield_dat_merge, by = intersect(names(.), names(yield_dat_merge))) %>%
+  mutate(fcr = if_else(is.na(fcr) & taxa %in% c("bivalves", "plants"), true = 0, false = fcr))
 
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 write.csv(lca_dat_imputed, file.path(datadir, "lca_dat_imputed_vars_hierarch_bayesian_starting_point.csv"))
