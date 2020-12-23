@@ -256,15 +256,14 @@ rm(list=ls()[!(ls() %in% c("datadir", "outdir",
 
 ######################################################################################################
 # RESTARTING POINT
-#datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-#outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
-
 # Load on-farm land variables
-# load(file.path(outdir, "<insert Date>_on-farm-land-all-data-prior-to-aggregation.RData.RData"))
+
+# datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+# outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+# load(file.path(outdir, "2020-12-21_on-farm-land-all-data-prior-to-aggregation.RData"))
 
 ######################################################################################################
-# Aggregate up to taxa level and estimate total feed footprint
-
+# Estimate taxa-level footprint
 
 # Load off-farm (feed-associated) variables
 load(file.path(outdir, "2020-12-20_off-farm-all-impacts-all-data-prior-to-aggregation.RData"))
@@ -311,6 +310,7 @@ land_footprint_merge <- full_yield_dat %>%
   ungroup() 
 
 # MERGE on and off-farm data
+# Then MERGE with complete lca_data_clean_groups to get all studies excluded from on-farm land analysis
 land_footprint_dat <- feed_dat_merge %>%
   full_join(fcr_dat_merge, by = intersect(names(feed_dat_merge), names(fcr_dat_merge))) %>%
   full_join(land_footprint_merge, by = intersect(names(land_footprint_merge), names(.))) %>%
@@ -322,6 +322,9 @@ land_footprint_dat <- feed_dat_merge %>%
          sci = as.numeric(clean_sci_name),
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
+
+# OUTPUT data used for analysis:
+write.csv(land_footprint_dat, file.path(outdir, "dat_for_bayesian-land.csv"), row.names = FALSE)
 
 # FEED IMPACT CONSTANTS:
 # Choose allocation method

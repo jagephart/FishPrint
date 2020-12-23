@@ -1113,6 +1113,7 @@ petrol_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming p
 natgas_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Natural gas") %>% pull(Value) * 0.001
 
 # FIX IT - join with full lca_dat_clean dataset - and incorporate non-fed taxa (plants, bivalves) into model output (these would only have on-farm impacts)
+# FIX IT - check studies with no country data, might be able to fix some of these manually
 # Calculate GHG footprint for each energy source
 carbon_footprint_dat <- carbon_footprint_dat_raw %>%
   # Calculate electriciy GHG footprint
