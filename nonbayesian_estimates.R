@@ -178,7 +178,30 @@ df_onfarm_water_taxa <- df_onfarm_water %>%
   summarise(mean_onfarm_water = mean(on_farm_water, na.rm = TRUE))
 
 df_onfarm_water_taxa$mean_onfarm_water[is.na(df_onfarm_water_taxa$mean_onfarm_water)] <- 0
-  
+
+#_______________________________________________________________________________________________________________________#
+# Calculate capture GHGs
+#_______________________________________________________________________________________________________________________#
+df_capture <- read.csv(file.path(datadir, "fisheries_fuel_use.csv"))
+
+df_capture_ghg <- df_capture %>%
+  # Remove mixed gear and nei observations
+  filter(!str_detect(pattern = " nei", species)) %>%
+  filter(gear != "Other, Mixed, or Unknown") %>%
+  # Remove observations with 0 gear, species, or consumption weighting
+  filter(gear_weighting > 0 & species_weighting > 0 & consumption_weighting > 0) %>%
+  # Re-weight gear within each species
+  group_by(species_group, species) %>%
+  mutate(gear_weighting_new = gear_weighting/sum(gear_weighting)) %>%
+  # Create species gear-weighted means
+  summarise(species_ghg_kg_t = sum(ghg*gear_weighting_new), 
+            species_weighting = mean(species_weighting), consumption_weighting = mean(consumption_weighting)) %>%
+  # Re-weight species and consumption within taxa group
+  ungroup() %>%
+  group_by(species_group) %>%
+  mutate(species_consumption_weighting = (species_weighting*consumption_weighting)/sum(species_weighting*consumption_weighting)) %>%
+  summarise(ghg_kg_t = sum(species_ghg_kg_t*species_consumption_weighting))
+
 #_______________________________________________________________________________________________________________________#
 # Summarize all by taxa
 #_______________________________________________________________________________________________________________________#
