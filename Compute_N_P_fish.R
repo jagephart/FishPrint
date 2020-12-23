@@ -28,8 +28,8 @@ fishNutrition <- data.table(read.csv("AFCD_live.csv", stringsAsFactors = FALSE))
 fish_Nutrition_genus<-fishNutrition[,c("species","order","family","genus")] %>%distinct()
 
 
-fishNutrition <-fishNutrition %>%filter(Processing=='r') %>%  #filter out all non raw observations (e.g. dried, cooked)
-  slice(c(1:1928))    #cut rows without names of species 
+#fishNutrition <-fishNutrition %>%filter(Processing=='r') %>%  #filter out all non raw observations (e.g. dried, cooked)
+#  slice(c(1:1928))    #cut rows without names of species 
 fishNutrition1<-fishNutrition %>% mutate(N_C=fishN_via_C(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
                                          ,P_C=fishP_via_C(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
                                          ,N_fat=fishN_viaFat(Water,Fat.total)
