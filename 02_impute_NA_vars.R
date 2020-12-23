@@ -4,7 +4,7 @@
 # All energy inputs: Electricity, Diesel, Petrol, Natural Gas
 # Yield
 
-# First run: process_data_for_analysis.R, to make lca_dat_clean_groups
+# First run: 01_process_data_for_analysis.R, to make lca_dat_clean_groups
 rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups"))])
 
 # Or just read in:
@@ -1475,4 +1475,4 @@ lca_dat_imputed <- feed_dat_merge %>%
   mutate(fcr = if_else(is.na(fcr) & taxa %in% c("bivalves", "plants"), true = 0, false = fcr))
 
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-write.csv(lca_dat_imputed, file.path(datadir, "lca_dat_imputed_vars_hierarch_bayesian_starting_point.csv"))
+write.csv(lca_dat_imputed, file.path(datadir, "lca-dat-imputed-vars.csv"))

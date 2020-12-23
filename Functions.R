@@ -132,7 +132,14 @@ clean.lca <- function(LCA_data){
            Petrol_L = if_else(is.na(Petrol_L) & (!is.na(Electricity_kwh) | !is.na(Diesel_L) | !is.na(NaturalGas_L)), true = 0, false = Petrol_L),
            NaturalGas_L = if_else(is.na(NaturalGas_L) & (!is.na(Electricity_kwh) | !is.na(Diesel_L) | !is.na(Petrol_L)), true = 0, false = NaturalGas_L))
   
-  LCA_data <- as.data.frame(lapply(LCA_data, rep, LCA_data$Sample_size_n_farms))
+  # Option 1:
+  # Replicate data by sqrt(n_farms):
+  LCA_data <- LCA_data %>%
+    mutate(Sample_replication = round(sqrt(Sample_size_n_farms)))
+  LCA_data <- as.data.frame(lapply(LCA_data, rep, LCA_data$Sample_replication))
+  
+  # Options 2: Replicate data by "n" farms
+  #LCA_data <- as.data.frame(lapply(LCA_data, rep, LCA_data$Sample_size_n_farms))
   
   # FINAL STEP: Create study_id column, use this in all analyses to bind predictions from multiple models back together
   LCA_data <- LCA_data %>%
