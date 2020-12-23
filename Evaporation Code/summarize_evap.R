@@ -13,19 +13,16 @@ library(rnaturalearth)
 #library(rgdal) # for GDALinfo()
 
 ####################################################### READ IN monthly climatology files
-# Read from K: Drive (on Windows)
-#datadir <- "K:/Blue Foods/Data"
-#outdir <- "K:/Blue Foods/Outputs"
-# Read from K: Drive (on Mac)
-datadir <- "/Volumes/jgephart/Blue Foods/Data"
-outdir <- "/Volumes/jgephart/Blue Foods/Outputs"
+datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+datadir_evap <- "/Volumes/jgephart/BFA Environment 2/Data/Evaporation"
+outdir_evap <- "/Volumes/jgephart/BFA Environment 2/Outputs/Evaporation"
 
 # Use rotate() to transform coordinate system to have standard x coordinates: xmin = -180 to xmax = 180
 # Convert longitude from 0 - 360 to -180 to 180 (Standard transformation for climate data)
 # https://stackoverflow.com/questions/25730625/how-to-convert-longitude-from-0-360-to-180-180
 
-clim_files <- list.files(file.path(datadir, "Monthly Climatology 1981-2010"))
-clim_raster <- lapply(clim_files, function(i){raster(file.path(datadir, "Monthly Climatology 1981-2010", i))}) # read in with raster() function so that rotate() function works
+clim_files <- list.files(file.path(datadir_evap, "Monthly Climatology 1981-2010"))
+clim_raster <- lapply(clim_files, function(i){raster(file.path(datadir_evap, "Monthly Climatology 1981-2010", i))}) # read in with raster() function so that rotate() function works
 clim_rotate <- lapply(clim_raster, function(i){rotate(i)})
 clim_stars_list <- lapply(clim_rotate, function(i){st_as_stars(i)})
 
@@ -38,20 +35,16 @@ ggplot() +
   geom_stars(data = clim_stars) +
   facet_wrap(~month)
 
-ggsave(file.path(outdir, "clim_panels.png"), width = 6, height = 4, unit = "in")
+ggsave(file.path(outdir_evap, "clim_panels.png"), width = 6, height = 4, unit = "in")
 
 # Confirm that month labels in clim_dat are the same as clim_dat_list:
-clim_dat_list <- read_stars(file.path(datadir, "Monthly Climatology 1981-2010", clim_files))
+clim_dat_list <- read_stars(file.path(datadir_evap, "Monthly Climatology 1981-2010", clim_files))
 for (i in 1:length(clim_dat_list)){
   ggplot() +
     geom_stars(data = clim_dat_list[i])
   
-  ggsave(file.path(outdir, paste("clim_list_", i, ".png", sep = "")), width = 6, height = 4, unit = "in")
+  ggsave(file.path(outdir_evap, paste("clim_list_", i, ".png", sep = "")), width = 6, height = 4, unit = "in")
 }
-
-####################################################### READ IN historical data
-#hist_files <- list.files(file.path(dataidr, "Historical Monthly"))
-#hist_dat <- read_stars(file.path(datadir, "Historical Monthly", hist_files))
 
 ####################################################### Process raster data
 # <calculate mean across climatology months>
@@ -63,7 +56,7 @@ clim_mean_stars <- st_apply(clim_stars, c("x", "y"), mean, na.rm = TRUE)
 # Plot with ggplot:
 ggplot() +
   geom_stars(data = clim_mean_stars)
-ggsave(file.path(outdir, "clim_mean.png"), width = 6, height = 4, unit = "in")
+ggsave(file.path(outdir_evap, "clim_mean.png"), width = 6, height = 4, unit = "in")
 
 ####################################################### Add country polygons
 # Get countries from naturalearth package and set to same crs as clim_mean_stars
@@ -81,14 +74,14 @@ ggplot() +
   #geom_stars(data = clim_mean_stars, mapping = aes(x = x, y = y, fill = mean)) +
   geom_sf(data = world_sf, alpha = 0.1, color = "black")
 
-ggsave(file.path(outdir, "clim_mean_world_map.png"), width = 6, height = 4, unit = "in")
+ggsave(file.path(outdir_evap, "clim_mean_world_map.png"), width = 6, height = 4, unit = "in")
 
 # CROP raster and replot
 clim_mean_stars <- st_crop(clim_mean_stars, world_sf)
 ggplot() +
   geom_stars(data = clim_mean_stars) +
   geom_sf(data = world_sf, alpha = 0.1, color = "black")
-ggsave(file.path(outdir, "clim_mean_world_map_2.png"), width = 6, height = 4, unit = "in")
+ggsave(file.path(outdir_evap, "clim_mean_world_map_2.png"), width = 6, height = 4, unit = "in")
 
 ## although coordinates are longitude/latitude, st_intersects assumes that they are planar
 # See: https://www.r-spatial.org/r/2020/06/17/s2.html (The Earth is no longer flat in r-spatial)
@@ -99,47 +92,22 @@ clim_world_sf <- st_intersection(clim_mean_sf, world_sf)
 
 clim_world_sf <- set_units(clim_world_sf$mean, mm)
 
+# FIX IT - do we want the mean of all pixels or the sum of all pixels weighted by pixel area? Note: pixel's whose centroid are not within the polygon are assigned NA
+# Calculate mean within each country
 clim_by_country <- clim_world_sf %>%
   group_by(admin) %>%
-  summarise(country_level_sum = sum(mean, na.rm = TRUE),
-            country_level_mean = mean(mean, na.rm = TRUE)) %>% # units are in "mm"
-  ungroup() %>%
-  mutate(country_level_area = st_area(.)) %>%
-  mutate(country_level_evap = as.numeric(country_level_mean / country_level_area))
+  summarise(mean_evap_mm = mean(mean, na.rm = TRUE)) %>% # units are in "mm"/ month
+  ungroup() 
 
-# FIX IT - do we want the mean of all pixels or the sum of all pixels weighted by pixel area? Note: pixel's whose centroid are not within the polygon are assigned NA
-# Sum of pixels weighted by country area gives mm of evaporation per area of pixels per area of country?
 ggplot(clim_by_country) +
-  geom_sf(mapping = aes(fill = country_level_evap)) +
+  geom_sf(mapping = aes(fill = mean_evap_mm)) +
   labs(fill = "Country-level evaporation")
-ggsave(file.path(outdir, "clim_summarise_by_country_sum_of_pixels_divided_by_area.png"), width = 6, height = 4, unit = "in")
-
-# Mean of pixels gives units mm of evaporation per area of single pixel
-ggplot(clim_by_country) +
-  geom_sf(mapping = aes(fill = country_level_mean)) +
-  labs(fill = "Country-level evaporation")
-ggsave(file.path(outdir, "clim_summarise_by_country_mean_of_pixels.png"), width = 6, height = 4, unit = "in")
-
+ggsave(file.path(outdir_evap, "clim_summarise_by_country_mean_of_pixels.png"), width = 6, height = 4, unit = "in")
  
-write.csv(clim_by_country %>% st_set_geometry(NULL), file = file.path(outdir, "clim_summarise_by_country.csv"), quote = FALSE)
+write.csv(clim_by_country %>% st_set_geometry(NULL), file = file.path(datadir, "clim_summarise_by_country.csv"), quote = FALSE)
 
 # BAR GRAPH:
 #ggplot(clim_by_country) +
 #  geom_col(mapping = aes(x = reorder(admin, desc(country_level)), y = country_level))
 
 #country_level_clim <- aggregate(clim_world_sf, by = admin, FUN = mean)
-
-
-
-#######################################################
-##################### READ IN historical data
-historical_dat <- raster("Data/Monthly/p041998.tif")
-historical_dat
-crs(historical_dat) # standard lat/long and GPS (i.e., WGS84) coordinate system
-
-# FIX IT - Notice extent is different in historical data, will have to control for this when comparing across datasets
-summary(historical_dat)
-
-plot(historical_dat)
-
-##################### PLOT historical data

@@ -2,8 +2,6 @@
 
 rm(list = ls())
 
-
-
 # Libraries for processing and analyses
 library(tidyverse)
 library(rstan)
@@ -21,7 +19,7 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # datadir <- "K:/BFA Environment 2/Data"
 # outdir <- "K:BFA Environment 2/Outputs"
 
-lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201214.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201222.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
 source("Functions.R")
 
 # Clean LCA data
@@ -46,12 +44,8 @@ sort(unique(lca_dat_clean_groups$taxa))
 write.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"), row.names = FALSE)
 
 # Output taxa groupings and sample sizes:
-# data.frame(table(lca_dat_clean_groups$taxa_group_name))
-# data.frame(table(lca_dat_clean_groups$taxa)) # abbreviated version of taxa_group_name for writing models
-# lca_dat_clean_groups %>% select(taxa_group_name, Source) %>% distinct() %>% group_by(taxa_group_name) %>% tally() # number of studies/sources per taxa
-# lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% group_by(taxa_group_name, clean_sci_name) %>% mutate(n_obs = n()) %>% unique() %>% arrange(taxa_group_name) %>% print(n=50)
-# write.csv(data.frame(table(lca_dat_clean_groups$taxa_group_name)), file.path(outdir, "taxa_group_sample_size.csv"))
-# write.csv(lca_dat_clean_groups %>% select(taxa_group_name, clean_sci_name) %>% unique() %>% arrange(taxa_group_name), file.path(outdir, "taxa_group_composition.csv"))
+n_and_composition <- lca_dat_clean_groups %>% select(taxa_group_name, Source) %>% distinct() %>% group_by(taxa_group_name) %>% tally() # number of studies/sources per taxa
+write.csv(n_and_composition, file.path(outdir, "taxa_group_n_and_composition.csv"))
 
 # Add fish N and P content
 #calculate C,N,P content of fish (based on energy and fat content ) and compute discharge based on Czamanski et al 2011, Marine Biology,
