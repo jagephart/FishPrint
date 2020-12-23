@@ -1475,4 +1475,4 @@ lca_dat_imputed <- feed_dat_merge %>%
   mutate(fcr = if_else(is.na(fcr) & taxa %in% c("bivalves", "plants"), true = 0, false = fcr))
 
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-write.csv(lca_dat_imputed, file.path(datadir, "lca-dat-imputed-vars.csv"))
+write.csv(lca_dat_imputed, file.path(datadir, "lca-dat-imputed-vars.csv"), row.names = FALSE)

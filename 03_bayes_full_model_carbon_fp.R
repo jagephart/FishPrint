@@ -1132,7 +1132,7 @@ carbon_footprint_dat <- carbon_footprint_dat_raw %>%
 ######################################################################################################
 # END all cleaning: carbon_footprint_dat is the data used for Bayesian
 
-# FIX IT - Reorder this section as: Data, indices, weights, constants?
+# Set Data, indices, constants, weights:
 
 # VARIABLE-SPECIFIC DATA:
 
@@ -1170,6 +1170,29 @@ sci_to_tx <- carbon_footprint_dat %>%
   unique() %>%
   pull(tx)
 
+# FEED IMPACT CONSTANTS:
+# Choose allocation method
+# Choose CARBON for Impact.category
+# IMPORTANT - multiply all values by 1000 to convert to kg CO2 per tonne (currently in kg CO2 per kg)
+impact <- "Global warming potential" # i.e., Carbon impact
+set_allocation <- "Mass"
+
+fp_dat <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv")) %>%
+  filter(Allocation == set_allocation) %>%
+  mutate(ave_stressor_per_tonne = ave_stressor * 1000)
+
+# ORDER OF feed_weights data vector: soy, crops, fmfo, animal
+head(feed_weights)
+# ORDER of footprint data vector should match this:
+set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
+
+fp_constant <- fp_dat %>%
+  filter(Impact.category == impact) %>% 
+  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
+  select(ave_stressor_per_tonne) %>%
+  as.matrix() %>%
+  c()
+
 # WEIGHTS:
 # Get sci-level weightings for generating taxa-level quantities:
 # IMPORTANT arrange by clean_sci_name so that the order matches data
@@ -1197,29 +1220,6 @@ n_sci_in_tx <- carbon_footprint_dat %>%
   pull(n_sci_in_tx)
 slice_where_tx <- cumsum(n_sci_in_tx) # These are the breaks in where_tx corresponding to each taxa level - need this to split up where_tx
 slice_where_tx <- c(0, slice_where_tx)
-
-# FEED IMPACT CONSTANTS:
-# Choose allocation method
-# Choose CARBON for Impact.category
-# IMPORTANT - multiply all values by 1000 to convert to kg CO2 per tonne (currently in kg CO2 per kg)
-impact <- "Global warming potential" # i.e., Carbon impact
-set_allocation <- "Mass"
-
-fp_dat <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv")) %>%
-  filter(Allocation == set_allocation) %>%
-  mutate(ave_stressor_per_tonne = ave_stressor * 1000)
-
-# ORDER OF feed_weights data vector: soy, crops, fmfo, animal
-head(feed_weights)
-# ORDER of footprint data vector should match this:
-set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
-
-fp_constant <- fp_dat %>%
-  filter(Impact.category == impact) %>% 
-  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
-  select(ave_stressor_per_tonne) %>%
-  as.matrix() %>%
-  c()
 
 # Set data for stan:
 stan_data <- list(N = N,

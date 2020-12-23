@@ -2,6 +2,8 @@
 
 # Calculate on-farm footprint as: FCR * (sum of (feed proportions * their N or P content) - (N or P content of the fish)
 
+# N and P constants are ready to go: fish_NP_clean.csv (except for plants)
+
 
 # Load feed-associated variables (FCRs and feed proportions) - used in both the on and off farm portions for this model
 # load(file.path(outdir, "2020-12-20_off-farm-all-impacts-all-data-prior-to-aggregation.RData"))
