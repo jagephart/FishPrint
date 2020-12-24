@@ -40,9 +40,9 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 
 # Load Data
-lca_full_dat <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-n-farms.csv"), fileEncoding="UTF-8-BOM") %>%
+lca_full_dat <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-n-farms.csv"), fileEncoding="UTF-8-BOM")
 
-# First to model data
+# Format data for model:
 lca_model_dat <- lca_full_dat %>%
   filter(is.na(fcr)==FALSE) %>% # NA here means that data point was not imputed in step 2 - remove these from model
   select(study_id, clean_sci_name, taxa, intensity, system, 

@@ -44,7 +44,7 @@ sort(unique(lca_dat_clean_groups$taxa))
 write.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"), row.names = FALSE)
 
 # Output taxa groupings and sample sizes:
-n_and_composition <- lca_dat_clean_groups %>% select(taxa_group_name, Source) %>% distinct() %>% group_by(taxa_group_name) %>% tally() # number of studies/sources per taxa
+n_and_composition <- lca_dat_clean_groups %>% select(taxa_group_name, Source, clean_sci_name) %>% distinct() %>% group_by(taxa_group_name, clean_sci_name) %>% tally() # number of studies/sources per taxa
 write.csv(n_and_composition, file.path(outdir, "taxa_group_n_and_composition.csv"))
 
 # Add fish N and P content
