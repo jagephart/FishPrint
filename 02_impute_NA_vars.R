@@ -1385,25 +1385,25 @@ fcr_dat_incomplete_predictors <- lca_dat_clean_groups_merge %>%
 # Electricity
 electric_dat_incomplete_predictors <- lca_dat_clean_groups_merge %>%
   filter(study_id %in% setdiff(lca_dat_clean_groups_merge$study_id, full_electric_dat$study_id)) %>%
-  select(study_id, clean_sci_name, taxa, intensity, system, Electricity_kwh) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, Electricity_kwh) %>%
   mutate(electric_data_type = "data") 
 
 # Diesel
 diesel_dat_incomplete_predictors <- lca_dat_clean_groups_merge %>%
   filter(study_id %in% setdiff(lca_dat_clean_groups_merge$study_id, full_diesel_dat$study_id)) %>%
-  select(study_id, clean_sci_name, taxa, intensity, system, Diesel_L) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, Diesel_L) %>%
   mutate(diesel_data_type = "data") 
 
 # Petrol
 petrol_dat_incomplete_predictors <- lca_dat_clean_groups_merge %>%
   filter(study_id %in% setdiff(lca_dat_clean_groups_merge$study_id, full_petrol_dat$study_id)) %>%
-  select(study_id, clean_sci_name, taxa, intensity, system, Petrol_L) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, Petrol_L) %>%
   mutate(petrol_data_type = "data") 
 
 # Natural Gas
 natgas_dat_incomplete_predictors <- lca_dat_clean_groups_merge %>%
   filter(study_id %in% setdiff(lca_dat_clean_groups_merge$study_id, full_natgas_dat$study_id)) %>%
-  select(study_id, clean_sci_name, taxa, intensity, system, NaturalGas_L) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, NaturalGas_L) %>%
   mutate(natgas_data_type = "data") 
 
 # Yield/Land
@@ -1440,22 +1440,22 @@ fcr_dat_merge <- full_fcr_dat %>%
 
 # Electricity - rename to get units back
 electric_dat_merge <- full_electric_dat %>%
-  select(study_id, clean_sci_name, taxa, intensity, system, electric_data_type = data_type, Electricity_kwh = electric) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, electric_data_type = data_type, Electricity_kwh = electric) %>%
   full_join(electric_dat_incomplete_predictors, by = intersect(names(.), names(electric_dat_incomplete_predictors)))
 
 # Diesel - rename to get units back
 diesel_dat_merge <- full_diesel_dat %>%
-  select(study_id, clean_sci_name, taxa, intensity, system, diesel_data_type = data_type, Diesel_L = diesel) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, diesel_data_type = data_type, Diesel_L = diesel) %>%
   full_join(diesel_dat_incomplete_predictors, by = intersect(names(.), names(diesel_dat_incomplete_predictors)))
 
 # Petrol - rename to get units back
 petrol_dat_merge <- full_petrol_dat %>%
-  select(study_id, clean_sci_name, taxa, intensity, system, petrol_data_type = data_type, Petrol_L = petrol) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, petrol_data_type = data_type, Petrol_L = petrol) %>%
   full_join(petrol_dat_incomplete_predictors, by = intersect(names(.), names(petrol_dat_incomplete_predictors)))
 
 # Natural gas - rename to get units back
 natgas_dat_merge <- full_natgas_dat %>%
-  select(study_id, clean_sci_name, taxa, intensity, system, natgas_data_type = data_type, NaturalGas_L = natgas) %>%
+  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity, system, natgas_data_type = data_type, NaturalGas_L = natgas) %>%
   full_join(natgas_dat_incomplete_predictors, by = intersect(names(.), names(natgas_dat_incomplete_predictors)))
 
 # Yield- rename to get units back
@@ -1472,7 +1472,13 @@ lca_dat_imputed <- feed_dat_merge %>%
   full_join(petrol_dat_merge, by = intersect(names(.), names(petrol_dat_merge))) %>%
   full_join(natgas_dat_merge, by = intersect(names(.), names(natgas_dat_merge))) %>%
   full_join(yield_dat_merge, by = intersect(names(.), names(yield_dat_merge))) %>%
-  mutate(fcr = if_else(is.na(fcr) & taxa %in% c("bivalves", "plants"), true = 0, false = fcr))
+  # BIVALVES AND PLANTS SHOULD GET AN FCR OF 0 - this way, NA is specific to MISSING DATA
+  mutate(fcr = if_else(is.na(fcr) & taxa %in% c("bivalves", "plants"), true = 0, false = fcr)) %>%
+  # FEEDS SHOULD BE 0 (not NA) WHENEVER FCR IS 0
+  mutate(feed_soy = if_else(fcr==0, true = 0, false = feed_soy),
+         feed_crops = if_else(fcr==0, true = 0, false = feed_crops),
+         feed_fmfo = if_else(fcr==0, true = 0, false = feed_fmfo),
+         feed_animal = if_else(fcr==0, true = 0, false = feed_animal))
 
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 write.csv(lca_dat_imputed, file.path(datadir, "lca-dat-imputed-vars.csv"), row.names = FALSE)
