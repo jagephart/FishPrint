@@ -39,6 +39,10 @@ ggplot(df_feed_taxa %>% filter(Impact.category == "Water consumption"),
   labs(x = "m3/t", y = "", title = "Water") +
   theme_clean()
 
+# Compare weighted and unweighted values
+ggplot(df_feed_taxa, aes(x = weighted_stressor, y = unweighted_stressor, colour = factor(taxa))) + 
+  geom_point() + 
+  geom_abline(intercept = 0, slope = 1)
 #_______________________________________________________________________________________________________________________#
 # Plot on farm GHG
 #_______________________________________________________________________________________________________________________#

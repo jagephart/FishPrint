@@ -47,35 +47,6 @@ write.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"),
 n_and_composition <- lca_dat_clean_groups %>% select(taxa_group_name, Source, clean_sci_name) %>% distinct() %>% group_by(taxa_group_name, clean_sci_name) %>% tally() # number of studies/sources per taxa
 write.csv(n_and_composition, file.path(outdir, "taxa_group_n_and_composition.csv"))
 
-# Add fish N and P content
-#calculate C,N,P content of fish (based on energy and fat content ) and compute discharge based on Czamanski et al 2011, Marine Biology,
-#Carbon, nitrogen and phosphorus elemental stoichiometry in aquacultured and wild-caught fish and consequences
-#for pelagic nutrient dynamics
-#And also a simplified NPZ method approach
-
-#N and P content of fish in % of DM
-#read Zach's data and make calculations using built functions
-fishNutrition <- read.csv(file.path(datadir, "AFCD_live.csv"), stringsAsFactors = FALSE)
-fishNutrition <-fishNutrition %>%filter(Processing=='r') %>%  #filter out all non raw observations (e.g. dried, cooked)
-  slice(c(1:1928))    #cut rows without names of species 
-fishNutrition1<-fishNutrition %>% mutate(N_C=fishN_via_C(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
-                                         ,P_C=fishP_via_C(Water,Energy.total.metabolizable.calculated.from.the.energy.producing.food.components.original.as.from.source.kcal)
-                                         ,N_fat=fishN_viaFat(Water,Fat.total)
-                                         ,P_fat=fishP_viaFat(Water,Fat.total)
-                                         ,N_built_in=Nitrogen.total*100/(100-Water),P_built_in=Phosphorus/1000*100/(100-Water)) #conversion to units of percentages in DM. Nitrogen.total is in units of g/100 edible gram; Phosphorous in the dataset is in mg/100 edible gram
-
-fishNutrition2<-fishNutrition1 %>% group_by(species) %>% summarise(P_byC=mean(P_C,na.rm = TRUE),N_byC=mean(N_C,na.rm = TRUE),
-                                                                   P_fat_1=mean(P_fat,na.rm = TRUE),N_fat_1=mean(N_fat,na.rm = TRUE),
-                                                                   P_built_in1=mean(P_built_in,na.rm = TRUE),N_built_in1=mean(N_built_in,na.rm = TRUE)) %>%                                 
-  rowwise() %>%                                                    
-  mutate(N_avg=mean(c(N_byC,N_fat_1,N_built_in1),na.rm = TRUE))%>%
-  mutate(P_avg=mean(c(P_byC,P_fat_1,P_built_in1),na.rm = TRUE))%>%
-  select(c("species","N_avg","P_avg"))
-
-# FIX IT: Currently there are 25 unmatched species. Emailed Alon Dec 17 to see if he can fix
-lca_dat_clean_groups_tmp <- lca_dat_clean_groups %>% 
-  left_join(fishNutrition2, by = c("Scientific.Name" = "species"))
-
 #________________________________________________________________________________________________________________________________________________________________#
 # Calculate production weightings for each taxa group
 #________________________________________________________________________________________________________________________________________________________________#
@@ -84,7 +55,7 @@ prod_weightings <- fishstat_dat %>%
   filter(unit == "t") %>%
   filter(source_name_en %in% c("Aquaculture production (marine)", "Aquaculture production (brackishwater)", "Aquaculture production (freshwater)")) %>%
   group_by(isscaap_group, species_scientific_name) %>%
-  summarise(total = sum(quantity, na.rm = TRUE))
+  summarise(species_prod = sum(quantity, na.rm = TRUE))
 
 # Check for species names in lca data that does not match fao data
 unique(lca_dat_clean_groups$clean_sci_name[!(lca_dat_clean_groups$clean_sci_name %in% prod_weightings$species_scientific_name)])
@@ -107,15 +78,22 @@ lca_dat_clean_groups$fao_species[is.na(lca_dat_clean_groups$fao_species)] <- lca
 
 prod_weightings <-  prod_weightings %>% 
   right_join(lca_dat_clean_groups, by = c("species_scientific_name" = "fao_species", "isscaap_group")) %>%
-  select(isscaap_group, taxa_group_name, taxa, clean_sci_name, total) %>%
+  select(isscaap_group, taxa_group_name, taxa, clean_sci_name, species_prod) %>%
   distinct()
 
 # Add small amount to na's 
-prod_weightings$total[is.na(prod_weightings$total)] <- 10
+prod_weightings$species_prod[is.na(prod_weightings$species_prod)] <- 10
 
+# Calculate proportions
 prod_weightings <-  prod_weightings %>% 
   group_by(taxa_group_name, taxa) %>%
-  mutate(weighting = total/sum(total, na.rm = TRUE))
+  # For taxa levels higher than species, use production volumes equal to the average in the taxa group
+  mutate(species_prod_reweight = ifelse(str_detect(clean_sci_name, pattern = "spp")|length(str_split(string = clean_sci_name, pattern = "\\s")[[1]]) == 1, 
+                                        mean(species_prod, na.rm = TRUE), species_prod),
+    prod_weighting = species_prod_reweight/sum(species_prod_reweight, na.rm = TRUE))
+
+# Check that species sum to 1
+prod_weightings %>% group_by(taxa_group_name, taxa) %>% summarise(total_weight = sum(prod_weighting))
 
 write.csv(prod_weightings, file.path(datadir, "aqua_prod_weightings.csv"), row.names = FALSE)
 #________________________________________________________________________________________________________________________________________________________________#

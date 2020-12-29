@@ -1,5 +1,5 @@
 # Clean fish N and P data
-# Author: Alon Shepon
+# Author: Alon Shepon and Jessica Gephart
 
 #------------------------------------------------------------------------------------
 #--------------------------------------load packages---------------------------------
@@ -373,118 +373,30 @@ fishNutrition <- fishNutrition %>%
   select(-Common.Name)
 
 # Final check that all species are included
-lca <- lca %>%
+fishNutrition <- lca %>%
+  select(clean_sci_name) %>%
+  distinct() %>%
   left_join(fishNutrition, by = c("clean_sci_name" = "Scientific.Name"))
-lca %>% filter(is.na(N_avg))
 
 # Convert from % N and P dry weight to wet weight
 fishNutrition <- fishNutrition %>%
   mutate(N_t_liveweight_t = (N_avg/100)*(1-(Water_content/100)),
          P_t_liveweight_t = (P_avg/100)*(1-(Water_content/100)))
 
+# Manually add aquatic plants from Alon's calculation (already in wet weight)
+fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Laminaria digitata"] <- 1.37/100
+fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Laminaria digitata"] <- 0.2320/100
+
+fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Saccharina latissima"] <- 1.21/100
+fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Saccharina latissima"] <- 0.1555/100
+
+ave_plant_N <- ((1.37+1.21)/2)/100
+ave_plant_P <- ((0.2320+0.1555)/2)/100
+
+fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Macrocystis pyrifera"] <- ave_plant_N
+fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Macrocystis pyrifera"] <- ave_plant_P
+
+fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Gracilaria chilensis"] <- ave_plant_N
+fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Gracilaria chilensis"] <- ave_plant_P
+
 write.csv(fishNutrition, file.path(datadir, "fish_NP_clean.csv"), row.names = FALSE)
-
-#---------------algorithm to match N and P to fill data gaps (when matching based on scientific names does not provide values)
-#--------------match according to this descending order and stop when value is found: match based on alternative scientific names->common names->genus->family
-#             ->order->loose text matching (e.g. will match "catfish" with "catfish")
-#
-# for N
-# db_model_full_try<-db_model_full
-# 
-# missing_N<-which(is.na(db_model_full$N_avg))
-# db_model_full$Common.Name[missing_N]
-# db_model_full$Species.scientific.name[missing_N]
-# for (lm in 1:length(missing_N)){
-#   
-#   #match in descending order of importance until value is obtained
-#   #first match - by common name and alternative scientific names
-#   mm<-agrep(db_model_full_try$Common.Name[missing_N[lm]], fishNutrition1$alt.scinames, max = 5, ignore.case = TRUE)
-#   N_built_2<-mean(fishNutrition1$N_built_in[mm],na.rm = TRUE);N_fat_2<-mean(fishNutrition1$N_fat[mm],na.rm = TRUE);N_C_2<-mean(fishNutrition1$N_C[mm],na.rm = TRUE);
-#   dd<-mean(c(N_built_2,N_fat_2,N_C_2),na.rm = TRUE)
-#   #if (!is.na(dd)){print("a")}
-#   #second match - by common name and used name
-#   if (is.na(dd)){mm<-agrep(db_model_full_try$Common.Name[missing_N[lm]], fishNutrition1$Food.name.in.English, max=5, ignore.case = TRUE)
-#   N_built_2<-mean(fishNutrition1$N_built_in[mm],na.rm = TRUE);N_fat_2<-mean(fishNutrition1$N_fat[mm],na.rm = TRUE);N_C_2<-mean(fishNutrition1$N_C[mm],na.rm = TRUE);
-#   dd<-mean(c(N_built_2,N_fat_2,N_C_2),na.rm = TRUE)}#;print("b")}
-#   
-#   #third match - by genus
-#   if (is.na(dd) & !is.na(db_model_full_try$genus[missing_N[lm]])){mm<-agrep(db_model_full_try$genus[missing_N[lm]], fishNutrition1$genus, ignore.case = TRUE,value = FALSE)
-#   N_built_2<-mean(fishNutrition1$N_built_in[mm],na.rm = TRUE);N_fat_2<-mean(fishNutrition1$N_fat[mm],na.rm = TRUE);N_C_2<-mean(fishNutrition1$N_C[mm],na.rm = TRUE);
-#   dd<-mean(c(N_built_2,N_fat_2,N_C_2),na.rm = TRUE)}#;print("c")}
-#   
-#   #fourth match - by family
-#   if (is.na(dd) & !is.na(db_model_full_try$family[missing_N[lm]])){mm<-agrep(db_model_full_try$family[missing_N[lm]], fishNutrition1$family, ignore.case = TRUE,value = FALSE)
-#   N_built_2<-mean(fishNutrition1$N_built_in[mm],na.rm = TRUE);N_fat_2<-mean(fishNutrition1$N_fat[mm],na.rm = TRUE);N_C_2<-mean(fishNutrition1$N_C[mm],na.rm = TRUE);
-#   dd<-mean(c(N_built_2,N_fat_2,N_C_2),na.rm = TRUE)}#;print("d")}
-#   
-#   #fifth match - by order
-#   if (is.na(dd) & !is.na(db_model_full_try$order[missing_N[lm]])){mm<-agrep(db_model_full_try$order[missing_N[lm]], fishNutrition1$order, ignore.case = TRUE,value=FALSE)
-#   N_built_2<-mean(fishNutrition1$N_built_in[mm],na.rm = TRUE);N_fat_2<-mean(fishNutrition1$N_fat[mm],na.rm = TRUE);N_C_2<-mean(fishNutrition1$N_C[mm],na.rm = TRUE);
-#   dd<-mean(c(N_built_2,N_fat_2,N_C_2),na.rm = TRUE)}#;print("e")}
-#   
-#   #sixth match - by loosely resembling words
-#   if (is.na(dd) & !is.na(db_model_full_try$Common.Name[missing_N[lm]])){mm<-agrep(db_model_full_try$Common.Name[missing_N[lm]], fishNutrition1$alt.scinames, max.distance =0.5, ignore.case = TRUE,value=FALSE)
-#   N_built_2<-mean(fishNutrition1$N_built_in[mm],na.rm = TRUE);N_fat_2<-mean(fishNutrition1$N_fat[mm],na.rm = TRUE);N_C_2<-mean(fishNutrition1$N_C[mm],na.rm = TRUE);
-#   dd<-mean(c(N_built_2,N_fat_2,N_C_2),na.rm = TRUE)}#;print("f")}
-#   
-#   #seventh match - by loosely resembling words
-#   if (is.na(dd) & !is.na(db_model_full_try$Common.Name[missing_N[lm]])){mm<-agrep(db_model_full_try$Common.Name[missing_N[lm]], fishNutrition1$Food.name.in.English, max.distance =0.5, ignore.case = TRUE,value=FALSE)
-#   N_built_2<-mean(fishNutrition1$N_built_in[mm],na.rm = TRUE);N_fat_2<-mean(fishNutrition1$N_fat[mm],na.rm = TRUE);N_C_2<-mean(fishNutrition1$N_C[mm],na.rm = TRUE);
-#   dd<-mean(c(N_built_2,N_fat_2,N_C_2),na.rm = TRUE)}#; print("g")}
-#   
-#   db_model_full_try$N_avg[missing_N[lm]]<-dd
-#   
-#   rm(N_built_2,N_fat_2,N_C_2,mm,dd)
-# }
-# 
-# 
-# # for P
-# missing_P<-which(is.na(db_model_full_try$P_avg))
-# db_model_full_try$Common.Name[missing_P]
-# db_model_full_try$Species.scientific.name[missing_P]
-# for (lm in 1:length(missing_P)){
-#   
-#   #match in descending order of importance until value is obtained
-#   #first match - by common name and alternative scientific names
-#   mm<-agrep(db_model_full_try$Common.Name[missing_P[lm]], fishNutrition1$alt.scinames, max = 5, ignore.case = TRUE)
-#   P_built_2<-mean(fishNutrition1$P_built_in[mm],na.rm = TRUE);P_fat_2<-mean(fishNutrition1$P_fat[mm],na.rm = TRUE);P_C_2<-mean(fishNutrition1$P_C[mm],na.rm = TRUE);
-#   dd<-mean(c(P_built_2,P_fat_2,P_C_2),na.rm = TRUE)
-#   #if (!is.na(dd)){print("a")}
-#   #second match - by common name and used name
-#   if (is.na(dd)){mm<-agrep(db_model_full_try$Common.Name[missing_P[lm]], fishNutrition1$Food.name.in.English, max=5, ignore.case = TRUE)
-#   P_built_2<-mean(fishNutrition1$P_built_in[mm],na.rm = TRUE);P_fat_2<-mean(fishNutrition1$P_fat[mm],na.rm = TRUE);P_C_2<-mean(fishNutrition1$P_C[mm],na.rm = TRUE);
-#   dd<-mean(c(P_built_2,P_fat_2,P_C_2),na.rm = TRUE)}#; print("b")}
-#   
-#   #third match - by genus
-#   if (is.na(dd) & !is.na(db_model_full_try$genus[missing_N[lm]])){mm<-agrep(db_model_full_try$genus[missing_P[lm]], fishNutrition1$genus, ignore.case = TRUE,value = FALSE)
-#   P_built_2<-mean(fishNutrition1$P_built_in[mm],na.rm = TRUE);P_fat_2<-mean(fishNutrition1$P_fat[mm],na.rm = TRUE);P_C_2<-mean(fishNutrition1$P_C[mm],na.rm = TRUE);
-#   dd<-mean(c(P_built_2,P_fat_2,P_C_2),na.rm = TRUE)}#; print("c")}
-#   
-#   #fourth match - by family
-#   if (is.na(dd) & !is.na(db_model_full_try$family[missing_P[lm]])){mm<-agrep(db_model_full_try$family[missing_P[lm]], fishNutrition1$family, ignore.case = TRUE,value = FALSE)
-#   P_built_2<-mean(fishNutrition1$P_built_in[mm],na.rm = TRUE);P_fat_2<-mean(fishNutrition1$P_fat[mm],na.rm = TRUE);P_C_2<-mean(fishNutrition1$P_C[mm],na.rm = TRUE);
-#   dd<-mean(c(P_built_2,P_fat_2,P_C_2),na.rm = TRUE)}#; print("d")}
-#   
-#   #fifth match - by order
-#   if (is.na(dd) & !is.na(db_model_full_try$order[missing_P[lm]])){mm<-agrep(db_model_full_try$order[missing_P[lm]], fishNutrition1$order, ignore.case = TRUE,value=FALSE)
-#   P_built_2<-mean(fishNutrition1$P_built_in[mm],na.rm = TRUE);P_fat_2<-mean(fishNutrition1$P_fat[mm],na.rm = TRUE);P_C_2<-mean(fishNutrition1$P_C[mm],na.rm = TRUE);
-#   dd<-mean(c(P_built_2,P_fat_2,P_C_2),na.rm = TRUE)}#; print("e")}
-#   
-#   #sixth match - by loosely resembling words
-#   if (is.na(dd) & !is.na(db_model_full_try$Common.Name[missing_P[lm]])){mm<-agrep(db_model_full_try$Common.Name[missing_P[lm]], fishNutrition1$alt.scinames, max.distance =0.5, ignore.case = TRUE,value=FALSE)
-#   P_built_2<-mean(fishNutrition1$P_built_in[mm],na.rm = TRUE);P_fat_2<-mean(fishNutrition1$P_fat[mm],na.rm = TRUE);P_C_2<-mean(fishNutrition1$P_C[mm],na.rm = TRUE);
-#   dd<-mean(c(P_built_2,P_fat_2,P_C_2),na.rm = TRUE)}#; print("f")}
-#   
-#   #seventh match - by loosely resembling words
-#   if (is.na(dd) & !is.na(db_model_full_try$Common.Name[missing_P[lm]])){mm<-agrep(db_model_full_try$Common.Name[missing_P[lm]], fishNutrition1$Food.name.in.English, max.distance =0.5, ignore.case = TRUE,value=FALSE)
-#   P_built_2<-mean(fishNutrition1$P_built_in[mm],na.rm = TRUE);P_fat_2<-mean(fishNutrition1$P_fat[mm],na.rm = TRUE);P_C_2<-mean(fishNutrition1$P_C[mm],na.rm = TRUE);
-#   dd<-mean(c(P_built_2,P_fat_2,P_C_2),na.rm = TRUE)}#; print("g")}
-#   
-#   db_model_full_try$P_avg[missing_P[lm]]<-dd
-#   
-#   rm(P_built_2,P_fat_2,P_C_2,mm,dd)
-# }
-# 
-# write.xlsx(db_model_full_try,'LCA_full_data_compiled.xlsx')
-
-
