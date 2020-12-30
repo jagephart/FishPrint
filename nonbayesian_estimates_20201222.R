@@ -42,7 +42,7 @@ df_feed <- df %>%
   pivot_longer(feed_soy:feed_animal, names_to = c("drop", "feed_type"), names_sep = "_", values_to = "feed_proportion") %>%
   select(-drop) %>%
   left_join(feed_fp, by = "feed_type") %>%
-  mutate(stressor = fcr*feed_proportion*ave_stressor) %>% 
+  mutate(stressor = 1000*fcr*feed_proportion*ave_stressor) %>% # multiply by 1000 to convert to kg N/P per tonne
   group_by(study_id, clean_sci_name, taxa, intensity, system, Impact.category, Allocation, Units, prod_weighting) %>%
   summarise(stressor = sum(stressor, na.rm = TRUE))
 
@@ -58,8 +58,6 @@ df_feed_taxa <- df_feed %>%
   ungroup() %>%
   group_by(taxa, clean_sci_name, Impact.category, Allocation, Units, prod_weighting) %>%
   summarise(stressor = mean(stressor, na.rm = TRUE)) %>%
-  # Convert units to per tonne
-  mutate(stressor = 1000*stressor) %>% 
   # Calculate taxa mean
   group_by(taxa, Impact.category, Allocation, Units) %>%
   summarise(weighted_stressor = sum(stressor*prod_weighting), 
@@ -101,8 +99,8 @@ df_onfarm_ghg_taxa <- df_onfarm_ghg %>%
   summarise(mean_onfarm_ghg = mean(onfarm_ghg_kgCO2, na.rm = TRUE)) %>%
   # Calculate taxa means
   group_by(taxa) %>%
-  summarise(onfarmGHG_weighted_stressor = sum(mean_onfarm_ghg*prod_weighting), 
-            onfarmGHG_unweighted_stressor = mean(mean_onfarm_ghg, na.rm = TRUE))
+  summarise(onfarm_GHG_weighted_stressor = sum(mean_onfarm_ghg*prod_weighting), 
+            onfarm_GHG_unweighted_stressor = mean(mean_onfarm_ghg, na.rm = TRUE))
 
 #_______________________________________________________________________________________________________________________#
 # Calculate on-farm N and P
@@ -130,9 +128,11 @@ df_onfarm_NP <- df %>%
   mutate(feed_N = feed_proportion*(N/100), 
          feed_P = feed_proportion*(P/100)) %>%
   select(-c("feed_proportion", "N", "P")) %>%
-  group_by(study_id,clean_sci_name, taxa, intensity, system, fcr, prod_weighting) %>% # removed Country, iso3c since they are temporarily missing from df
+  ungroup() %>%
+  group_by(study_id, clean_sci_name, taxa, Country, iso3c, intensity, system, fcr, prod_weighting) %>% 
   summarise(feed_N = fcr*sum(feed_N, na.rm = TRUE), 
-            feed_P = fcr*sum(feed_P, na.rm = TRUE)) %>%
+            feed_P = fcr*sum(feed_P, na.rm = TRUE), .groups = 'drop') %>%
+  distinct() %>%
   # Subtract product N and P
   left_join(fish_NP, by = c("clean_sci_name")) %>%
   mutate(N_emissions_kg_per_t = 1000*(feed_N - N_t_liveweight_t), 
@@ -145,24 +145,26 @@ df_onfarm_NP_taxa <- df_onfarm_NP %>%
             mean_onfarm_P = mean(P_emissions_kg_per_t, na.rm = TRUE)) %>% 
   # Calculate taxa means
   group_by(taxa) %>%
-  summarise(onfarmN_weighted_stressor = sum(mean_onfarm_N*prod_weighting), 
-            onfarmN_unweighted_stressor = mean(mean_onfarm_N, na.rm = TRUE),
-            onfarmP_weighted_stressor = sum(mean_onfarm_P*prod_weighting), 
-            onfarmP_unweighted_stressor = mean(mean_onfarm_P, na.rm = TRUE))
+  summarise(onfarm_N_weighted_stressor = sum(mean_onfarm_N*prod_weighting), 
+            onfarm_N_unweighted_stressor = mean(mean_onfarm_N, na.rm = TRUE),
+            onfarm_P_weighted_stressor = sum(mean_onfarm_P*prod_weighting), 
+            onfarm_P_unweighted_stressor = mean(mean_onfarm_P, na.rm = TRUE))
 
 #_______________________________________________________________________________________________________________________#
 # Calculate on-farm land
 #_______________________________________________________________________________________________________________________#
-df_onfarm_land_taxa <- df %>% 
+df_onfarm_land <- df %>% 
   # Only count land for ponds and recirculating systems
-  mutate(Yield_m2_per_t = ifelse(system %in% c("Ponds", "Recirculating and tanks"), Yield_m2_per_t, 0)) %>%
+  mutate(Yield_m2_per_t = ifelse(system %in% c("Ponds", "Recirculating and tanks"), Yield_m2_per_t, 0))
+
+df_onfarm_land_taxa <- df_onfarm_land %>% 
   # Calculate species means
   group_by(taxa, clean_sci_name, prod_weighting) %>% 
   summarise(mean_onfarm_land = mean(Yield_m2_per_t, na.rm = TRUE)) %>% 
   # Calculate taxa means
   group_by(taxa) %>%
-  summarise(onfarmland_weighted_stressor = sum(mean_onfarm_land*prod_weighting), 
-            onfarmland_unweighted_stressor = mean(mean_onfarm_land, na.rm = TRUE))
+  summarise(onfarm_land_weighted_stressor = sum(mean_onfarm_land*prod_weighting), 
+            onfarm_land_unweighted_stressor = mean(mean_onfarm_land, na.rm = TRUE))
 
 #_______________________________________________________________________________________________________________________#
 # Calculate on-farm water
@@ -187,11 +189,11 @@ df_onfarm_water_taxa <- df_onfarm_water %>%
   summarise(mean_onfarm_water = mean(on_farm_water, na.rm = TRUE)) %>%
   # Calculate taxa means
   group_by(taxa) %>%
-  summarise(onfarmwater_weighted_stressor = sum(mean_onfarm_water*prod_weighting), 
-            onfarmwater_unweighted_stressor = mean(mean_onfarm_water, na.rm = TRUE))
+  summarise(onfarm_water_weighted_stressor = sum(mean_onfarm_water*prod_weighting), 
+            onfarm_water_unweighted_stressor = mean(mean_onfarm_water, na.rm = TRUE))
 
-df_onfarm_water_taxa$onfarmwater_weighted_stressor[is.na(df_onfarm_water_taxa$onfarmwater_weighted_stressor)] <- 0
-df_onfarm_water_taxa$onfarmwater_unweighted_stressor[is.na(df_onfarm_water_taxa$onfarmwater_unweighted_stressor)] <- 0
+df_onfarm_water_taxa$onfarm_water_weighted_stressor[is.na(df_onfarm_water_taxa$onfarm_water_weighted_stressor)] <- 0
+df_onfarm_water_taxa$onfarm_water_unweighted_stressor[is.na(df_onfarm_water_taxa$onfarm_water_unweighted_stressor)] <- 0
 
 #_______________________________________________________________________________________________________________________#
 # Calculate capture GHGs
@@ -218,9 +220,36 @@ df_capture_ghg <- df_capture %>%
   summarise(ghg_kg_t = sum(species_ghg_kg_t*species_consumption_weighting))
 
 #_______________________________________________________________________________________________________________________#
+# Summarize all by species
+#_______________________________________________________________________________________________________________________#
+df_feed_species <- df_feed %>% 
+  ungroup() %>%
+  filter(Allocation == "Mass") %>%
+  mutate(spread_col = case_when(
+    Impact.category == "Global warming potential" ~ "feed_GHG",
+    Impact.category == "Freshwater eutrophication" ~ "feed_P",
+    Impact.category == "Marine eutrophication" ~ "feed_N",
+    Impact.category == "Land use" ~ "feed_land",
+    Impact.category == "Water consumption" ~ "feed_water"
+  )) %>%
+  select(study_id, taxa, intensity, system, clean_sci_name, spread_col, stressor) %>%
+  pivot_wider(names_from = spread_col, values_from = stressor) 
+
+stressor_species_summary <- df %>%
+  select(study_id, taxa, intensity, system, clean_sci_name) %>% 
+  left_join(df_feed_species, by = c("study_id", "taxa", "intensity", "system", "clean_sci_name")) %>%
+  left_join(df_onfarm_ghg, by = c("study_id", "taxa", "intensity", "system", "clean_sci_name")) %>%
+  left_join(df_onfarm_NP, by = c("study_id", "taxa", "intensity", "system", "clean_sci_name")) %>%
+  left_join(df_onfarm_land, by = c("study_id", "taxa", "intensity", "system", "clean_sci_name")) %>%
+  left_join(df_onfarm_water, by = c("study_id", "taxa", "intensity", "system", "clean_sci_name")) %>%
+  select(study_id, taxa, intensity, system, clean_sci_name, feed_GHG, "feed_N" = "feed_N.x", "feed_P" = "feed_P.x",
+         feed_land, feed_water, "onfarm_ghg" = "onfarm_ghg_kgCO2", "onfarm_N" = "N_emissions_kg_per_t", 
+        "onfarm_P" = "P_emissions_kg_per_t", "onfarm_land" = "Yield_m2_per_t.x", "onfarm_water" = "on_farm_water")
+
+#_______________________________________________________________________________________________________________________#
 # Summarize all by taxa
 #_______________________________________________________________________________________________________________________#
-df_feed_taxa <- df_feed_taxa %>%
+df_feed_taxa_summary <- df_feed_taxa %>%
   ungroup() %>%
   filter(Allocation == "Mass") %>%
   mutate(spread_col = case_when(
@@ -233,14 +262,14 @@ df_feed_taxa <- df_feed_taxa %>%
   select(taxa, spread_col, weighted_stressor) %>%
   pivot_wider(names_from = spread_col, values_from = weighted_stressor) 
 
-stressor_taxa_summary <- df_feed_taxa %>%
+stressor_taxa_summary <- df_feed_taxa_summary %>%
   left_join(df_onfarm_ghg_taxa, by = "taxa") %>%
   left_join(df_onfarm_NP_taxa, by = "taxa") %>%
   left_join(df_onfarm_land_taxa, by = "taxa") %>%
   left_join(df_onfarm_water_taxa, by = "taxa") %>%
-  mutate(total_ghg = feed_GHG + onfarmGHG_weighted_stressor, 
-         total_N = feed_N + onfarmN_weighted_stressor, 
-         total_P = feed_P + onfarmP_weighted_stressor, 
-         total_land = feed_land + onfarmland_weighted_stressor, 
-         total_water = feed_water + onfarmwater_weighted_stressor)
+  mutate(total_ghg = feed_GHG + onfarm_GHG_weighted_stressor, 
+         total_N = feed_N + onfarm_N_weighted_stressor, 
+         total_P = feed_P + onfarm_P_weighted_stressor, 
+         total_land = feed_land + onfarm_land_weighted_stressor, 
+         total_water = feed_water + onfarm_water_weighted_stressor)
 

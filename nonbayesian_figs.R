@@ -2,39 +2,40 @@
 library(tidyverse)
 library(ggplot2)
 library(ggthemes)
+library(ggridges)
 
-source("nonbayesian_estimates.R")
+#source("nonbayesian_estimates.R")
 
 #_______________________________________________________________________________________________________________________#
 # Plot feed-associated stressors
 #_______________________________________________________________________________________________________________________#
 
 ggplot(df_feed_taxa %>% filter(Impact.category == "Global warming potential"), 
-       aes(x = stressor, y = taxa, fill = Allocation)) +
+       aes(x = weighted_stressor, y = taxa, fill = Allocation)) +
   geom_bar(position="dodge", stat="identity") + 
   labs(x = "GHG kg CO2-eq/t", y = "", title = "GHG") +
   theme_clean()
 
 ggplot(df_feed_taxa %>% filter(Impact.category == "Marine eutrophication"), 
-       aes(x = stressor, y = taxa, fill = Allocation)) +
+       aes(x = weighted_stressor, y = taxa, fill = Allocation)) +
   geom_bar(position="dodge", stat="identity") + 
   labs(x = "Feed-associated N (kg N-eq/t)", y = "", title = "Nitrogen") +
   theme_clean()
 
 ggplot(df_feed_taxa %>% filter(Impact.category == "Freshwater eutrophication"), 
-       aes(x = stressor, y = taxa, fill = Allocation)) +
+       aes(x = weighted_stressor, y = taxa, fill = Allocation)) +
   geom_bar(position="dodge", stat="identity") + 
   labs(x = "Feed-associated P (kg P-eq/t)", y = "", title = "Phosphorus") +
   theme_clean()
 
 ggplot(df_feed_taxa %>% filter(Impact.category == "Land use"), 
-       aes(x = stressor, y = taxa, fill = Allocation)) +
+       aes(x = weighted_stressor, y = taxa, fill = Allocation)) +
   geom_bar(position="dodge", stat="identity") + 
   labs(x = "m2a/t", y = "", title = "Land") +
   theme_clean()
 
 ggplot(df_feed_taxa %>% filter(Impact.category == "Water consumption"), 
-       aes(x = stressor, y = taxa, fill = Allocation)) +
+       aes(x = weighted_stressor, y = taxa, fill = Allocation)) +
   geom_bar(position="dodge", stat="identity") + 
   labs(x = "m3/t", y = "", title = "Water") +
   theme_clean()
@@ -46,26 +47,23 @@ ggplot(df_feed_taxa, aes(x = weighted_stressor, y = unweighted_stressor, colour 
 #_______________________________________________________________________________________________________________________#
 # Plot on farm GHG
 #_______________________________________________________________________________________________________________________#
-# Plot unweighted taxa means
-ggplot(df_onfarm_ghg %>% group_by(taxa) %>% summarise(mean_onfarm_ghg = mean(onfarm_ghg_kgCO2)), 
-       aes(y = taxa, x = mean_onfarm_ghg)) +
+ggplot(stressor_taxa_summary, 
+       aes(y = taxa, x = onfarm_GHG_weighted_stressor)) +
   geom_bar(stat = "identity") + 
-  labs(x = "On farm GHG (kg CO2-eq)", y = "") +
+  labs(x = "On farm GHG (kg CO2-eq per t)", y = "") +
   theme_clean()
-
 
 #_______________________________________________________________________________________________________________________#
 # Plot on farm N and P
 #_______________________________________________________________________________________________________________________#
-# Plot unweighted taxa means
-ggplot(df_onfarm_NP_taxa, 
-       aes(y = taxa, x = mean_onfarm_N)) +
+ggplot(stressor_taxa_summary, 
+       aes(y = taxa, x = onfarm_N_weighted_stressor)) +
   geom_bar(stat = "identity") + 
   labs(x = "On farm N (kg N per t)", y = "") +
   theme_clean()
 
-ggplot(df_onfarm_NP_taxa, 
-       aes(y = taxa, x = mean_onfarm_P)) +
+ggplot(stressor_taxa_summary, 
+       aes(y = taxa, x = onfarm_P_weighted_stressor)) +
   geom_bar(stat = "identity") + 
   labs(x = "On farm P (kg P per t)", y = "") +
   theme_clean()
@@ -73,9 +71,161 @@ ggplot(df_onfarm_NP_taxa,
 #_______________________________________________________________________________________________________________________#
 # Plot on farm land
 #_______________________________________________________________________________________________________________________#
-# Plot unweighted taxa means
-ggplot(df_onfarm_land %>% group_by(taxa) %>% summarise(mean_onfarm_land = mean(yield)), 
-       aes(y = taxa, x = mean_onfarm_land)) +
+ggplot(stressor_taxa_summary, 
+       aes(y = taxa, x = onfarm_land_weighted_stressor)) +
   geom_bar(stat = "identity") + 
   labs(x = "On farm land (m2 per t)", y = "") +
+  theme_clean()
+
+#_______________________________________________________________________________________________________________________#
+# Plot on farm water
+#_______________________________________________________________________________________________________________________#
+ggplot(stressor_taxa_summary, 
+       aes(y = taxa, x = onfarm_water_weighted_stressor)) +
+  geom_bar(stat = "identity") + 
+  labs(x = "On farm water (m3 per t)", y = "") +
+  theme_clean()
+
+#_______________________________________________________________________________________________________________________#
+# Summary plots
+#_______________________________________________________________________________________________________________________#
+# Data distributions by taxa
+stressor_species_summary_plot <- stressor_species_summary %>% 
+  pivot_longer(feed_GHG:onfarm_water, names_sep = "_", 
+               names_to = c("source", "stressor")) %>%
+  filter(!is.na(value))
+
+# Plot GHG by taxa
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("GHG", "ghg")),
+       aes(x = value, y = taxa)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  labs(x = "GHG (kg CO2-eq per t)", y = "") +
+  facet_wrap(~source, scales = "free")
+
+# Plot GHG by system
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("GHG", "ghg"), !is.na(system)),
+       aes(x = value, y = system)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  labs(x = "GHG (kg CO2-eq per t)", y = "") +
+  facet_wrap(~source, scales = "free")
+
+# Plot GHG by system
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("GHG", "ghg"), !is.na(intensity)),
+       aes(x = value, y = intensity)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  labs(x = "GHG (kg CO2-eq per t)", y = "") +
+  facet_wrap(~source, scales = "free")
+
+# Plot N by taxa
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("N")),
+       aes(x = value, y = taxa)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  labs(x = "N (kg N per t)", y = "") +
+  facet_wrap(~source, scales = "free")
+
+# Plot N by system
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("N"), !is.na(system)),
+       aes(x = value, y = system)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  labs(x = "N (kg N per t)", y = "") +
+  facet_wrap(~source, scales = "free")
+
+# Plot N by taxa
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("N"), !is.na(intensity)),
+       aes(x = value, y = intensity)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  labs(x = "N (kg N per t)", y = "") +
+  facet_wrap(~source, scales = "free")
+
+# Plot P by taxa
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("P")),
+       aes(x = value, y = taxa)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  labs(x = "P (kg P per t)", y = "") +
+  facet_wrap(~source, scales = "free")
+
+# Plot P by system
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("P"), !is.na(system)),
+       aes(x = value, y = system)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  labs(x = "P (kg P per t)", y = "") +
+  facet_wrap(~source, scales = "free")
+
+# Plot P by intensity
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("P"), !is.na(intensity)),
+       aes(x = value, y = intensity)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  labs(x = "P (kg P per t)", y = "") +
+  facet_wrap(~source, scales = "free")
+
+# Plot land by taxa
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("land")),
+       aes(x = value, y = taxa)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  labs(x = "Land (m2 per t)", y = "") +
+  facet_wrap(~source, scales = "free")
+
+# Plot land by system
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("land"), !is.na(system)),
+       aes(x = value, y = system)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  labs(x = "Land (m2 per t)", y = "") +
+  facet_wrap(~source, scales = "free")
+
+# Plot land by intensity
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("land"), !is.na(intensity)),
+       aes(x = value, y = intensity)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  labs(x = "Land (m2 per t)", y = "") +
+  facet_wrap(~source, scales = "free")
+
+# Plot water by taxa
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("water")),
+       aes(x = value, y = taxa)) +
+  geom_density_ridges() +
+  labs(x = "Water (m3 per t)", y = "") +
+  theme_ridges() + 
+  facet_wrap(~source, scales = "free")
+
+# Plot water by system
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("water"), !is.na(system)),
+       aes(x = value, y = system)) +
+  geom_density_ridges() +
+  labs(x = "Water (m3 per t)", y = "") +
+  theme_ridges() + 
+  facet_wrap(~source, scales = "free")
+
+# Plot water by intensity
+ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("water"), !is.na(intensity)),
+       aes(x = value, y = intensity)) +
+  geom_density_ridges() +
+  labs(x = "Water (m3 per t)", y = "") +
+  theme_ridges() + 
+  facet_wrap(~source, scales = "free")
+
+# Mean stressor by taxa
+stressor_taxa_summary_plot <- stressor_taxa_summary %>%
+  select(-c("total_ghg", "total_N", "total_P", "total_land", "total_water", 
+            "onfarm_GHG_unweighted_stressor", "onfarm_N_unweighted_stressor",
+            "onfarm_P_unweighted_stressor", "onfarm_land_unweighted_stressor", "onfarm_water_unweighted_stressor")) %>%
+  pivot_longer(feed_P:onfarm_water_weighted_stressor, names_sep = "_", 
+               names_to = c("source", "stressor", "drop_1", "drop_2")) %>%
+  select(-c("drop_1", "drop_2"))
+  
+  
+ggplot(stressor_taxa_summary_plot, aes(x = value, y = taxa, fill = source)) + 
+  geom_bar(position="stack", stat="identity") +
+  facet_wrap(~stressor, scales = "free") +
   theme_clean()
