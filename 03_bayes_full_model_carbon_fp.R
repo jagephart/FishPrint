@@ -66,13 +66,19 @@ lca_model_dat <- lca_full_dat %>%
   drop_na(any_of(study_vars)) %>% # NAs in these variables means they were not able to be imputed in step 2 
   # OPTION 1: TEST MODEL ON SPECIES THAT ARE FED 
   #filter(fcr != 0)  %>% 
-  # OPTION 2: INCLUDE FED AND NON-FED SPECIES BUT mutate feed proportions to be an arbitrary simplex (0.25 per component) to avoid STAN error for non-simplexes
-  # FIX IT - feed proportions are multiplied by FCR == 0 so on-farm footprint for these studies will be 0
+  # OPTION 2: INCLUDE FED AND NON-FED SPECIES BUT mutate feed proportions to be the average within it's clean_sci_name; otherwise, give it an arbitrary simplex (0.25 per component) to avoid STAN error for simplexes that don't sum to 1
+  # FIX IT - in terms of on-farm footprint, this is OK because feed proportions are multiplied by FCR == 0 so on-farm footprint for these studies will be 0
   # BUT this will affect the pooled sci and taxa level feed proportions since they enter as 0.25
-  mutate(feed_soy = if_else(fcr==0, true = 0.25, false = feed_soy),
-         feed_crops = if_else(fcr==0, true = 0.25, false = feed_crops),
-         feed_fmfo = if_else(fcr==0, true = 0.25, false = feed_fmfo),
-         feed_animal = if_else(fcr==0, true = 0.25, false = feed_animal)) %>%
+  group_by(clean_sci_name) %>%
+  mutate(feed_soy = if_else(fcr==0, true = mean(feed_soy), false = feed_soy),
+         feed_crops = if_else(fcr==0, true = mean(feed_crops), false = feed_crops),
+         feed_fmfo = if_else(fcr==0, true = mean(feed_fmfo), false = feed_fmfo),
+         feed_animal = if_else(fcr==0, true = mean(feed_animal), false = feed_animal)) %>%
+  ungroup() %>%
+  mutate(feed_soy = if_else(fcr == 0 & feed_soy == 0 & feed_crops == 0 & feed_fmfo == 0 & feed_animal == 0, true = 0.25, false = feed_soy),
+         feed_crops = if_else(fcr == 0 & feed_crops == 0 & feed_fmfo == 0 & feed_animal == 0, true = 0.25, false = feed_crops),
+         feed_fmfo = if_else(fcr == 0 & feed_fmfo == 0 & feed_animal == 0, true = 0.25, false = feed_fmfo),
+         feed_animal = if_else(fcr == 0 & feed_animal == 0, true = 0.25, false = feed_animal)) %>%
   # Multiply energy input by their Carbon (i.e., GHG) footprint, then sum across energy inputs
   # (Electricity use * country-specific GHG of electricity) + (Diesel * GHG of diesel) + (Petrol * GHG of petrol) + (Natural gas * GHG of natural gas)
   # Calculate electriciy GHG footprint
@@ -93,7 +99,6 @@ lca_model_dat <- lca_full_dat %>%
          taxa = as.factor(taxa),
          tx = as.numeric(taxa),
          fed = if_else(fcr == 0, true = 0, false = 1)) 
-
 
 # Set data, indices, constants, weights for STAN
 
@@ -797,6 +802,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 ######################################################################################################
 # PLOT other intermediate-level calculations
 
+# FCR
 # Mean FCR sci-level
 fit_no_na %>%
   spread_draws(sci_mu_fcr[sci]) %>%
@@ -808,6 +814,8 @@ fit_no_na %>%
   theme_classic() + 
   sci_plot_theme + 
   labs(x = "FCR", y = "", title = "Mean FCR", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FCR-SCI-LEVEL.png", sep = "")), width = 11, height = 8.5)
+
 
 # Mean FCR taxa-level
 fit_no_na %>%
@@ -820,27 +828,52 @@ fit_no_na %>%
   theme_classic() + 
   tx_plot_theme + 
   labs(x = "FCR", y = "", title = "Mean FCR", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FCR-TAXA-LEVEL.png", sep = "")), width = 11, height = 8.5)
 
-# FIX IT - for feed proportions, remove taxa that were modified to 0.25
+# FEED PROPORTIONS:
+# For feed proportions, remove scinames where all studies were fcr == 0 and feed proportions were modified to 0.25
+sci_null_feed <- lca_model_dat %>% 
+  group_by(clean_sci_name) %>% 
+  mutate(drop_feed_model = if_else(fcr == 0 & feed_soy == 0.25 & feed_crops == 0.25 & feed_fmfo == 0.25 & feed_animal == 0.25, true = 1, false = 0)) %>%
+  mutate(n_sci = n()) %>%
+  mutate(n_drop = sum(drop_feed_model)) %>%
+  ungroup() %>%
+  filter(n_drop == n_sci) %>% # the number of studies that were modified to 0.25 is the same as the total number of studies for that sci name
+  pull(clean_sci_name) %>%
+  unique()
+
+# Same with taxa names
+taxa_null_feed <- lca_model_dat %>% 
+  group_by(taxa) %>% 
+  mutate(drop_feed_model = if_else(fcr == 0 & feed_soy == 0.25 & feed_crops == 0.25 & feed_fmfo == 0.25 & feed_animal == 0.25, true = 1, false = 0)) %>%
+  mutate(n_sci = n()) %>%
+  mutate(n_drop = sum(drop_feed_model)) %>%
+  ungroup() %>%
+  filter(n_drop == n_sci) %>%
+  pull(taxa) %>%
+  unique()
+
 # Sci-level theta (feed proportions)
 # Make separate plot for each feed component
 feed_component <- c("soy", "crops", "fmfo", "animal")
 for (i in 1:length(feed_component)){
-  fit_no_na %>%
+  plot_dat <- fit_no_na %>%
     spread_draws(sci_theta[sci, feed_index]) %>%
     median_qi(.width = 0.95) %>%
     left_join(sci_feed_key, by = c("sci" = "sci", "feed_index" = "feed_index")) %>% # Join with index key to get sci and taxa names
     filter(feed == feed_component[i]) %>%
+    filter(clean_sci_name %in% sci_null_feed == FALSE) %>%
     ungroup() %>% # need to remove automatic sci-level grouping for fct_reorder to work
-    mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
-    ggplot(aes(y = clean_sci_name, x = sci_theta, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+    mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name)))
+  p <- ggplot(plot_dat, aes(y = clean_sci_name, x = sci_theta, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
     geom_pointinterval() +
     #stat_halfeye(aes(slab_fill = full_taxa_name)) +
     coord_cartesian(xlim = c(0, 1)) +
     theme_classic() + 
     sci_plot_theme + 
     labs(x = "Feed Proportion", y = "", title = feed_component[i], color = "taxa group")
-  #ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FEED-PROP-TAXA-LEVEL-", feed_component[i], ".png", sep = "")), width = 11, height = 8.5)
+  print(p)
+  ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FEED-", feed_component[i], "-SCI-LEVEL.png", sep = "")), width = 11, height = 8.5)
 }
 
 # Taxa-level theta (feed proportions)
@@ -851,8 +884,9 @@ for (i in 1:length(feed_component)){
     spread_draws(tx_theta[tx, feed_index]) %>%
     median_qi(.width = 0.95) %>%
     left_join(tx_feed_key, by = c("tx" = "tx", "feed_index" = "feed_index")) %>% # Join with index key to get sci and taxa names
-    filter(feed == feed_component[i])
-  p <- ggplot(plot_dat, aes(y = taxa, x = tx_theta, xmin = .lower, xmax = .upper)) +
+    filter(feed == feed_component[i]) %>%
+    filter(taxa %in% taxa_null_feed == FALSE)
+  p <- ggplot(plot_dat, aes(y = full_taxa_name, x = tx_theta, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
     geom_pointinterval() +
     #stat_halfeye(aes(slab_fill = full_taxa_name)) +
     coord_cartesian(xlim = c(0, 1)) +
@@ -861,11 +895,8 @@ for (i in 1:length(feed_component)){
     theme(legend.position = "none") +
     labs(x = "Feed Proportion", y = "", title = feed_component[i])
   print(p)
-  #ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FEED-PROP-TAXA-LEVEL-", feed_component[i], ".png", sep = "")), width = 11, height = 8.5)
+  ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FEED-", feed_component[i], "-TAXA-LEVEL.png", sep = "")), width = 11, height = 8.5)
 }
-
-
-
 
 # OPTION 2: Taxa-level plots with color themes:
 # If we want to mimic bayesplot color schemes, can get hexadecimal colors and input manually to stat_halfeye aesthetics
