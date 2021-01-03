@@ -399,4 +399,7 @@ fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Macrocystis pyri
 fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Gracilaria chilensis"] <- ave_plant_N
 fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Gracilaria chilensis"] <- ave_plant_P
 
+fishNutrition <- fishNutrition %>%
+  select(clean_sci_name, N_t_liveweight_t, P_t_liveweight_t)
+
 write.csv(fishNutrition, file.path(datadir, "fish_NP_clean.csv"), row.names = FALSE)
