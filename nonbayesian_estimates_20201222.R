@@ -262,6 +262,7 @@ df_feed_taxa_summary <- df_feed_taxa %>%
   select(taxa, spread_col, weighted_stressor) %>%
   pivot_wider(names_from = spread_col, values_from = weighted_stressor) 
 
+# Output summary (can compare with lever analysis with all deltas = 0)
 stressor_taxa_summary <- df_feed_taxa_summary %>%
   left_join(df_onfarm_ghg_taxa, by = "taxa") %>%
   left_join(df_onfarm_NP_taxa, by = "taxa") %>%
