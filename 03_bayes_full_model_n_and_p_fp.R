@@ -410,7 +410,7 @@ summary(fit_no_na)$summary
 # rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
 #                            "lca_dat_clean_groups", "feed_model_dat_categories",
 #                            "full_feed_dat", "full_fcr_dat", "feed_footprint_dat", "fit_no_na"))])
-#save.image(file.path(outdir, paste(Sys.Date(), "_full-model_", impact, "_", set_allocation, "-allocation_all-data-prior-to-plotting.RData", sep = "")))
+save.image(file.path(outdir, paste(Sys.Date(), "_full-model_", impact, "_", set_allocation, "-allocation_all-data-prior-to-plotting.RData", sep = "")))
 
 # datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 # outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
@@ -442,9 +442,29 @@ if (impact == "Global warming potential") {
 }
 
 
-# Key for naming sci and taxa levels
+# Key for naming taxa levels
 # Get full taxa group names back
-index_key <- lca_model_dat %>%
+tx_index_key <- lca_model_dat %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_obs = n()) %>%
+  ungroup() %>%
+  select(taxa, tx) %>%
+  unique() %>%
+  arrange(taxa) %>%
+  mutate(taxa = as.character(taxa),
+         full_taxa_name = case_when(taxa == "hypoph_carp" ~ "bighead/silverhead carp",
+                                    taxa == "misc_marine" ~ "misc marine fishes",
+                                    taxa == "misc_fresh" ~ "misc freshwater fishes",
+                                    taxa == "misc_diad" ~ "misc diadromous fishes",
+                                    taxa == "oth_carp" ~ "misc carps",
+                                    taxa == "fresh_crust" ~ "freshwater crustaceans",
+                                    TRUE ~ taxa),
+         taxa = as.factor(taxa),
+         full_taxa_name = as.factor(full_taxa_name))
+
+# Key for naming sci levels
+# Get full taxa group names back
+sci_index_key <- lca_model_dat %>%
   group_by(clean_sci_name) %>%
   mutate(n_obs = n()) %>%
   ungroup() %>%
@@ -532,7 +552,7 @@ get_variables(fit_no_na)
 fit_no_na %>%
   spread_draws(tx_feed_fp_w[tx]) %>%
   median_qi(.width = 0.95) %>%
-  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
   mutate(tx_feed_fp_w = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_feed_fp_w),
          .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
          .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
@@ -547,7 +567,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 fit_no_na %>%
   spread_draws(tx_farm_fp_w[tx]) %>%
   median_qi(.width = 0.95) %>%
-  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
   ggplot(aes(y = full_taxa_name, x = tx_farm_fp_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
   theme_classic() + 
@@ -559,7 +579,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
   median_qi(.width = 0.95) %>%
-  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
   # Set .lower limit of plants and bivalves to be 0
   mutate(.lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower)) %>% 
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
@@ -575,7 +595,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 fit_no_na %>%
   spread_draws(sci_feed_fp_w[sci]) %>%
   median_qi(.width = 0.95) %>%
-  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  left_join(sci_index_key, by = "sci") %>% # Join with index key to get sci and taxa names
   mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
   ggplot(aes(y = clean_sci_name, x = sci_feed_fp_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
@@ -588,7 +608,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 fit_no_na %>%
   spread_draws(sci_mu_farm_w[sci]) %>%
   median_qi(.width = 0.95) %>%
-  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  left_join(sci_index_key, by = "sci") %>% # Join with index key to get sci and taxa names
   mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
   ggplot(aes(y = clean_sci_name, x = sci_mu_farm_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
@@ -605,7 +625,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 fit_no_na %>%
   spread_draws(sci_feed_fp[sci]) %>%
   median_qi(.width = 0.95) %>%
-  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  left_join(sci_index_key, by = "sci") %>% # Join with index key to get sci and taxa names
   # SET plants and bivalves to 0
   mutate(sci_feed_fp = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = sci_feed_fp),
          .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
@@ -622,7 +642,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 fit_no_na %>%
   spread_draws(tx_feed_fp[tx]) %>%
   median_qi(.width = 0.95) %>%
-  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
   # SET plants and bivalves to 0
   mutate(tx_feed_fp = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_feed_fp),
          .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
@@ -640,7 +660,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 fit_no_na %>%
   spread_draws(sci_mu_farm[sci]) %>%
   median_qi(.width = 0.95) %>%
-  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  left_join(sci_index_key, by = "sci") %>% # Join with index key to get sci and taxa names
   mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
   ggplot(aes(y = clean_sci_name, x = sci_mu_farm, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
@@ -667,7 +687,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 fit_no_na %>%
   spread_draws(sci_total_fp[sci]) %>%
   median_qi(.width = 0.95) %>%
-  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  left_join(sci_index_key, by = "sci") %>% # Join with index key to get sci and taxa names
   mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
   ggplot(aes(y = clean_sci_name, x = sci_total_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
@@ -681,7 +701,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 # fit_no_na %>%
 #   spread_draws(tx_total_fp[tx]) %>%
 #   median_qi(.width = 0.95) %>%
-#   left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+#   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
 #   ggplot(aes(y = full_taxa_name, x = tx_total_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
 #   geom_pointinterval() +
 #   theme_classic() + 
@@ -690,114 +710,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 # ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
 ######################################################################################################
-# PLOT other intermediate-level calculations
-
-# FCR
-# Mean FCR sci-level
-fit_no_na %>%
-  spread_draws(sci_mu_fcr[sci]) %>%
-  median_qi(.width = 0.95) %>%
-  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
-  # SET plants and bivalves to 0
-  mutate(sci_mu_fcr = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = sci_mu_fcr),
-         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
-         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
-  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
-  ggplot(aes(y = clean_sci_name, x = sci_mu_fcr, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-  geom_pointinterval() +
-  theme_classic() + 
-  sci_plot_theme + 
-  labs(x = "FCR", y = "", title = "Mean FCR", color = "taxa group")
-ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FCR-SCI-LEVEL.png", sep = "")), width = 11, height = 8.5)
+# NEXT: Before clearing workspace, use 04_plot_common_outputs.R - plot other intermediate-level calculations (these are universally shared among all models)
 
 
-# Mean FCR taxa-level
-fit_no_na %>%
-  spread_draws(tx_mu_fcr[tx]) %>%
-  median_qi(.width = 0.95) %>%
-  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  # SET plants and bivalves to 0
-  mutate(tx_mu_fcr = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_mu_fcr),
-         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
-         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
-  #mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
-  ggplot(aes(y = full_taxa_name, x = tx_mu_fcr, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-  geom_pointinterval() +
-  theme_classic() + 
-  tx_plot_theme + 
-  labs(x = "FCR", y = "", title = "Mean FCR", color = "taxa group")
-ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FCR-TAXA-LEVEL.png", sep = "")), width = 11, height = 8.5)
-
-# FEED PROPORTIONS:
-# For feed proportions, remove scinames where all studies were fcr == 0 and feed proportions were modified to 0.25
-sci_null_feed <- lca_model_dat %>% 
-  group_by(clean_sci_name) %>% 
-  mutate(drop_feed_model = if_else(fcr == 0 & feed_soy == 0.25 & feed_crops == 0.25 & feed_fmfo == 0.25 & feed_animal == 0.25, true = 1, false = 0)) %>%
-  mutate(n_sci = n()) %>%
-  mutate(n_drop = sum(drop_feed_model)) %>%
-  ungroup() %>%
-  filter(n_drop == n_sci) %>% # the number of studies that were modified to 0.25 is the same as the total number of studies for that sci name
-  pull(clean_sci_name) %>%
-  unique()
-
-# Same with taxa names
-taxa_null_feed <- lca_model_dat %>% 
-  group_by(taxa) %>% 
-  mutate(drop_feed_model = if_else(fcr == 0 & feed_soy == 0.25 & feed_crops == 0.25 & feed_fmfo == 0.25 & feed_animal == 0.25, true = 1, false = 0)) %>%
-  mutate(n_sci = n()) %>%
-  mutate(n_drop = sum(drop_feed_model)) %>%
-  ungroup() %>%
-  filter(n_drop == n_sci) %>%
-  pull(taxa) %>%
-  unique()
-
-# Sci-level theta (feed proportions)
-# Make separate plot for each feed component
-feed_component <- c("soy", "crops", "fmfo", "animal")
-for (i in 1:length(feed_component)){
-  plot_dat <- fit_no_na %>%
-    spread_draws(sci_theta[sci, feed_index]) %>%
-    median_qi(.width = 0.95) %>%
-    left_join(sci_feed_key, by = c("sci" = "sci", "feed_index" = "feed_index")) %>% # Join with index key to get sci and taxa names
-    filter(feed == feed_component[i]) %>%
-    filter(clean_sci_name %in% sci_null_feed == FALSE) %>%
-    ungroup() %>% # need to remove automatic sci-level grouping for fct_reorder to work
-    mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name)))
-  p <- ggplot(plot_dat, aes(y = clean_sci_name, x = sci_theta, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-    geom_pointinterval() +
-    #stat_halfeye(aes(slab_fill = full_taxa_name)) +
-    coord_cartesian(xlim = c(0, 1)) +
-    theme_classic() + 
-    sci_plot_theme + 
-    labs(x = "Feed Proportion", y = "", title = feed_component[i], color = "taxa group")
-  print(p)
-  ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FEED-", feed_component[i], "-SCI-LEVEL.png", sep = "")), width = 11, height = 8.5)
-}
-
-# Taxa-level theta (feed proportions)
-# Make separate plot for each feed component
-feed_component <- c("soy", "crops", "fmfo", "animal")
-for (i in 1:length(feed_component)){
-  plot_dat <- fit_no_na %>%
-    spread_draws(tx_theta[tx, feed_index]) %>%
-    median_qi(.width = 0.95) %>%
-    left_join(tx_feed_key, by = c("tx" = "tx", "feed_index" = "feed_index")) %>% # Join with index key to get sci and taxa names
-    filter(feed == feed_component[i]) %>%
-    filter(taxa %in% taxa_null_feed == FALSE)
-  p <- ggplot(plot_dat, aes(y = full_taxa_name, x = tx_theta, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-    geom_pointinterval() +
-    #stat_halfeye(aes(slab_fill = full_taxa_name)) +
-    coord_cartesian(xlim = c(0, 1)) +
-    theme_classic() + 
-    tx_plot_theme + 
-    theme(legend.position = "none") +
-    labs(x = "Feed Proportion", y = "", title = feed_component[i])
-  print(p)
-  ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FEED-", feed_component[i], "-TAXA-LEVEL.png", sep = "")), width = 11, height = 8.5)
-}
-
-# OPTION 2: Taxa-level plots with color themes:
-# If we want to mimic bayesplot color schemes, can get hexadecimal colors and input manually to stat_halfeye aesthetics
-color_scheme_get("blue")
-color_scheme_get("green")
 
