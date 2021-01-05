@@ -12,12 +12,50 @@ library(tidybayes)
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
-wild_dat <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>%
+# FIX IT - figure out weightings - easiest would be to pass a single weighting to each species' ghg
+wild_dat <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>% as_tibble()
+
+wild_dat_new_weights <- wild_dat %>%
   filter(species_group != "Finfish") %>%
-  mutate(species = as.factor(species)) %>%
-  mutate(species_group = as.factor(species_group)) %>%
-  mutate(sci = as.numeric(species)) %>%
-  mutate(tx = as.numeric(species_group))
+  # Remove mixed gear and nei observations
+  filter(!str_detect(pattern = " nei", species)) %>%
+  filter(gear != "Other, Mixed, or Unknown") %>%
+  # Remove observations with 0 gear, species, or consumption weighting
+  filter(gear_weighting > 0 & species_weighting > 0 & consumption_weighting > 0) %>%
+  # Re-weight gear within species
+  group_by(species) %>%
+  mutate(gear_weights_new = gear_weighting/sum(gear_weighting)) %>%
+  ungroup() %>%
+  # Re-weight species and consumption within species_groups
+  group_by(species_group) %>%
+  mutate(species_weights_new = species_weighting/sum(species_weighting),
+         consumption_weights_new = consumption_weighting/sum(consumption_weighting)) %>%
+  ungroup() %>%
+  # Calculate overall weights and re-weight
+  mutate(prod_of_weights = gear_weights_new * species_weights_new * consumption_weights_new) %>%
+  group_by(species_group) %>%
+  mutate(overall_weights = prod_of_weights/sum(prod_of_weights))
+
+# LEFT OFF HERE - Find Bayesian mean of ghg column with species nested within species_group, then apply overall_weights
+
+jg_results <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>%
+# Remove mixed gear and nei observations
+  filter(!str_detect(pattern = " nei", species)) %>%
+  filter(gear != "Other, Mixed, or Unknown") %>%
+  # Remove observations with 0 gear, species, or consumption weighting
+  filter(gear_weighting > 0 & species_weighting > 0 & consumption_weighting > 0) %>%
+  # Re-weight gear within each species
+  group_by(species_group, species) %>%
+  mutate(gear_weighting_new = gear_weighting/sum(gear_weighting)) %>%
+  # Create species gear-weighted means
+  summarise(species_ghg_kg_t = sum(ghg*gear_weighting_new), 
+            species_weighting = mean(species_weighting), 
+            consumption_weighting = mean(consumption_weighting)) %>%
+  # Re-weight species and consumption within taxa group
+  ungroup() %>%
+  group_by(species_group) %>%
+  mutate(species_consumption_weighting = (species_weighting*consumption_weighting)/sum(species_weighting*consumption_weighting)) %>%
+  summarise(ghg_kg_t = sum(species_ghg_kg_t*species_consumption_weighting))
 
 # FOR NOW, no weightings and pooling observations up to taxa (i.e., species_group) level and skip scientific name level
 # Set data

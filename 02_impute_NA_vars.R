@@ -8,7 +8,7 @@
 rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups"))])
 
 # Or just read in:
-#lca_dat_clean_group <- read.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"), row.names = FALSE)
+#lca_dat_clean_groups <- read.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"), row.names = FALSE)
 
 ######################################################################################################
 # Section 1: Create feed_model_dat_categories for modeling FCR and feed proportions
