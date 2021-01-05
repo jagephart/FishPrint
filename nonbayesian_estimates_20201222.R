@@ -125,7 +125,7 @@ df_onfarm_NP <- df %>%
   pivot_longer(feed_soy:feed_animal, names_to = c("drop", "feed_type"), names_sep = "_", values_to = "feed_proportion") %>%
   select(-drop) %>%
   left_join(feed_NP, by = "feed_type") %>%
-  mutate(feed_N = feed_proportion*(N/100), 
+  mutate(feed_N = feed_proportion*(N/100), # Divide by 100 because N and P data is in percent
          feed_P = feed_proportion*(P/100)) %>%
   select(-c("feed_proportion", "N", "P")) %>%
   ungroup() %>%
@@ -272,5 +272,10 @@ stressor_taxa_summary <- df_feed_taxa_summary %>%
          total_N = feed_N + onfarm_N_weighted_stressor, 
          total_P = feed_P + onfarm_P_weighted_stressor, 
          total_land = feed_land + onfarm_land_weighted_stressor, 
-         total_water = feed_water + onfarm_water_weighted_stressor)
+         total_water = feed_water + onfarm_water_weighted_stressor) %>%
+  mutate(prop_onfarm_ghg = onfarm_GHG_weighted_stressor/total_ghg,
+         prop_onfarm_N = onfarm_N_weighted_stressor/total_N,
+         prop_onfarm_P = onfarm_P_weighted_stressor/total_P,
+         prop_onfarm_water = onfarm_water_weighted_stressor/total_water,
+         prop_onfarm_land = onfarm_land_weighted_stressor/total_land)
 
