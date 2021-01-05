@@ -1,4 +1,4 @@
-# Get Bayesian means of on-farm (non-feed) and off-farm (feed) CARBON impacts 
+# Get Bayesian sci and taxa-level means of on-farm (non-feed) and off-farm (feed) CARBON impacts 
 
 ###################### REMINDER FOR CARBON: 
 # OFF-FARM impacts should be ZERO when FCR = 0 (i.e., for full taxa groups bivalves and plants, and other sci-names within other taxa groups)
@@ -44,15 +44,6 @@ petrol_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming p
 
 # NOTE: natural gas is in kg CO2-eq / m3, need to convert to kg CO2-eq / L - multiply by 0.001 m3 / L
 natgas_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Natural gas") %>% pull(Value) * 0.001
-
-# SELECT STUDY VARIABLES NEEDED FOR MODEL (this will be used in drop_na function)
-study_vars <- c("clean_sci_name", "taxa",
-                "feed_soy", "feed_crops", "feed_fmfo", "feed_animal",
-                "fcr",
-                "electric",
-                "diesel",
-                "petrol",
-                "natgas")
 
 # Format data for model:
 lca_model_dat <- lca_full_dat %>%
@@ -100,7 +91,8 @@ lca_model_dat <- lca_full_dat %>%
   mutate(natgas_ghg = natgas * natgas_fp) %>%
   # Calculate sum total of GHG footprint
   mutate(total_ghg = electric_ghg + diesel_ghg + petrol_ghg + natgas_ghg) %>%
-  arrange(clean_sci_name, taxa) %>%
+  # LAST FORMATING STEP - always arrange by clean_sci_name
+  arrange(clean_sci_name) %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
          sci = as.numeric(clean_sci_name),
          taxa = as.factor(taxa),
@@ -253,7 +245,7 @@ stan_no_na <- 'data {
 }
 parameters {
   // FCR model
-  vector[N_TX] tx_mu_fcr; // putting lower=0 bounds will cause mu_fcr to skew positive
+  vector[N_TX] tx_mu_fcr; // putting lower=0 bounds will cause mu_fcr to skew positive when zero (eg, plants, bivalves)
   vector[N_SCI] sci_mu_fcr;
   real<lower=0> tx_sigma_fcr;
   real<lower=0> sci_sigma_fcr;
@@ -528,6 +520,9 @@ fit_no_na %>%
   spread_draws(tx_feed_fp_w[tx]) %>%
   median_qi(.width = 0.95) %>%
   left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  mutate(tx_feed_fp_w = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_feed_fp_w),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_feed_fp_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
   theme_classic() + 
@@ -552,6 +547,8 @@ fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
   median_qi(.width = 0.95) %>%
   left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # Set .lower limit of plants and bivalves to be 0
+  mutate(.lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower)) %>% 
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
   theme_classic() + 
@@ -596,6 +593,10 @@ fit_no_na %>%
   spread_draws(sci_feed_fp[sci]) %>%
   median_qi(.width = 0.95) %>%
   left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  # SET plants and bivalves to 0
+  mutate(sci_feed_fp = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = sci_feed_fp),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
   mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
   ggplot(aes(y = clean_sci_name, x = sci_feed_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
@@ -609,6 +610,10 @@ fit_no_na %>%
   spread_draws(tx_feed_fp[tx]) %>%
   median_qi(.width = 0.95) %>%
   left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # SET plants and bivalves to 0
+  mutate(tx_feed_fp = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_feed_fp),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_feed_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
   theme_classic() + 
@@ -679,6 +684,10 @@ fit_no_na %>%
   spread_draws(sci_mu_fcr[sci]) %>%
   median_qi(.width = 0.95) %>%
   left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  # SET plants and bivalves to 0
+  mutate(sci_mu_fcr = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = sci_mu_fcr),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
   mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
   ggplot(aes(y = clean_sci_name, x = sci_mu_fcr, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
@@ -693,6 +702,10 @@ fit_no_na %>%
   spread_draws(tx_mu_fcr[tx]) %>%
   median_qi(.width = 0.95) %>%
   left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # SET plants and bivalves to 0
+  mutate(tx_mu_fcr = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_mu_fcr),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
   #mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
   ggplot(aes(y = full_taxa_name, x = tx_mu_fcr, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +

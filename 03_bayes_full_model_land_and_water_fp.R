@@ -1,21 +1,20 @@
-# Get Bayesian mean of sci and taxa-level land and water impacts 
+# Get Bayesian sci and taxa-level means of on-farm (non-feed) and off-farm (feed) LAND and WATER impacts 
 
 ###################### REMINDER FOR LAND: 
 # ON-FARM impacts only apply to SYSTEM == PONDS or RECIRCULATING and TANKS
 # OFF-FARM impacts EXCLUDE wherever FCR = 0 and bivalves and plants
+# CALCULATION for ON-FARM land = yield
 
 ###################### REMINDER FOR WATER: 
-# CALCULATION for ON-FARM impacts: MULTIPLY mean_evap_mm / 1000 (to get to m2) * LAND * grow out period in days (means per taxa group)/365
+# CALCULATION for ON-FARM impacts: mean_evap_mm / 1000 (to get to m2) * LAND * grow out period in days (means per taxa group)/365
 # i.e., just multiplying LAND with constants within the "generated quantities" section
 
 # ON-FARM IMPACTS only apply to:
-# Freshwater taxa only - i.e., oth_carp, catfish, hypoph_carp, tilapia, trout, fresh crust
-# System = Pond or Recirculating Tanks (Land already deals with filtering this out)
-# The rest get a ZERO for ON-FARM IMPACTS
-
+# System = Pond or Recirculating Tanks (Land model already deals with setting all other systems to 0)
+# Freshwater taxa only - i.e., oth_carp, catfish, hypoph_carp, tilapia, trout, fresh crust (For other taxa, just set mean_evap_mm to 0)
 
 ######################
-# Step 0: Set directories, load packages
+# STEP 0: SET DIRECTORIES, LOAD PACKAGES
 rm(list = ls())
 
 # Libraries for processing and analyses
@@ -36,63 +35,84 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # outdir <- "K:BFA Environment 2/Outputs"
 
 ######################
-# Step 1: Set Data, indices, weights, constants
-
+# STEP 1: LOAD AND FORMAT DATA
 
 # Load Data
-lca_full_dat <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-n-farms.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
 
-# Format data for model:
-lca_model_dat <- lca_full_dat %>%
-  filter(is.na(fcr)==FALSE) %>% # NA here means that data point was not imputed in step 2 - remove these from model
-  select(study_id, clean_sci_name, taxa, intensity, system, 
-         feed_soy, feed_crops, feed_fmfo, feed_animal, 
-         fcr, 
-         yield = Yield_m2_per_t) %>%
-  # TEST ON "UNIFIED" Dataset first - system == ponds or recirculating tanks & FCR != 0 - later need to add conditionals to STAN
-  filter(fcr != 0)  %>%
-  filter(system %in% c("Ponds", "Recirculating and tanks"))
-  
 # Load on-farm evaporative water loss (NOAA data - country-level mean of monthly climatological means 1981-2010)
 evap_clim <- read.csv(file.path(datadir, "20201222_clim_summarise_by_country.csv")) %>%
   mutate(iso3c = countrycode(admin, origin = "country.name", destination = "iso3c")) %>%
   select(-X) %>%
   drop_na()
 
-# FIX IT - make sure this works with; just copied over from water model
-# Merge evap dat with Countries in lca data, only need mean_evap_mm and ID columns: study_id, Country, iso3c
-# Then merge with feed data to get full model dataset
-evap_dat <- lca_dat_clean_groups %>%
+
+# Format data for model:
+lca_model_dat <- lca_full_dat %>%
+  select(study_id, iso3c, clean_sci_name, taxa, intensity, system, 
+         feed_soy, feed_crops, feed_fmfo, feed_animal, 
+         fcr, 
+         yield = Yield_m2_per_t) %>%
+  # Option 1: TEST ON "UNIFIED" Dataset first: only system == ponds or recirculating tanks & FCR != 0 - later need to add conditionals to STAN
+  # filter(fcr != 0)  %>%
+  # filter(system %in% c("Ponds", "Recirculating and tanks")) %>%
+  # OPTION 2: INCLUDE FED AND NON-FED SPECIES BUT mutate feed proportions to be the average within it's clean_sci_name; otherwise, give it an arbitrary simplex (0.25 per component) to avoid STAN error for simplexes that don't sum to 1
+  # FIX IT - in terms of on-farm footprint, this is OK because feed proportions are multiplied by FCR == 0 so on-farm footprint for these studies will be 0
+  # BUT this will affect the pooled sci and taxa level feed proportions since they enter as 0.25
+  group_by(clean_sci_name) %>%
+  mutate(feed_soy = if_else(fcr==0, true = mean(feed_soy), false = feed_soy),
+         feed_crops = if_else(fcr==0, true = mean(feed_crops), false = feed_crops),
+         feed_fmfo = if_else(fcr==0, true = mean(feed_fmfo), false = feed_fmfo),
+         feed_animal = if_else(fcr==0, true = mean(feed_animal), false = feed_animal)) %>%
+  ungroup() %>%
+  # Need to re-normalize everything (using the mean value does not guarantee that proportion sums to 1)
+  mutate(feed_sum = feed_soy + feed_crops + feed_fmfo + feed_animal) %>%
+  mutate(feed_soy = if_else(feed_sum != 0, true = feed_soy / feed_sum, false = feed_soy), # need conditional feed_sum != 0 - otherwise species with FCR == 0 and no sci-level average will renormalize using denominator of 0
+         feed_crops = if_else(feed_sum != 0, true = feed_crops / feed_sum, false = feed_crops),
+         feed_fmfo = if_else(feed_sum != 0, true = feed_fmfo / feed_sum, false = feed_fmfo),
+         feed_animal = if_else(feed_sum != 0, true = feed_animal / feed_sum, false = feed_animal)) %>%
+  # Give the remaining things 0.25
+  mutate(feed_soy = if_else(fcr == 0 & feed_soy == 0 & feed_crops == 0 & feed_fmfo == 0 & feed_animal == 0, true = 0.25, false = feed_soy),
+         feed_crops = if_else(fcr == 0 & feed_crops == 0 & feed_fmfo == 0 & feed_animal == 0, true = 0.25, false = feed_crops),
+         feed_fmfo = if_else(fcr == 0 & feed_fmfo == 0 & feed_animal == 0, true = 0.25, false = feed_fmfo),
+         feed_animal = if_else(fcr == 0 & feed_animal == 0, true = 0.25, false = feed_animal)) %>%
+  # Set yield = 0 (including where yield is NA) for studies that are not Ponds or Recirculating/tanks
+  mutate(yield = if_else(system %in% c("Ponds", "Recirculating and tanks")==FALSE, true = 0, false = yield)) %>%
+  drop_na() %>% # After fixing NA's in yield, drop all other NAs
+  # Merge evap dat with Countries in lca_data - only need mean_evap_mm and ID columns: study_id, Country, iso3c
   left_join(evap_clim, by = "iso3c") %>%
-  # Deal with some countries manually: Calculate mean for Germany, Denmark; Assign global mean to N/A
-  mutate(mean_evap_mm = case_when(Country == "Germany, Denmark" ~ evap_clim %>% filter(iso3c %in% c("DEU", "DNK")) %>% pull(mean_evap_mm) %>% mean(),
-                                  Country == "Scotland" ~ evap_clim %>% filter(iso3c == "GBR") %>% pull(mean_evap_mm),
-                                  Country == "N/A" ~ mean(evap_clim$mean_evap_mm),
-                                  TRUE ~ mean_evap_mm)) %>%
-  select(study_id, Country, iso3c, clean_sci_name, taxa, intensity = Intensity, system = Production_system_group, mean_evap_mm) %>%
-  # Merge with feed data for full model dataset
-  full_join(feed_dat_merge, by = intersect(names(feed_dat_merge), names(.))) %>%
-  full_join(fcr_dat_merge, by = intersect(names(feed_dat_merge), names(fcr_dat_merge)))
+  # For non-freshwater taxa, set mean_evap_mm to 0
+  mutate(mean_evap_mm = if_else(taxa %in% c("oth_carp", "catfish", "hypoph_carp", "tilapia", "trout", "fresh_crust")==FALSE, true = 0, false = mean_evap_mm)) %>%
+  # LAST FORMATING STEP - always arrange by clean_sci_name
+  arrange(clean_sci_name) %>%
+  mutate(clean_sci_name = as.factor(clean_sci_name),
+         sci = as.numeric(clean_sci_name),
+         taxa = as.factor(taxa),
+         tx = as.numeric(taxa)) 
+
+#####################
+
+# Set data, indices, constants, weights for STAN
 
 # VARIABLE-SPECIFIC DATA:
 
-# For on_farm ghg
-farm_c <- lca_full_dat$total_ghg
+# For on farm land
+land <- lca_model_dat$yield
 # For FCR model:
-fcr <- carbon_footprint_dat$fcr
+fcr <- lca_model_dat$fcr
 # For Feed proportion model:
 K = 4
-feed_weights <- carbon_footprint_dat %>%
+feed_weights <- lca_model_dat %>%
   select(feed_soy, feed_crops, feed_fmfo, feed_animal) %>%
   as.matrix()
 # Also needed for feed proportion dirichlet: counts per sci name and counts per taxa group (also included as data in the model):
-sci_kappa <- carbon_footprint_dat %>% 
+sci_kappa <- lca_model_dat %>% 
   group_by(sci) %>% 
   summarise(n_obs = n()) %>%
   ungroup() %>%
   arrange(sci) %>%
   pull(n_obs)
-tx_kappa <- carbon_footprint_dat %>% 
+tx_kappa <- lca_model_dat %>% 
   group_by(tx) %>% 
   summarise(n_obs = n()) %>%
   ungroup() %>%
@@ -100,34 +120,41 @@ tx_kappa <- carbon_footprint_dat %>%
   pull(n_obs)
 
 # INDICES:
-N = nrow(carbon_footprint_dat)
-N_SCI <- length(unique(carbon_footprint_dat$sci))
-n_to_sci <- carbon_footprint_dat$sci
-n_to_tx <- carbon_footprint_dat$tx
-N_TX <- length(unique(carbon_footprint_dat$tx))
-sci_to_tx <- carbon_footprint_dat %>%
+N = nrow(lca_model_dat)
+N_SCI <- length(unique(lca_model_dat$sci))
+n_to_sci <- lca_model_dat$sci
+n_to_tx <- lca_model_dat$tx
+N_TX <- length(unique(lca_model_dat$tx))
+sci_to_tx <- lca_model_dat %>%
   select(sci, tx) %>%
   unique() %>%
   pull(tx)
 
-# FEED IMPACT CONSTANTS:
+# FEED IMPACT CONSTANTS: need to include both land and water constants in the model
+
 # Choose allocation method
-# Choose CARBON for Impact.category
-# IMPORTANT - multiply all values by 1000 to convert to kg CO2 per tonne (currently in kg CO2 per kg)
-impact <- "Global warming potential" # i.e., Carbon impact
 set_allocation <- "Mass"
+#set_allocation <- "Gross energy content"
+#set_allocation <- "Economic"
 
 fp_dat <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv")) %>%
   filter(Allocation == set_allocation) %>%
-  mutate(ave_stressor_per_tonne = ave_stressor * 1000)
+  mutate(ave_stressor_per_tonne = ave_stressor * 1000) # Multiply by 1000 to convert to kg CO2 per tonne
 
 # ORDER OF feed_weights data vector: soy, crops, fmfo, animal
 head(feed_weights)
 # ORDER of footprint data vector should match this:
 set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
 
-fp_constant <- fp_dat %>%
-  filter(Impact.category == impact) %>% 
+land_feed_fp <- fp_dat %>%
+  filter(Impact.category == "Land use") %>% 
+  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
+  select(ave_stressor_per_tonne) %>%
+  as.matrix() %>%
+  c()
+
+water_feed_fp <- fp_dat %>%
+  filter(Impact.category == "Water consumption") %>% 
   arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
   select(ave_stressor_per_tonne) %>%
   as.matrix() %>%
@@ -140,15 +167,15 @@ sci_prod_weights <- read.csv(file.path(datadir, "aqua_prod_weightings.csv")) %>%
   arrange(clean_sci_name)
 # Drop sci-names not found in the data
 sci_prod_weights <- sci_prod_weights %>%
-  filter(clean_sci_name %in% carbon_footprint_dat$clean_sci_name)
+  filter(clean_sci_name %in% lca_model_dat$clean_sci_name)
 # Check that the order of sci names in both weights and data are the same (sum = 0)
-sum(sci_prod_weights$clean_sci_name != unique(carbon_footprint_dat$clean_sci_name))
-sci_w <- sci_prod_weights$weighting
+sum(sci_prod_weights$clean_sci_name != unique(lca_model_dat$clean_sci_name))
+sci_w <- sci_prod_weights$prod_weighting
 
 # Need the following for generating ragged array in STAN - indexing vector of sci_mu's based on their taxa identity (each slice will have a different length)
 where_tx <- order(sci_to_tx) # i.e., give the positions in sci_to_tx in order of their taxa level (where in sci_to_tx is taxa level 1, followed by taxa level 2, etc)
 # How many sci are in each taxa - need this to declare length of each sci_mu vector
-n_sci_in_tx <- carbon_footprint_dat %>%
+n_sci_in_tx <- lca_model_dat %>%
   select(sci, tx) %>%
   unique() %>%
   group_by(tx) %>%
@@ -161,6 +188,10 @@ n_sci_in_tx <- carbon_footprint_dat %>%
 slice_where_tx <- cumsum(n_sci_in_tx) # These are the breaks in where_tx corresponding to each taxa level - need this to split up where_tx
 slice_where_tx <- c(0, slice_where_tx)
 
+######################################################################################################
+# STEP 2: RUN STAN MODEL
+
+# FIX IT - remove data related to water impact model since this is now separated out
 # Set data for stan:
 stan_data <- list(N = N,
                   N_SCI = N_SCI, 
@@ -170,16 +201,17 @@ stan_data <- list(N = N,
                   fcr = fcr,
                   K = K,
                   feed_weights = feed_weights,
-                  farm_c = farm_c,
+                  land = land,
                   sci_kappa = sci_kappa,
                   tx_kappa = tx_kappa,
-                  fp_constant = fp_constant,
+                  land_feed_fp = land_feed_fp,
+                  water_feed_fp = water_feed_fp,
                   sci_w = sci_w,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
                   slice_where_tx = slice_where_tx)
 
-# NORMAL distribution hierarchical model
+# NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {
   // indices
   int<lower=0> N;  // number of observations
@@ -196,10 +228,11 @@ stan_no_na <- 'data {
   int tx_kappa[N_TX]; // number of observations per taxa group
   
   // data for on-farm footrpint
-  vector<lower=0>[N] farm; // data
+  vector<lower=0>[N] land; // data
 
-  // constants to apply to feed footrpint
-  //vector[K] fp_constant;
+  // land and water footprint constants to apply to feed model
+  vector[K] land_feed_fp;
+  vector[K] water_feed_fp;
   
   // data for slicing vectors for calculating weighted means
   vector<lower=0>[N_SCI] sci_w; // sci-level production weights
@@ -209,22 +242,20 @@ stan_no_na <- 'data {
 }
 parameters {
   // FCR model
-  vector<lower=0>[N_TX] tx_mu_fcr;
-  vector<lower=0>[N_SCI] sci_mu_fcr;
+  vector[N_TX] tx_mu_fcr; // putting lower=0 bounds will cause mu_fcr to skew positive when zero (eg, plants, bivalves)
+  vector[N_SCI] sci_mu_fcr;
   real<lower=0> tx_sigma_fcr;
   real<lower=0> sci_sigma_fcr;
-  //vector<lower=0>[N_TX] tx_sigma_fcr;
-  //vector<lower=0>[N_SCI] sci_sigma_fcr;
   
   // Feed proportion model:
   simplex[K] sci_theta[N_SCI]; // vectors of estimated sci-level feed weight simplexes
   simplex[K] tx_theta[N_TX];
   
   // On farm model
-  vector<lower=0>[N_TX] tx_mu_farm;
-  vector<lower=0>[N_SCI] sci_mu_farm;
-  real<lower=0> tx_sigma_farm;
-  real<lower=0> sci_sigma_farm;
+  vector<lower=0>[N_TX] tx_land_farm; // putting lower=0 bounds will cause tx_land_farm to skew positive when zero
+  vector<lower=0>[N_SCI] sci_land_farm;
+  real<lower=0> tx_sigma_land;
+  real<lower=0> sci_sigma_land;
 }
 transformed parameters {
   // define params for dirichlet model for feed proportions
@@ -255,14 +286,14 @@ model {
   // weak priors on sigma
   tx_sigma_fcr ~ cauchy(0, 1);
   sci_sigma_fcr ~ cauchy(0, 1);
-  tx_sigma_farm ~ cauchy(0, 10);
-  sci_sigma_farm ~ cauchy(0, 10);
+  tx_sigma_land ~ cauchy(0, 10000);
+  sci_sigma_land ~ cauchy(0, 10000);
 
   // likelihood
   // normal model sci-name and taxa-level for FCR
   fcr ~ normal(sci_mu_fcr[n_to_sci], sci_sigma_fcr);
   sci_mu_fcr ~ normal(tx_mu_fcr[sci_to_tx], tx_sigma_fcr);
-
+  
   // dirichlet model for feed proportions
   // use data to estimate sci-level dirichlet shape param (alphas)
   // LOOPING feed proportions:
@@ -274,45 +305,59 @@ model {
     sci_theta[n_sci] ~ dirichlet(to_vector(tx_alpha[sci_to_tx[n_sci]]));
   }
   
-  // normal model for sci and taxa-level on-farm footrpint
-  farm ~ normal(sci_mu_farm[n_to_sci], sci_sigma_farm);
-  sci_mu_farm ~ normal(tx_mu_farm[sci_to_tx], tx_sigma_farm);
+  // normal model for sci and taxa-level on-farm land footrpint
+  land ~ normal(sci_land_farm[n_to_sci], sci_sigma_land);
+  sci_land_farm ~ normal(tx_land_farm[sci_to_tx], tx_sigma_land);
 }
 generated quantities {
   // Declare vectors for weightings
-  vector[N_TX] tx_feed_fp;
-  vector[N_SCI] sci_feed_fp;
-  vector[N_SCI] sci_total_fp; // unweighted sci-level
-  vector[N_TX] tx_total_fp; //
-  vector[N_SCI] sci_total_fp_w; // weighted sci-level
-  vector[N_TX] tx_total_fp_w; // weighted tx-level
+  vector[N_TX] tx_land_feed;
+  vector[N_SCI] sci_land_feed;
+  vector[N_SCI] sci_land_total; // unweighted
+  vector[N_TX] tx_land_total; //
+  //vector[N_SCI] sci_total_fp_w; // only need this if applying weights directly to the total impact
+  vector[N_TX] tx_land_total_w; // weighted
+  vector[N_TX] tx_land_feed_w;
+  vector[N_TX] tx_land_farm_w;
+  vector[N_SCI] sci_land_feed_w;
+  vector[N_SCI] sci_land_farm_w;
 
-  // Feed footrpint calculations
+  // Feed LAND footprint calculations
   for (n_tx in 1:N_TX) {
-    tx_feed_fp[n_tx] = tx_mu_feed[n_tx] * sum(fp_constant .* tx_theta[n_tx]);
+    tx_land_feed[n_tx] = tx_mu_fcr[n_tx] * sum(land_feed_fp .* tx_theta[n_tx]);
   }
   for (n_sci in 1:N_SCI) {
-    sci_feed_fp[n_sci] = sci_mu_feed[n_sci] * sum(fp_constant .* sci_theta[n_sci]);
+    sci_land_feed[n_sci] = sci_mu_fcr[n_sci] * sum(land_feed_fp .* sci_theta[n_sci]);
   }
 
   // Sum off farm (feed) and on farm footprints (UNWEIGHTED sci and tx-level outputs)
   for (n_sci in 1:N_SCI) {
-    sci_total_fp[n_sci] = sci_feed_fp[n_sci] + sci_mu_farm[n_sci];
+    sci_land_total[n_sci] = sci_land_feed[n_sci] + sci_land_farm[n_sci];
   }
   for (n_tx in 1:N_TX) {
-    tx_total_fp[n_tx] = tx_feed_fp[n_tx] + tx_mu_farm[n_tx];
+    tx_land_total[n_tx] = tx_land_feed[n_tx] + tx_land_farm[n_tx];
   }
 
-  // Apply weightings
-  //sci_total_fp_w = sci_total_fp .* sci_w; // WEIGHTED sci-level outputs
+  // Apply weightings to LAND
+  sci_land_feed_w = sci_land_feed .* sci_w; // WEIGHTED sci-level off-farm impacts
+  sci_land_farm_w = sci_land_farm .* sci_w; // WEIGHTED sci-level on-farm impacts
 
-  //for (n_tx in 1:N_TX){
-  //  vector[n_sci_in_tx[n_tx]] sci_mu_w_vec; // declare vector of sci_mu in taxa-level n_tx
-  //  sci_mu_w_vec = sci_total_fp_w[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
-  //  tx_total_fp_w[n_tx] = sum(sci_mu_w_vec); // sum sci_mu_w_vec to get WEIGHTED tx-level outputs
-  //}
+  for (n_tx in 1:N_TX) {
+    vector[n_sci_in_tx[n_tx]] land_feed_vec; // declare vector of sci_feed in taxa-level n_tx
+    vector[n_sci_in_tx[n_tx]] land_farm_vec; // declare vector of sci_farm in taxa-level n_tx
+
+    land_feed_vec = sci_land_feed_w[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
+    tx_land_feed_w[n_tx] = sum(land_feed_vec); // sum land_feed_vec to get WEIGHTED tx-level outputs
+
+    land_farm_vec = sci_land_farm_w[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
+    tx_land_farm_w[n_tx] = sum(land_farm_vec); // sum land_farm_vec to get WEIGHTED tx-level outputs
+  }
+
+  // Sum of weighted on and off-farm land impacts
+  for (n_tx in 1:N_TX){
+    tx_land_total_w[n_tx] = tx_land_feed_w[n_tx] + tx_land_farm_w[n_tx];
+  }
 }'
-
 
 no_na_mod <- stan_model(model_code = stan_no_na)
 # Note: For Windows, apparently OK to ignore this warning message:
@@ -322,64 +367,428 @@ no_na_mod <- stan_model(model_code = stan_no_na)
 
 # Fit model:
 # Set seed while testing
-fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, seed = "11729", iter = 10000, control = list(adapt_delta = 0.99))
-#fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 10000, control = list(adapt_delta = 0.99))
+start_sampling <- Sys.time()
+fit_no_na <- sampling(object = no_na_mod, 
+                      data = stan_data, 
+                      cores = 4, 
+                      seed = "11729", 
+                      iter = 2500, 
+                      control = list(adapt_delta = 0.99, max_treedepth = 15))
+#fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 5000, control = list(adapt_delta = 0.99))
+end_sampling <- Sys.time()
+end_sampling - start_sampling
 summary(fit_no_na)$summary
+# Index specific parameters by name:
+#(summary(fit_no_na)$summary)[rownames(summary(fit_no_na)$summary) %in% c("tx_sigma_land", "sci_sigma_land", "tx_sigma_fcr", "sci_sigma_fcr"),]
 
 #launch_shinystan(fit_no_na)
-
 ######################################################################################################
-# PLOT RESULTS
-plot_theme <- theme(title = element_text(size = 18),
-                    axis.title.x = element_text(size = 16),
-                    axis.text=element_text(size=14, color = "black"))
+# RESTARTING POINT
+# FIX IT - which objects to clear before saving?
+# rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
+#                            "lca_dat_clean_groups", "feed_model_dat_categories",
+#                            "full_feed_dat", "full_fcr_dat", "feed_footprint_dat", "fit_no_na"))])
+#save.image(file.path(outdir, paste(Sys.Date(), "_full-model_", impact, "_", set_allocation, "-allocation_all-data-prior-to-plotting.RData", sep = "")))
+
+# datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+# outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+# load(file.path(outdir, "<file-name>.RData"))
+# set_allocation <- "Mass"
+######################################################################################################
+# STEP 3: PLOT RESULTS
+
+# SET THEME
+sci_plot_theme <- theme(title = element_text(size = 18),
+                        axis.title.x = element_text(size = 16),
+                        axis.text=element_text(size=14, color = "black"))
+tx_plot_theme <- theme(title = element_text(size = 20),
+                       axis.title.x = element_text(size = 20),
+                       axis.text=element_text(size=20, color = "black"),
+                       legend.position = "none")
 
 # Key for naming sci and taxa levels
 # Get full taxa group names back
-index_key <- land_footprint_dat %>%
-  select(clean_sci_name, sci, taxa, tx, n_in_sci, n_in_taxa) %>%
+index_key <- lca_model_dat %>%
+  group_by(clean_sci_name) %>%
+  mutate(n_obs = n()) %>%
+  ungroup() %>%
+  select(clean_sci_name, sci, taxa, tx, n_obs) %>%
   unique() %>%
+  arrange(taxa) %>%
   mutate(taxa = as.character(taxa),
-         full_taxa_name = case_when(taxa == "fresh_crust" ~ "freshwater crustaceans",
-                                    taxa == "misc_diad" ~ "misc diadromous fishes",
-                                    taxa == "misc_fresh" ~ "misc freshwater fishes",
+         full_taxa_name = case_when(taxa == "hypoph_carp" ~ "bighead/silverhead carp",
                                     taxa == "misc_marine" ~ "misc marine fishes",
+                                    taxa == "misc_fresh" ~ "misc freshwater fishes",
+                                    taxa == "misc_diad" ~ "misc diadromous fishes",
+                                    taxa == "oth_carp" ~ "misc carps",
+                                    taxa == "fresh_crust" ~ "freshwater crustaceans",
                                     TRUE ~ taxa),
          taxa = as.factor(taxa),
          full_taxa_name = as.factor(full_taxa_name))
 
+# Key for naming [sci, feed] and [taxa, feed] levels
+# Order of feeds: soy, crops, fmfo, animal
+tx_feed_key <- lca_model_dat %>%
+  select(contains(c("taxa", "tx", "soy", "crops", "fmfo", "animal"))) %>%
+  pivot_longer(cols = contains(c("soy", "crops", "fmfo", "animal")), names_to = "feed") %>%
+  select(-value) %>%
+  unique() %>%
+  mutate(feed_index = case_when(str_detect(feed, "soy") ~ 1,
+                                str_detect(feed, "crops") ~ 2,
+                                str_detect(feed, "fmfo") ~ 3,
+                                str_detect(feed, "animal") ~ 4)) %>%
+  # Clean feed names
+  mutate(feed = gsub(feed, pattern = "feed_", replacement = "")) %>%
+  mutate(index = paste("[", tx, ",", feed_index, "]", sep = "")) %>%
+  mutate(tx_theta_name = paste("theta[", taxa, ", ", feed, "]", sep = "")) %>%
+  mutate(tx_alpha_name = paste("alpha[", taxa, ", ", feed, "]", sep = "")) %>%
+  # IMPORTANT before replaceing param names: ARRANGE BY FEED, THEN TAXA NAME TO MATCH HOW NAMES ARE ARRANGED IN STANFIT OBJECT
+  arrange(feed_index, tx) %>%
+  mutate(taxa = as.character(taxa),
+         full_taxa_name = case_when(taxa == "hypoph_carp" ~ "bighead/silverhead carp",
+                                    taxa == "misc_marine" ~ "misc marine fishes",
+                                    taxa == "misc_fresh" ~ "misc freshwater fishes",
+                                    taxa == "misc_diad" ~ "misc diadromous fishes",
+                                    taxa == "oth_carp" ~ "misc carps",
+                                    taxa == "fresh_crust" ~ "freshwater crustaceans",
+                                    TRUE ~ taxa),
+         taxa = as.factor(taxa),
+         full_taxa_name = as.factor(full_taxa_name))
+
+sci_feed_key <- lca_model_dat %>%
+  select(contains(c("clean_sci_name", "taxa", "sci", "soy", "crops", "fmfo", "animal"))) %>%
+  pivot_longer(cols = contains(c("soy", "crops", "fmfo", "animal")), names_to = "feed") %>%
+  select(-value) %>%
+  unique() %>%
+  mutate(feed_index = case_when(str_detect(feed, "soy") ~ 1,
+                                str_detect(feed, "crops") ~ 2,
+                                str_detect(feed, "fmfo") ~ 3,
+                                str_detect(feed, "animal") ~ 4)) %>%
+  # Clean feed names
+  mutate(feed = gsub(feed, pattern = "feed_", replacement = "")) %>%
+  mutate(index = paste("[", sci, ",", feed_index, "]", sep = "")) %>%
+  mutate(sci_theta_name = paste("theta[", clean_sci_name, ", ", feed, "]", sep = "")) %>%
+  mutate(sci_alpha_name = paste("alpha[", clean_sci_name, ", ", feed, "]", sep = "")) %>%
+  # IMPORTANT before replaceing param names: ARRANGE BY FEED, THEN TAXA NAME TO MATCH HOW NAMES ARE ARRANGED IN STANFIT OBJECT
+  arrange(feed_index, sci) %>%
+  mutate(taxa = as.character(taxa),
+         full_taxa_name = case_when(taxa == "hypoph_carp" ~ "bighead/silverhead carp",
+                                    taxa == "misc_marine" ~ "misc marine fishes",
+                                    taxa == "misc_fresh" ~ "misc freshwater fishes",
+                                    taxa == "misc_diad" ~ "misc diadromous fishes",
+                                    taxa == "oth_carp" ~ "misc carps",
+                                    taxa == "fresh_crust" ~ "freshwater crustaceans",
+                                    TRUE ~ taxa),
+         taxa = as.factor(taxa),
+         full_taxa_name = as.factor(full_taxa_name))
+
+
 # Use tidybayes + ggdist for finer control of aes mapping (instead of bayesplots) 
 get_variables(fit_no_na)
 
-# Sci-level land footprints as point intervals:
+######################################################################################################
+# PLOT final LAND outputs (off-farm, on-farm, and total impacts)
+
+# Set units:
+impact <- "Land Use"
+units_for_plot = bquote('m'^2*'a per tonne')
+
+###########################################################
+## WEIGHTED (only taxa level is relevant - i.e., sum of weighted sci-levels)
+###########################################################
+# Mean off-farm (feed) impact taxa-level
+# FIX IT - try 0.80% and geom_halfeye, other geoms?
 fit_no_na %>%
-  spread_draws(sci_land[sci]) %>%
-  median_qi(.width = 0.8) %>%
-  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
-  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
-  ggplot(aes(y = clean_sci_name, x = sci_land, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  spread_draws(tx_land_feed_w[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # SET plants and bivalves to 0
+  mutate(tx_land_feed_w = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_land_feed_w),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
+  ggplot(aes(y = full_taxa_name, x = tx_land_feed_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
   geom_pointinterval() +
   theme_classic() + 
-  plot_theme + 
-  labs(x = "hectares per tonne", y = "", title = "Land", color = "taxa group")
-ggsave(filename = file.path(outdir, "plot_land-footprint_sci-level.png"), width = 11, height = 8.5)
+  tx_plot_theme + 
+  labs(x = units_for_plot, y = "", title = "Mean off-farm (feed) impact")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
-# Taxa-level land footprints as densities: 
-# FIX IT - DENSITIES ARE SUPER STEEP (see just trout for example) - if this is true for final dataset, just plot as point-interval
+
+# Mean on-farm impact taxa-level:
+# FIX IT - set all taxa that have no PONDS or RECIRCULATING and TANKS to be ZERO, all the rest are true distributions
+# lca_model_dat %>% 
+#   group_by(clean_sci_name) %>%
+#   mutate(ponds = if_else(system %in% c("Ponds", "Recirculating and tanks"), true = 1, false = 0),
+#          total_ponds = sum(ponds),
+#          n_sci = n()) %>%
+#   ungroup() %>%
+#   filter(total_ponds == 0) %>%
+#   pull(clean_sci_name) %>%
+#   unique()
+# 
+# lca_model_dat %>% 
+#   group_by(taxa) %>%
+#   mutate(ponds = if_else(system %in% c("Ponds", "Recirculating and tanks"), true = 1, false = 0),
+#          total_ponds = sum(ponds),
+#          n_sci = n()) %>%
+#   ungroup() %>%
+#   filter(total_ponds == 0) %>%
+#   pull(taxa) %>%
+#   unique()
+
 fit_no_na %>%
-  spread_draws(tx_land[tx]) %>%
-  #median_qi(.width = 0.8) %>% # need at least 2 points to select a bandwidth automatically
+  spread_draws(tx_land_farm_w[tx]) %>%
+  median_qi(.width = 0.95) %>%
   left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  #filter(tx_land > 100)
-  filter(full_taxa_name == "freshwater crustaceans") %>%
-  ggplot(aes(y = full_taxa_name, x = tx_land)) +
-  stat_halfeye(aes(slab_fill = full_taxa_name)) +
+  ggplot(aes(y = full_taxa_name, x = tx_land_farm_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
   theme_classic() + 
-  plot_theme + 
-  theme(legend.position = "none") +
-  labs(x = "hectares per tonne", y = "", title = "Land")
-ggsave(filename = file.path(outdir, "plot_land-footprint_taxa-level.png"), width = 11, height = 8.5)
+  tx_plot_theme + 
+  labs(x = units_for_plot, y = "", title = "Mean on-farm impact")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
+# Mean total impact taxa-level
+fit_no_na %>%
+  spread_draws(tx_land_total_w[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # Set .lower limits to be 0
+  mutate(.lower = if_else(.lower < 0, true = 0, false = .lower)) %>% 
+  ggplot(., aes(y = full_taxa_name, x = tx_land_total_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  tx_plot_theme + 
+  labs(x = units_for_plot, y = "", title = "Total (on and off-farm) impact", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+###########################################################
+## PLOT WEIGHTED SCI-LEVEL ESTIMATES ANYWAY TO COMPARE WITH UNWEIGHTED ESTIMATES
+# Mean 
+fit_no_na %>%
+  spread_draws(sci_land_feed_w[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_land_feed_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = units_for_plot, y = "", title = "Weighted sci-level off-farm impacts", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_OFF-FARM-SCI-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+
+fit_no_na %>%
+  spread_draws(sci_land_farm_w[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_land_farm_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = units_for_plot, y = "", title = "Weighted sci-level on-farm impacts", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_ON-FARM-SCI-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+
+###########################################################
+## UNWEIGHTED
+###########################################################
+# Mean off-farm (feed) impact sci-level
+fit_no_na %>%
+  spread_draws(sci_land_feed[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  # SET plants and bivalves to 0
+  mutate(sci_land_feed = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = sci_land_feed),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_land_feed, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = units_for_plot, y = "", title = "Mean off-farm (feed) impact", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_OFF-FARM-SCI-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+# Taxa-level
+fit_no_na %>%
+  spread_draws(tx_land_feed[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # SET plants and bivalves to 0
+  mutate(tx_land_feed = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_land_feed),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
+  ggplot(aes(y = full_taxa_name, x = tx_land_feed, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  tx_plot_theme + 
+  labs(x = units_for_plot, y = "", title = "Mean off-farm (feed) impact")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_OFF-FARM-TAXA-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+###########################################################
+# Mean on-farm impact sci-level
+# NOTE: Mean on-farm estimates are bounded by zero as declared in STAN model (FCR was left unbounded to allow for mean = 0, so off-farm is also unabounded)
+fit_no_na %>%
+  spread_draws(sci_land_farm[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_land_farm, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = units_for_plot, y = "", title = "Mean on-farm impact", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_ON-FARM-SCI-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+# Taxa-level
+fit_no_na %>%
+  spread_draws(tx_land_farm[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  ggplot(aes(y = full_taxa_name, x = tx_land_farm, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  tx_plot_theme + 
+  labs(x = units_for_plot, y = "", title = "Mean on-farm impact", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_ON-FARM-TAXA-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+###########################################################
+# Mean unweighted total (on + off-farm) impact sci-level
+fit_no_na %>%
+  spread_draws(sci_land_total[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  # Set .lower limits to be 0
+  mutate(.lower = if_else(.lower < 0, true = 0, false = .lower)) %>% 
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_land_total, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = units_for_plot, y = "", title = "Total (on and off-farm) impact", color = "taxa group") 
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-SCI-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+# Taxa-level
+fit_no_na %>%
+  spread_draws(tx_land_total[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # Set .lower limits to be 0
+  mutate(.lower = if_else(.lower < 0, true = 0, false = .lower)) %>% 
+  ggplot(aes(y = full_taxa_name, x = tx_land_total, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  tx_plot_theme + 
+  labs(x = units_for_plot, y = "", title = "Total (on and off-farm) impact", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+######################################################################################################
+# PLOT other intermediate-level calculations
+
+# FCR
+# Mean FCR sci-level
+fit_no_na %>%
+  spread_draws(sci_mu_fcr[sci]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "sci") %>% # Join with index key to get sci and taxa names
+  # SET plants and bivalves to 0
+  mutate(sci_mu_fcr = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = sci_mu_fcr),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
+  mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = clean_sci_name, x = sci_mu_fcr, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  sci_plot_theme + 
+  labs(x = "FCR", y = "", title = "Mean FCR", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FCR-SCI-LEVEL.png", sep = "")), width = 11, height = 8.5)
+
+
+# Mean FCR taxa-level
+fit_no_na %>%
+  spread_draws(tx_mu_fcr[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # SET plants and bivalves to 0
+  mutate(tx_mu_fcr = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_mu_fcr),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
+  #mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
+  ggplot(aes(y = full_taxa_name, x = tx_mu_fcr, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+  geom_pointinterval() +
+  theme_classic() + 
+  tx_plot_theme + 
+  labs(x = "FCR", y = "", title = "Mean FCR", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FCR-TAXA-LEVEL.png", sep = "")), width = 11, height = 8.5)
+
+# FEED PROPORTIONS:
+# For feed proportions, remove scinames where all studies were fcr == 0 and feed proportions were modified to 0.25
+sci_null_feed <- lca_model_dat %>% 
+  group_by(clean_sci_name) %>% 
+  mutate(drop_feed_model = if_else(fcr == 0 & feed_soy == 0.25 & feed_crops == 0.25 & feed_fmfo == 0.25 & feed_animal == 0.25, true = 1, false = 0)) %>%
+  mutate(n_sci = n()) %>%
+  mutate(n_drop = sum(drop_feed_model)) %>%
+  ungroup() %>%
+  filter(n_drop == n_sci) %>% # the number of studies that were modified to 0.25 is the same as the total number of studies for that sci name
+  pull(clean_sci_name) %>%
+  unique()
+
+# Same with taxa names
+taxa_null_feed <- lca_model_dat %>% 
+  group_by(taxa) %>% 
+  mutate(drop_feed_model = if_else(fcr == 0 & feed_soy == 0.25 & feed_crops == 0.25 & feed_fmfo == 0.25 & feed_animal == 0.25, true = 1, false = 0)) %>%
+  mutate(n_sci = n()) %>%
+  mutate(n_drop = sum(drop_feed_model)) %>%
+  ungroup() %>%
+  filter(n_drop == n_sci) %>%
+  pull(taxa) %>%
+  unique()
+
+# Sci-level theta (feed proportions)
+# Make separate plot for each feed component
+feed_component <- c("soy", "crops", "fmfo", "animal")
+for (i in 1:length(feed_component)){
+  plot_dat <- fit_no_na %>%
+    spread_draws(sci_theta[sci, feed_index]) %>%
+    median_qi(.width = 0.95) %>%
+    left_join(sci_feed_key, by = c("sci" = "sci", "feed_index" = "feed_index")) %>% # Join with index key to get sci and taxa names
+    filter(feed == feed_component[i]) %>%
+    filter(clean_sci_name %in% sci_null_feed == FALSE) %>%
+    ungroup() %>% # need to remove automatic sci-level grouping for fct_reorder to work
+    mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name)))
+  p <- ggplot(plot_dat, aes(y = clean_sci_name, x = sci_theta, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+    geom_pointinterval() +
+    #stat_halfeye(aes(slab_fill = full_taxa_name)) +
+    coord_cartesian(xlim = c(0, 1)) +
+    theme_classic() + 
+    sci_plot_theme + 
+    labs(x = "Feed Proportion", y = "", title = feed_component[i], color = "taxa group")
+  print(p)
+  ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FEED-", feed_component[i], "-SCI-LEVEL.png", sep = "")), width = 11, height = 8.5)
+}
+
+# Taxa-level theta (feed proportions)
+# Make separate plot for each feed component
+feed_component <- c("soy", "crops", "fmfo", "animal")
+for (i in 1:length(feed_component)){
+  plot_dat <- fit_no_na %>%
+    spread_draws(tx_theta[tx, feed_index]) %>%
+    median_qi(.width = 0.95) %>%
+    left_join(tx_feed_key, by = c("tx" = "tx", "feed_index" = "feed_index")) %>% # Join with index key to get sci and taxa names
+    filter(feed == feed_component[i]) %>%
+    filter(taxa %in% taxa_null_feed == FALSE)
+  p <- ggplot(plot_dat, aes(y = full_taxa_name, x = tx_theta, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
+    geom_pointinterval() +
+    #stat_halfeye(aes(slab_fill = full_taxa_name)) +
+    coord_cartesian(xlim = c(0, 1)) +
+    theme_classic() + 
+    tx_plot_theme + 
+    theme(legend.position = "none") +
+    labs(x = "Feed Proportion", y = "", title = feed_component[i])
+  print(p)
+  ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FEED-", feed_component[i], "-TAXA-LEVEL.png", sep = "")), width = 11, height = 8.5)
+}
 
 # OPTION 2: Taxa-level plots with color themes:
 # If we want to mimic bayesplot color schemes, can get hexadecimal colors and input manually to stat_halfeye aesthetics
