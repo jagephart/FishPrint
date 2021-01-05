@@ -1,17 +1,9 @@
-# Get Bayesian sci and taxa-level means of on-farm (non-feed) and off-farm (feed) LAND and WATER impacts 
+# Get Bayesian sci and taxa-level means of on-farm (non-feed) and off-farm (feed) LAND impacts 
 
 ###################### REMINDER FOR LAND: 
-# ON-FARM impacts only apply to SYSTEM == PONDS or RECIRCULATING and TANKS
+# ON-FARM impacts only apply to SYSTEM == PONDS or RECIRCULATING and TANKS (everything else is zero)
 # OFF-FARM impacts EXCLUDE wherever FCR = 0 and bivalves and plants
 # CALCULATION for ON-FARM land = yield
-
-###################### REMINDER FOR WATER: 
-# CALCULATION for ON-FARM impacts: mean_evap_mm / 1000 (to get to m2) * LAND * grow out period in days (means per taxa group)/365
-# i.e., just multiplying LAND with constants within the "generated quantities" section
-
-# ON-FARM IMPACTS only apply to:
-# System = Pond or Recirculating Tanks (Land model already deals with setting all other systems to 0)
-# Freshwater taxa only - i.e., oth_carp, catfish, hypoph_carp, tilapia, trout, fresh crust (For other taxa, just set mean_evap_mm to 0)
 
 ######################
 # STEP 0: SET DIRECTORIES, LOAD PACKAGES
@@ -153,13 +145,6 @@ land_feed_fp <- fp_dat %>%
   as.matrix() %>%
   c()
 
-water_feed_fp <- fp_dat %>%
-  filter(Impact.category == "Water consumption") %>% 
-  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
-  select(ave_stressor_per_tonne) %>%
-  as.matrix() %>%
-  c()
-
 # WEIGHTS:
 # Get sci-level weightings for generating taxa-level quantities:
 # IMPORTANT arrange by clean_sci_name so that the order matches data
@@ -205,7 +190,6 @@ stan_data <- list(N = N,
                   sci_kappa = sci_kappa,
                   tx_kappa = tx_kappa,
                   land_feed_fp = land_feed_fp,
-                  water_feed_fp = water_feed_fp,
                   sci_w = sci_w,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
@@ -230,9 +214,8 @@ stan_no_na <- 'data {
   // data for on-farm footrpint
   vector<lower=0>[N] land; // data
 
-  // land and water footprint constants to apply to feed model
+  // constants to apply to feed footrpint
   vector[K] land_feed_fp;
-  vector[K] water_feed_fp;
   
   // data for slicing vectors for calculating weighted means
   vector<lower=0>[N_SCI] sci_w; // sci-level production weights
@@ -252,8 +235,8 @@ parameters {
   simplex[K] tx_theta[N_TX];
   
   // On farm model
-  vector<lower=0>[N_TX] tx_land_farm; // putting lower=0 bounds will cause tx_land_farm to skew positive when zero
-  vector<lower=0>[N_SCI] sci_land_farm;
+  vector[N_TX] tx_land_farm; // putting lower=0 bounds will cause tx_land_farm to skew positive when zero
+  vector[N_SCI] sci_land_farm;
   real<lower=0> tx_sigma_land;
   real<lower=0> sci_sigma_land;
 }
@@ -353,7 +336,7 @@ generated quantities {
     tx_land_farm_w[n_tx] = sum(land_farm_vec); // sum land_farm_vec to get WEIGHTED tx-level outputs
   }
 
-  // Sum of weighted on and off-farm land impacts
+  // Sum of weighted on and off-farm impacts
   for (n_tx in 1:N_TX){
     tx_land_total_w[n_tx] = tx_land_feed_w[n_tx] + tx_land_farm_w[n_tx];
   }

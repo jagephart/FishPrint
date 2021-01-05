@@ -1,9 +1,12 @@
-# Get Bayesian sci and taxa-level means of on-farm (non-feed) and off-farm (feed) CARBON impacts 
+# Get Bayesian sci and taxa-level means of on-farm (non-feed) and off-farm (feed)  WATER impacts 
 
-###################### REMINDER FOR CARBON: 
-# OFF-FARM impacts should be ZERO when FCR = 0 (i.e., for full taxa groups bivalves and plants, and other sci-names within other taxa groups)
-# ON-FARM carbon footprint calculated as:
-# (Electricity use * country-specific GHG of electricity) + (Diesel * GHG of diesel) + (Petrol * GHG of petrol) + (Natural gas * GHG of natural gas)
+###################### REMINDER FOR WATER: 
+# CALCULATION for ON-FARM impacts: mean_evap_mm / 1000 (to get to m2) * LAND * grow out period in days (means per taxa group)/365
+# i.e., just multiplying LAND with constants within the "generated quantities" section
+
+# ON-FARM IMPACTS only apply to:
+# System = Pond or Recirculating Tanks (For other systems, just set land to 0)
+# Freshwater taxa only - i.e., oth_carp, catfish, hypoph_carp, tilapia, trout, fresh crust (For other taxa, just set mean_evap_mm to 0)
 
 ######################
 # STEP 0: SET DIRECTORIES, LOAD PACKAGES
@@ -30,33 +33,24 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # STEP 1: LOAD AND FORMAT DATA
 
 # Load Data
-lca_full_dat <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-n-farms.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
 
-# Get farm-associated carbon footprints data
-# Add iso3c
-electric_fp_dat <- read.csv(file.path(datadir, "electricity_GWP.csv")) %>%
-  mutate(iso3c = countrycode(Country, origin = "country.name", destination = "iso3c"))
-other_energy_fp_dat <- read.csv(file.path(datadir, "energy_carriers_impact_factors.csv"))
+# Load on-farm evaporative water loss (NOAA data - country-level mean of monthly climatological means 1981-2010)
+evap_clim <- read.csv(file.path(datadir, "20201222_clim_summarise_by_country.csv")) %>%
+  mutate(iso3c = countrycode(admin, origin = "country.name", destination = "iso3c")) %>%
+  select(-X) %>%
+  drop_na()
 
-# units for diesel and petrol constants are in kg CO2-eq / L
-diesel_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Diesel") %>% pull(Value)
-petrol_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Petrol") %>% pull(Value)
-
-# NOTE: natural gas is in kg CO2-eq / m3, need to convert to kg CO2-eq / L - multiply by 0.001 m3 / L
-natgas_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Natural gas") %>% pull(Value) * 0.001
 
 # Format data for model:
 lca_model_dat <- lca_full_dat %>%
   select(study_id, iso3c, clean_sci_name, taxa, intensity, system, 
          feed_soy, feed_crops, feed_fmfo, feed_animal, 
          fcr, 
-         electric = Electricity_kwh,
-         diesel = Diesel_L,
-         petrol = Petrol_L,
-         natgas = NaturalGas_L) %>%
-  drop_na() %>% # just in case
-  # OPTION 1: TEST MODEL ON SPECIES THAT ARE FED 
-  #filter(fcr != 0)  %>% 
+         yield = Yield_m2_per_t) %>%
+  # Option 1: TEST ON "UNIFIED" Dataset first: only system == ponds or recirculating tanks & FCR != 0 - later need to add conditionals to STAN
+  # filter(fcr != 0)  %>%
+  # filter(system %in% c("Ponds", "Recirculating and tanks")) %>%
   # OPTION 2: INCLUDE FED AND NON-FED SPECIES BUT mutate feed proportions to be the average within it's clean_sci_name; otherwise, give it an arbitrary simplex (0.25 per component) to avoid STAN error for simplexes that don't sum to 1
   # FIX IT - in terms of on-farm footprint, this is OK because feed proportions are multiplied by FCR == 0 so on-farm footprint for these studies will be 0
   # BUT this will affect the pooled sci and taxa level feed proportions since they enter as 0.25
@@ -77,20 +71,16 @@ lca_model_dat <- lca_full_dat %>%
          feed_crops = if_else(fcr == 0 & feed_crops == 0 & feed_fmfo == 0 & feed_animal == 0, true = 0.25, false = feed_crops),
          feed_fmfo = if_else(fcr == 0 & feed_fmfo == 0 & feed_animal == 0, true = 0.25, false = feed_fmfo),
          feed_animal = if_else(fcr == 0 & feed_animal == 0, true = 0.25, false = feed_animal)) %>%
-  # Multiply energy input by their Carbon (i.e., GHG) footprint, then sum across energy inputs
-  # (Electricity use * country-specific GHG of electricity) + (Diesel * GHG of diesel) + (Petrol * GHG of petrol) + (Natural gas * GHG of natural gas)
-  # Calculate electriciy GHG footprint
-  left_join(electric_fp_dat %>% select(-Country), by = "iso3c") %>% 
-  mutate(GWP_perkWh_kgCO2eq = if_else(is.na(GWP_perkWh_kgCO2eq), true = mean(GWP_perkWh_kgCO2eq, na.rm = TRUE), false = GWP_perkWh_kgCO2eq)) %>% # for studies with no country data, just use the average across countries
-  mutate(electric_ghg = electric * GWP_perkWh_kgCO2eq) %>%
-  # Calculate diesel GHG footprint
-  mutate(diesel_ghg = diesel * diesel_fp) %>%
-  # Calculate petrol GHG footprint
-  mutate(petrol_ghg = petrol * petrol_fp) %>%
-  # Calculate natural gas GHG footprint
-  mutate(natgas_ghg = natgas * natgas_fp) %>%
-  # Calculate sum total of GHG footprint
-  mutate(total_ghg = electric_ghg + diesel_ghg + petrol_ghg + natgas_ghg) %>%
+  # Set yield = 0 (including where yield is NA) for studies that are not Ponds or Recirculating/tanks
+  mutate(yield = if_else(system %in% c("Ponds", "Recirculating and tanks")==FALSE, true = 0, false = yield)) %>%
+  drop_na() %>% # After fixing NA's in yield, drop all other NAs
+  # Merge evap dat with Countries in lca_data - only need mean_evap_mm and ID columns: study_id, Country, iso3c
+  left_join(evap_clim, by = "iso3c") %>%
+  # For non-freshwater taxa, set mean_evap_mm to 0
+  mutate(mean_evap_mm = if_else(taxa %in% c("oth_carp", "catfish", "hypoph_carp", "tilapia", "trout", "fresh_crust")==FALSE, true = 0, false = mean_evap_mm)) %>%
+  # Calculate on-farm water impacts:
+  # FIX IT - add grow out period in days (mean per taxa group) / 365
+  mutate(water = mean_evap_mm / 1000 * yield) %>%
   # LAST FORMATING STEP - always arrange by clean_sci_name
   arrange(clean_sci_name) %>%
   mutate(clean_sci_name = as.factor(clean_sci_name),
@@ -98,12 +88,14 @@ lca_model_dat <- lca_full_dat %>%
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
 
+#####################
+
 # Set data, indices, constants, weights for STAN
 
 # VARIABLE-SPECIFIC DATA:
 
-# For on_farm ghg
-farm <- lca_model_dat$total_ghg
+# For on farm water
+farm <- lca_model_dat$water
 # For FCR model:
 fcr <- lca_model_dat$fcr
 # For Feed proportion model:
@@ -136,16 +128,9 @@ sci_to_tx <- lca_model_dat %>%
   unique() %>%
   pull(tx)
 
-# FEED IMPACT CONSTANTS:
-# Choose allocation method
-# Choose CARBON for Impact.category
-# IMPORTANT - multiply all values by 1000 to convert to kg CO2 per tonne (currently in kg CO2 per kg)
-impact <- "Global warming potential" # i.e., Carbon impact
-#impact <- "Freshwater eutrophication" # i.e., Phosphorus impact
-#impact <- "Marine eutrophication" # i.e., Nitrogen impact
-#impact <- "Land use" # i.e., Land impact
-#impact <- "Water consumption" # i.e., Water impact
+# FEED IMPACT CONSTANTS: need to include both land and water constants in the model
 
+# Choose allocation method
 set_allocation <- "Mass"
 #set_allocation <- "Gross energy content"
 #set_allocation <- "Economic"
@@ -160,7 +145,7 @@ head(feed_weights)
 set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
 
 fp_constant <- fp_dat %>%
-  filter(Impact.category == impact) %>% 
+  filter(Impact.category == "Water consumption") %>% 
   arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
   select(ave_stressor_per_tonne) %>%
   as.matrix() %>%
@@ -255,8 +240,8 @@ parameters {
   simplex[K] tx_theta[N_TX];
   
   // On farm model
-  vector<lower=0>[N_TX] tx_mu_farm;
-  vector<lower=0>[N_SCI] sci_mu_farm;
+  vector[N_TX] tx_mu_farm; // putting lower=0 bounds will cause tx_land_farm to skew positive when zero
+  vector[N_SCI] sci_mu_farm;
   real<lower=0> tx_sigma_farm;
   real<lower=0> sci_sigma_farm;
 }
@@ -370,6 +355,7 @@ no_na_mod <- stan_model(model_code = stan_no_na)
 
 # Fit model:
 # Set seed while testing
+start_sampling <- Sys.time()
 fit_no_na <- sampling(object = no_na_mod, 
                       data = stan_data, 
                       cores = 4, 
@@ -377,7 +363,11 @@ fit_no_na <- sampling(object = no_na_mod,
                       iter = 2500, 
                       control = list(adapt_delta = 0.99, max_treedepth = 15))
 #fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 5000, control = list(adapt_delta = 0.99))
+end_sampling <- Sys.time()
+end_sampling - start_sampling
 summary(fit_no_na)$summary
+# Index specific parameters by name:
+#(summary(fit_no_na)$summary)[rownames(summary(fit_no_na)$summary) %in% c("tx_sigma_land", "sci_sigma_land", "tx_sigma_fcr", "sci_sigma_fcr"),]
 
 #launch_shinystan(fit_no_na)
 ######################################################################################################
@@ -397,26 +387,12 @@ summary(fit_no_na)$summary
 
 # SET THEME
 sci_plot_theme <- theme(title = element_text(size = 18),
-                    axis.title.x = element_text(size = 16),
-                    axis.text=element_text(size=14, color = "black"))
+                        axis.title.x = element_text(size = 16),
+                        axis.text=element_text(size=14, color = "black"))
 tx_plot_theme <- theme(title = element_text(size = 20),
-                        axis.title.x = element_text(size = 20),
-                        axis.text=element_text(size=20, color = "black"),
+                       axis.title.x = element_text(size = 20),
+                       axis.text=element_text(size=20, color = "black"),
                        legend.position = "none")
-
-# Set units:
-if (impact == "Global warming potential") {
-  units_for_plot = "kg CO2-eq per tonne"
-} else if (impact == "Freshwater eutrophication") {
-  units_for_plot = "kg P-eq per tonne"
-} else if (impact == "Marine eutrophication") {
-  units_for_plot = "kg N-eq per tonne"
-} else if (impact == "Land use") {
-  units_for_plot = bquote('m'^2~'a per tonne')
-} else if (impact == "Water consumption") {
-  units_for_plot = bquote('m'^3~'per tonne')
-}
-
 
 # Key for naming sci and taxa levels
 # Get full taxa group names back
@@ -500,6 +476,10 @@ get_variables(fit_no_na)
 
 ######################################################################################################
 # PLOT final outputs (off-farm, on-farm, and total impacts)
+
+# Set units:
+impact <- "Water Consumption"
+units_for_plot = bquote('m'^3~'per tonne')
 
 ###########################################################
 ## WEIGHTED (only taxa level is relevant - i.e., sum of weighted sci-levels)
@@ -770,13 +750,3 @@ for (i in 1:length(feed_component)){
   print(p)
   ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_FEED-", feed_component[i], "-TAXA-LEVEL.png", sep = "")), width = 11, height = 8.5)
 }
-
-# OPTION 2: Taxa-level plots with color themes:
-# If we want to mimic bayesplot color schemes, can get hexadecimal colors and input manually to stat_halfeye aesthetics
-color_scheme_get("blue")
-color_scheme_get("green")
-
-
-
-
-
