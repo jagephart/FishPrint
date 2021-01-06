@@ -33,9 +33,7 @@ fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global
 lca_dat_clean_groups <- add_taxa_group(lca_dat_clean, fishstat_dat) %>%
   group_by(clean_sci_name, taxa_group_name, taxa) %>%
   mutate(n_in_sci = n()) %>%
-  ungroup() #%>%
-  #filter(n_in_sci > 2)
-# doign this removes whole taxa groups: crabs, aquatic plants get filtered out
+  ungroup()
 
 # Check after add_taxa_group, there should be no taxa == "unassigned"
 sort(unique(lca_dat_clean_groups$taxa))
@@ -95,7 +93,7 @@ prod_weightings <-  prod_weightings %>%
 # Check that species sum to 1
 prod_weightings %>% group_by(taxa_group_name, taxa) %>% summarise(total_weight = sum(prod_weighting))
 
-write.csv(prod_weightings, file.path(datadir, "aqua_prod_weightings.csv"), row.names = FALSE)
+write.csv(prod_weightings, file.path(datadir, "20210106_aqua_prod_weightings.csv"), row.names = FALSE)
 #________________________________________________________________________________________________________________________________________________________________#
 # Calculate the weighted averages for the feed components # FIX IT: Need to add in groupings (not finished yet)
 #________________________________________________________________________________________________________________________________________________________________#
@@ -224,5 +222,5 @@ weighted_fp <- rbind(weighted_soy, weighted_crop)
 weighted_fp <- rbind(weighted_fp, weighted_livestock)
 weighted_fp <- rbind(weighted_fp, weighted_fish)
 
-write.csv(weighted_fp, file.path(datadir, "20201217_weighted_feed_fp.csv"), row.names = FALSE)
+write.csv(weighted_fp, file.path(datadir, "20210106_weighted_feed_fp.csv"), row.names = FALSE)
 

@@ -270,7 +270,14 @@ fit_no_na <- sampling(object = no_na_mod,
 summary(fit_no_na)$summary
 
 ######################################################################################################
-# STEP 3: PLOT RESULTS
+# STEP 3: OUTPUT RESULTS
+###########################################################
+# RESTARTING POINT
+rm(list=ls()[!(ls() %in% c("datadir", "outdir", "impact", "set_allocation",
+                           "wild_dat_new_weights", "fit_no_na"))])
+save(fit_no_na, file = file.path(outdir, paste(Sys.Date(), "_full-model-posterior_", impact, "_", set_allocation, "-allocation.RData", sep = "")))
+
+###########################################################
 
 # SET THEME
 sci_plot_theme <- theme(title = element_text(size = 18),
@@ -314,7 +321,6 @@ fit_no_na %>%
   spread_draws(tx_ghg_w[tx]) %>%
   median_qi(tx_ghg_w, .width = c(0.95, 0.8, 0.5)) %>%
   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  # SET plants and bivalves to 0
   ggplot(aes(y = taxa, x = tx_ghg_w)) +
   geom_interval(aes(xmin = .lower, xmax = .upper)) +
   scale_color_brewer() +
@@ -323,6 +329,14 @@ fit_no_na %>%
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "")
 ggsave(filename = file.path(outdir, "plot_WILD-GHG-TAXA-LEVEL-WEIGHTED.png"), width = 11, height = 8.5)
+
+# Same but as CSV output
+fit_no_na %>%
+  spread_draws(tx_ghg_w[tx]) %>%
+  median_qi(tx_ghg_w, .width = c(0.95, 0.8, 0.5)) %>%
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  rename(total_stressor = tx_ghg_w) %>%
+  write.csv(file = file.path(outdir, "summary_WILD-GHG-TAXA-LEVEL-WEIGHTED.csv"), row.names = FALSE)
 
 # UNWEIGHTED taxa-level GHG
 fit_no_na %>%
@@ -363,16 +377,3 @@ fit_no_na %>%
   sci_plot_theme + 
   labs(x = units_for_plot, y = "", title = "")
 ggsave(filename = file.path(outdir, "plot_WILD-GHG-SCI-LEVEL-UNWEIGHTED.png"), width = 11, height = 8.5)
-
-# OLD plot style:
-# Point + interval plots:
-fit_no_na %>%
-  spread_draws(tx_ghg_w[tx]) %>%
-  median_qi(.width = 0.95) %>%
-  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  ggplot(aes(y = taxa, x = tx_ghg_w, xmin = .lower, xmax = .upper)) +
-  geom_pointinterval() +
-  theme_classic() + 
-  tx_plot_theme + 
-  labs(x = units_for_plot, y = "", title = "")
-ggsave(filename = file.path(outdir, "plot_WILD-GHG-TAXA-LEVEL-WEIGHTED.png"), width = 11, height = 8.5)

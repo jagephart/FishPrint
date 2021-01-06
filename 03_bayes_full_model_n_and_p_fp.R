@@ -42,7 +42,7 @@ feed_element <- "N"
 
 # FIX IT - decide how much replication to create in the dataset (e.g., n-farms vs sqrt-n-farms)
 # Load Data
-lca_full_dat <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
 
 # Format data for model:
 # Merge this with FISH/SHELLFISH CONTENT CONSTANTS so this can also be passed as data - paired to the correct clean_sci_name
@@ -404,20 +404,16 @@ fit_no_na <- sampling(object = no_na_mod,
 summary(fit_no_na)$summary
 
 #launch_shinystan(fit_no_na)
-######################################################################################################
-# RESTARTING POINT
-# FIX IT - which objects to clear before saving?
-# rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
-#                            "lca_dat_clean_groups", "feed_model_dat_categories",
-#                            "full_feed_dat", "full_fcr_dat", "feed_footprint_dat", "fit_no_na"))])
-save.image(file.path(outdir, paste(Sys.Date(), "_full-model_", impact, "_", set_allocation, "-allocation_all-data-prior-to-plotting.RData", sep = "")))
 
-# datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-# outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
-# load(file.path(outdir, "<file-name>.RData"))
-# set_allocation <- "Mass"
-######################################################################################################
-# STEP 3: PLOT RESULTS
+###########################################################
+# STEP 3: OUTPUT RESULTS
+###########################################################
+# RESTARTING POINT
+rm(list=ls()[!(ls() %in% c("datadir", "outdir", "impact", "set_allocation",
+                           "lca_model_dat", "fit_no_na"))])
+save(fit_no_na, file = file.path(outdir, paste(Sys.Date(), "_full-model-posterior_", impact, "_", set_allocation, "-allocation.RData", sep = "")))
+
+###########################################################
 
 # SET THEME
 sci_plot_theme <- theme(title = element_text(size = 18),
@@ -563,6 +559,17 @@ fit_no_na %>%
   labs(x = units_for_plot, y = "", title = "Mean off-farm (feed) impact")
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
+# Same but as CSV output
+fit_no_na %>%
+  spread_draws(tx_feed_fp_w[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  mutate(tx_feed_fp_w = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_feed_fp_w),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
+  rename(off_farm = tx_feed_fp_w) %>%
+  write.csv(file = file.path(outdir, paste("summary_", impact, "_", set_allocation, "-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv", sep = "")), row.names = FALSE)
+
 # Mean on-farm impact taxa-level
 fit_no_na %>%
   spread_draws(tx_farm_fp_w[tx]) %>%
@@ -574,6 +581,14 @@ fit_no_na %>%
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "Mean on-farm impact")
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+# Same but as CSV output
+fit_no_na %>%
+  spread_draws(tx_farm_fp_w[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  rename(on_farm = tx_farm_fp_w) %>%
+  write.csv(file = file.path(outdir, paste("summary_", impact, "_", set_allocation, "-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv", sep = "")), row.names = FALSE)
 
 # Mean total impact taxa-level
 fit_no_na %>%
@@ -588,6 +603,17 @@ fit_no_na %>%
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "Total (on and off-farm) impact", color = "taxa group")
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+# Same but as CSV output
+fit_no_na %>%
+  spread_draws(tx_total_fp_w[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # Set .lower limit of plants and bivalves to be 0
+  mutate(.lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower)) %>% 
+  rename(total_stressor = tx_total_fp_w) %>%
+  write.csv(file = file.path(outdir, paste("summary_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv", sep = "")), row.names = FALSE)
+
 
 ###########################################################
 ## PLOT WEIGHTED SCI-LEVEL ESTIMATES ANYWAY TO COMPARE WITH UNWEIGHTED ESTIMATES

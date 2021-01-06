@@ -30,7 +30,7 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # STEP 1: LOAD AND FORMAT DATA
 
 # Load Data
-lca_full_dat <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
 
 # Load on-farm evaporative water loss (NOAA data - country-level mean of monthly climatological means 1981-2010)
 evap_clim <- read.csv(file.path(datadir, "20201222_clim_summarise_by_country.csv")) %>%
@@ -367,7 +367,7 @@ summary(fit_no_na)$summary
 #launch_shinystan(fit_no_na)
 
 ######################################################################################################
-# STEP 3: PLOT RESULTS
+# STEP 3: OUTPUT RESULTS
 
 # Set units:
 impact <- "Land Use"
@@ -375,12 +375,9 @@ units_for_plot = bquote('m'^2*'a per tonne')
 
 ###########################################################
 # RESTARTING POINT
-save.image(file.path(outdir, paste(Sys.Date(), "_full-model_", impact, "_", set_allocation, "-allocation_all-data-prior-to-plotting.RData", sep = "")))
-
-# datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-# outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
-# load(file.path(outdir, "<file-name>.RData"))
-# set_allocation <- "Mass"
+rm(list=ls()[!(ls() %in% c("datadir", "outdir", "impact", "set_allocation",
+                           "lca_model_dat", "fit_no_na"))])
+save(fit_no_na, file = file.path(outdir, paste(Sys.Date(), "_full-model-posterior_", impact, "_", set_allocation, "-allocation.RData", sep = "")))
 
 ###########################################################
 # PLOT final LAND outputs (off-farm, on-farm, and total impacts)
@@ -514,29 +511,16 @@ fit_no_na %>%
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
 #ggsave(filename = file.path(outdir, "plot_geom_pointinterval.png"))
 
-# FOR PLOTS THAT INCLUDE DISTRIBUTIONS:
+# Same but as CSV output
 fit_no_na %>%
   spread_draws(tx_land_feed_w[tx]) %>%
-  median_qi(tx_land_feed_w, .width = c(0.95, 0.8, 0.5)) %>%
+  median_qi(.width = 0.95) %>%
   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  # SET plants and bivalves to 0
   mutate(tx_land_feed_w = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_land_feed_w),
          .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
          .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
-  ggplot(aes(y = full_taxa_name, x = tx_land_feed_w)) +
-  # can adjust intervals for thick vs. thin lines: stat_halfeye(.width = c(.80, .95))
-  #stat_halfeye(aes(slab_fill = full_taxa_name), normalize = "all") +
-  #stat_interval(aes(x = tx_land_feed_w), .width = c(0.5, 0.8, 0.95)) +
-  geom_interval(aes(xmin = .lower, xmax = .upper)) +
-  geom_point(x = c(0), y = c("bivalves")) +
-  geom_point(x = 0, y = "plants") +
-  scale_color_brewer() +
-  theme_classic() + 
-  tx_plot_theme + 
-  labs(x = units_for_plot, y = "", title = "Mean off-farm (feed) impact")
-ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
-#ggsave(filename = file.path(outdir, "plot_geom_interval.png"))
-
+  rename(off_farm = tx_land_feed_w) %>%
+  write.csv(file = file.path(outdir, paste("summary_", impact, "_", set_allocation, "-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv", sep = "")), row.names = FALSE)
 
 # Mean on-farm impact taxa-level:
 # First - set all taxa that have no PONDS or RECIRCULATING and TANKS to be ZERO, all the rest are true distributions
@@ -565,6 +549,18 @@ fit_no_na %>%
   labs(x = units_for_plot, y = "", title = "Mean on-farm impact")
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
+# Same but as CSV output
+fit_no_na %>%
+  spread_draws(tx_land_farm_w[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # SET tx_null_farm to 0
+  mutate(tx_land_farm_w = if_else(taxa %in% tx_null_farm, true = 0, false = tx_land_farm_w),
+         .lower = if_else(taxa %in% tx_null_farm, true = 0, false = .lower),
+         .upper = if_else(taxa %in% tx_null_farm, true = 0, false = .upper)) %>%
+  rename(on_farm = tx_land_farm_w) %>%
+  write.csv(file = file.path(outdir, paste("summary_", impact, "_", set_allocation, "-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv", sep = "")), row.names = FALSE)
+
 # Mean total impact taxa-level
 fit_no_na %>%
   spread_draws(tx_land_total_w[tx]) %>%
@@ -580,6 +576,19 @@ fit_no_na %>%
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "Total (on and off-farm) impact", color = "taxa group")
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+# Same but as CSV output
+fit_no_na %>%
+  spread_draws(tx_land_total_w[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # Set plant and bivalves distributions to 0 (both are 0 for on and off farm)
+  mutate(tx_land_total_w = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_land_total_w),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
+  rename(total_stressor = tx_land_total_w) %>%
+  write.csv(file = file.path(outdir, paste("summary_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv", sep = "")), row.names = FALSE)
+
 
 ###########################################################
 ## PLOT WEIGHTED SCI-LEVEL ESTIMATES ANYWAY TO COMPARE WITH UNWEIGHTED ESTIMATES
