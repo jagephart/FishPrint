@@ -3,8 +3,10 @@ library(tidyverse)
 library(ggplot2)
 library(ggthemes)
 library(ggridges)
+library(cowplot)
+library(egg)
 
-#source("nonbayesian_estimates.R")
+#source("nonbayesian_estimates_20201222.R")
 
 #_______________________________________________________________________________________________________________________#
 # Plot feed-associated stressors
@@ -229,3 +231,157 @@ ggplot(stressor_taxa_summary_plot, aes(x = value, y = taxa, fill = source)) +
   geom_bar(position="stack", stat="identity") +
   facet_wrap(~stressor, scales = "free") +
   theme_clean()
+
+# Total stressor ridge plots 
+total_stressor_species_summary_plot <- stressor_species_summary_plot %>%
+  group_by(study_id, taxa,  intensity, system,  clean_sci_name, stressor) %>%
+  summarise(total_value = sum(value))
+
+# Set factor levels
+stressor_species_summary_plot$intensity <- factor(stressor_species_summary_plot$intensity, 
+                                                  levels = c("Extensive", "Imp. extensive", 
+                                                             "Semi-intensive", "Intensive", "NA"))
+stressor_species_summary_plot$system <- factor(stressor_species_summary_plot$system,
+                                               levels = c("On- and off-bottom", "Cages & pens", 
+                                                          "Ponds", "Recirculating and tanks", "NA"))
+# ghg
+ghg_ridge_intensity <- ggplot(total_stressor_species_summary_plot %>% 
+                                filter(stressor == "ghg" & !is.na(intensity)),
+       aes(x = total_value, y = intensity)) +
+  geom_density_ridges() +
+  labs(title = "GHG", x = "kg CO2-eq/t", y = "") +
+  theme_ridges() 
+
+ghg_ridge_system <- ggplot(total_stressor_species_summary_plot %>% 
+                                filter(stressor == "ghg" & !is.na(system)),
+                              aes(x = total_value, y = system)) +
+  geom_density_ridges() +
+  labs(title = "GHG", x = "kg CO2-eq/t", y = "") +
+  theme_ridges() 
+
+ghg_ridge_taxa <- ggplot(total_stressor_species_summary_plot %>% 
+                             filter(stressor == "ghg" & !is.na(system)),
+                           aes(x = total_value, y = taxa)) +
+  geom_density_ridges() +
+  labs(title = "GHG", x = "kg CO2-eq/t", y = "") +
+  theme_ridges() 
+
+# N
+N_ridge_intensity <- ggplot(total_stressor_species_summary_plot %>% 
+                                filter(stressor == "N" & !is.na(intensity)),
+                              aes(x = total_value, y = intensity)) +
+  geom_density_ridges() +
+  labs(title = "Nitrogen", x = "kg N/t", y = "") +
+  theme_ridges() +
+  theme(axis.text.y=element_blank())
+
+N_ridge_system <- ggplot(total_stressor_species_summary_plot %>% 
+                             filter(stressor == "N" & !is.na(system)),
+                           aes(x = total_value, y = system)) +
+  geom_density_ridges() +
+  labs(title = "Nitrogen", x = "kg N/t", y = "") +
+  theme_ridges() +
+  theme(axis.text.y=element_blank())
+
+N_ridge_taxa <- ggplot(total_stressor_species_summary_plot %>% 
+                           filter(stressor == "N" & !is.na(system)),
+                         aes(x = total_value, y = taxa)) +
+  geom_density_ridges() +
+  labs(title = "Nitrogen", x = "kg N/t", y = "") +
+  theme_ridges() +
+  theme(axis.text.y=element_blank())
+
+# P
+P_ridge_intensity <- ggplot(total_stressor_species_summary_plot %>% 
+                                filter(stressor == "P" & !is.na(intensity)),
+                              aes(x = total_value, y = intensity)) +
+  geom_density_ridges() +
+  labs(title = "Phosphorus", x = "kg P/t", y = "") +
+  theme_ridges() +
+  theme(axis.text.y=element_blank())
+
+P_ridge_system <- ggplot(total_stressor_species_summary_plot %>% 
+                             filter(stressor == "P" & !is.na(system)),
+                           aes(x = total_value, y = system)) +
+  geom_density_ridges() +
+  labs(title = "Phosphorus", x = "kg P/t", y = "") +
+  theme_ridges() +
+  theme(axis.text.y=element_blank())
+
+P_ridge_taxa <- ggplot(total_stressor_species_summary_plot %>% 
+                           filter(stressor == "P" & !is.na(system)),
+                         aes(x = total_value, y = taxa)) +
+  geom_density_ridges() +
+  labs(title = "Phosphorus", x = "kg P/t", y = "") +
+  theme_ridges() +
+  theme(axis.text.y=element_blank())
+
+# land
+land_ridge_intensity <- ggplot(total_stressor_species_summary_plot %>% 
+                                filter(stressor == "land" & !is.na(intensity)),
+                              aes(x = total_value, y = intensity)) +
+  geom_density_ridges() +
+  labs(title = "Land", x = "m2/t", y = "") +
+  theme_ridges() +
+  theme(axis.text.y=element_blank())
+
+land_ridge_system <- ggplot(total_stressor_species_summary_plot %>% 
+                             filter(stressor == "land" & !is.na(system)),
+                           aes(x = total_value, y = system)) +
+  geom_density_ridges() +
+  labs(title = "Land", x = "m2/t", y = "") +
+  theme_ridges() +
+  theme(axis.text.y=element_blank())
+
+land_ridge_taxa <- ggplot(total_stressor_species_summary_plot %>% 
+                              filter(stressor == "land" & !is.na(system)),
+                            aes(x = total_value, y = taxa)) +
+  geom_density_ridges() +
+  labs(title = "Land", x = "m2/t", y = "") +
+  theme_ridges() +
+  theme(axis.text.y=element_blank())
+
+# water
+water_ridge_intensity <- ggplot(total_stressor_species_summary_plot %>% 
+                                filter(stressor == "water" & !is.na(intensity)),
+                              aes(x = total_value, y = intensity)) +
+  geom_density_ridges() +
+  labs(title = "Water", x = "m3/t", y = "") +
+  theme_ridges() +
+  theme(axis.text.y=element_blank())
+
+water_ridge_system <- ggplot(total_stressor_species_summary_plot %>% 
+                             filter(stressor == "water" & !is.na(system)),
+                           aes(x = total_value, y = system)) +
+  geom_density_ridges() +
+  labs(title = "Water", x = "m3/t", y = "") +
+  theme_ridges() +
+  theme(axis.text.y=element_blank())
+
+water_ridge_taxa <- ggplot(total_stressor_species_summary_plot %>% 
+                               filter(stressor == "water" & !is.na(system)),
+                             aes(x = total_value, y = taxa)) +
+  geom_density_ridges() +
+  labs(title = "Water", x = "m3/t", y = "") +
+  theme_ridges() +
+  theme(axis.text.y=element_blank())
+
+
+ggarrange(ghg_ridge_intensity, N_ridge_intensity, P_ridge_intensity,
+          land_ridge_intensity, water_ridge_intensity, nrow = 1)
+
+ggarrange(ghg_ridge_system, N_ridge_system, P_ridge_system,
+          land_ridge_system, water_ridge_system, nrow = 1)
+
+ggarrange(ghg_ridge_taxa, N_ridge_taxa, P_ridge_taxa,
+          land_ridge_taxa, water_ridge_taxa, nrow = 1)
+
+
+#_______________________________________________________________________________________________________________________#
+# Plot capture GHG
+#_______________________________________________________________________________________________________________________#
+ggplot(df_capture_ghg, aes(x = ghg_kg_t, y = species_group)) +
+  geom_bar(stat="identity") +
+  labs(title = "Capture Fishery GHGs", x = "CO2-eq (kg/t)", y = "") +
+  theme_clean()
+

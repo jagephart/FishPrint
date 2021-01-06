@@ -12,6 +12,7 @@ fui <- read.csv("Data/marine_mammal_risk_fui.csv")
 
 # Tidy data and join FUI data
 mm_risk <- mm_risk %>%
+  filter(str_detect(Reference, pattern = "Brown")| str_detect(Reference, pattern = "Micheli")) %>%
   pivot_longer(high:low, names_to = "risk", values_to = "n.species") %>%
   filter(!(is.na(n.species))) %>%
   select("mm_species" = species, "species" = fui, gear, Region, risk, n.species) %>%
