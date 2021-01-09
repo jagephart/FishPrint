@@ -31,15 +31,17 @@ units_for_plot = bquote('kg'~CO[2]*'-eq per tonne')
 interval_palette <- c("#9EA8B7", "#6A7A90", "#364F6B") # Order: light to dark
 
 # Theme
-tx_plot_theme <- theme(axis.title = element_text(size = 10),
-                       axis.text=element_text(size=10, color = "black"),
+tx_plot_theme <- theme(axis.title = element_text(size = 9),
+                       axis.text.x = element_text(size = 9, color = "black"),
+                       axis.text.y = element_text(size = 9, color = "black"),
                        legend.position = "none",
-                       plot.margin = unit(c(0, 0, 0, 0), "cm"))
+                       plot.margin = unit(c(0, 3, 0, 0), "mm")) # increase the right margin so that there can be some pillover from x-axis
 
 # Key for naming taxa levels
 
 # FIX IT - later remove the section for creating lca_model_dat; after re-doing model with priors, lca_model_dat will be part of the saved .RData loaded back into this working space)
 # Load Data
+library(countrycode)
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
 # Get farm-associated carbon footprints data
@@ -162,9 +164,11 @@ p_carbon <- fit_no_na %>%
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_total_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w, xmin = .lower, xmax = .upper)) +
-  geom_interval(aes(xmin = .lower, xmax = .upper)) +
+  geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_total_fp_w)) +
+  geom_hline(yintercept = 1:12, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
+  coord_cartesian(xlim = c(0, 12500)) +
   theme_classic() + 
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "")
@@ -195,10 +199,11 @@ p_land <- fit_no_na %>%
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(., aes(y = full_taxa_name, x = tx_land_total_w, xmin = .lower, xmax = .upper)) +
-  geom_interval(aes(xmin = .lower, xmax = .upper)) +
+  geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_land_total_w)) +
   geom_point(x = 0, y = "bivalves") +
   geom_point(x = 0, y = "plants") +
+  geom_hline(yintercept = 1:12, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
   theme_classic() + 
   tx_plot_theme + 
@@ -226,8 +231,9 @@ p_nitrogen <- fit_no_na %>%
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
-  geom_interval(aes(xmin = .lower, xmax = .upper)) +
+  geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_total_fp_w)) +
+  geom_hline(yintercept = 1:12, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
   theme_classic() + 
   tx_plot_theme + 
@@ -260,8 +266,9 @@ p_phosphorus <- fit_no_na %>%
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
-  geom_interval(aes(xmin = .lower, xmax = .upper)) +
+  geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_total_fp_w)) +
+  geom_hline(yintercept = 1:12, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
   theme_classic() + 
   tx_plot_theme + 
@@ -298,10 +305,11 @@ p_water <- fit_no_na %>%
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
-  geom_interval(aes(xmin = .lower, xmax = .upper)) +
+  geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(x = 0, y = "bivalves") +
   geom_point(x = 0, y = "plants") +
   geom_point(aes(y = full_taxa_name, x = tx_total_fp_w)) +
+  geom_hline(yintercept = 1:12, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
   theme_classic() + 
   tx_plot_theme + 
@@ -319,7 +327,7 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 
 # Load model outputs individually, save to plot_grid, and create multi-panel plot
 load(file.path(outdir, "Wild/2021-01-07_full-model-posterior_Wild-capture-ghg.RData"))
-units_for_plot = "kg CO2-eq per tonne"
+units_for_plot = bquote('kg'~CO[2]*'-eq per tonne')
 interval_palette <- c("#9EA8B7", "#6A7A90", "#364F6B") # Order: light to dark
 
 
@@ -371,8 +379,9 @@ p_wild <- fit_no_na %>%
   mutate(taxa = tolower(taxa)) %>%
   mutate(taxa = fct_reorder(taxa, tx_ghg_w)) %>%
   ggplot(aes(y = taxa, x = tx_ghg_w)) +
-  geom_interval(aes(xmin = .lower, xmax = .upper)) +
+  geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 3) +
   geom_point(aes(y = taxa, x = tx_ghg_w)) +
+  geom_hline(yintercept = 1:11, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
   theme_classic() + 
   coord_cartesian(xlim = c(0, 12500)) +
@@ -388,46 +397,11 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
                            "p_wild"))])
 
 
-plot_grid(p_carbon, p_land, p_nitrogen, p_wild, p_water, p_phosphorus, 
-          labels = "auto", nrow = 2, ncol = 3, align = "hv", rel_widths = c(1, 1, 1.4))
-
-panel_carbon <- plot_grid(p_carbon, labels = "a")
-panel_land <- plot_grid(p_land, labels = "b")
-panel_nitrogen <- plot_grid(p_nitrogen, labels = "c")
-panel_wild <- plot_grid(p_wild, labels = "d")
-panel_water <- plot_grid(p_water, labels = "e")
-panel_phosphorus <- plot_grid(p_phosphorus, labels = "f")
-
-
-plot_grid(panel_carbon, panel_land, panel_nitrogen, nrow = 1, ncol = 3, align = "hv")
-
-
-
-
-# FIX IT - this gets rid of extra space in N and P plots, but now axes aren't aligned
-# Plot N and P separately:
-plot_left <- plot_grid(p_carbon, p_wild,
-          labels = c("a", "d"), nrow = 2, ncol = 1, align = "hv")
-plot_middle <- plot_grid(p_land, p_water,
-                       labels = c("b", "e"), nrow = 2, ncol = 1, align = "hv")
-plot_right <- plot_grid(p_nitrogen, p_phosphorus,
-          labels = c("c", "f"), nrow = 2, ncol = 1, align = "hv")
-plot_grid(plot_left, plot_middle, nrow = 1, ncol = 2, align = "hv", axis = "bl")
-
-# Try align_plots
-align_test <- align_plots(p_carbon, p_land, axis = "bl", align = "hv")
-plot_grid(align_test[[1]], align_test[[2]])
-
-# Plot similar axes together so that the spacing is aligned (wild catch separately)
-plot_top <- plot_grid(p_carbon, p_land, p_nitrogen,
-                      labels = c("a", "b", "c"), nrow = 1, ncol = 3, align = "hv")
-plot_bottom <- plot_grid(p_wild, p_water, p_phosphorus,
-                         labels = c("d", "e", "f"), nrow = 1, ncol = 3, align = "hv")
-plot_grid(plot_top, plot_bottom, nrow = 2, ncol = 1, align = "hv")
-
-plot_a_b <- plot_grid(p_carbon, p_land,
-                      labels = c("a", "b"), nrow = 1, ncol = 2, align = "hv")
-plot_grid(plot_a_b, p_nitrogen)
-
-
+# COMBINE INTO PANEL:
+p_left <- plot_grid(p_carbon, p_wild, ncol = 1, nrow = 2, align = "hv")
+p_right <- plot_grid(p_land, p_nitrogen, p_water, p_phosphorus, ncol = 2, nrow = 2, align = "h")
+plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.7, 1))
 ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm")
+ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
+
+
