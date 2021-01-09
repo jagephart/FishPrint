@@ -46,50 +46,50 @@ wild_dat_new_weights <- wild_dat %>%
 
 ##### COMPARE with non-Bayesian calculation
 
-# 2-step weighting
-jg_results <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>%
-# Remove mixed gear and nei observations
-  filter(!str_detect(pattern = " nei", species)) %>%
-  filter(gear != "Other, Mixed, or Unknown") %>%
-  # Remove observations with 0 gear, species, or consumption weighting
-  filter(gear_weighting > 0 & species_weighting > 0 & consumption_weighting > 0) %>%
-  # Re-weight gear within each species
-  group_by(species_group, species) %>%
-  mutate(gear_weighting_new = gear_weighting/sum(gear_weighting)) %>%
-  # Create species gear-weighted means
-  summarise(species_ghg_kg_t = sum(ghg*gear_weighting_new), 
-            species_weighting = mean(species_weighting), 
-            consumption_weighting = mean(consumption_weighting)) %>%
-  # Re-weight species and consumption within taxa group
-  ungroup() %>%
-  group_by(species_group) %>%
-  mutate(species_consumption_weighting = (species_weighting*consumption_weighting)/sum(species_weighting*consumption_weighting)) %>%
-  summarise(ghg_kg_t = sum(species_ghg_kg_t*species_consumption_weighting))
-
-# 1-step weighting
-jg_results_2 <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>%
-  # Remove mixed gear and nei observations
-  filter(!str_detect(pattern = " nei", species)) %>%
-  filter(gear != "Other, Mixed, or Unknown") %>%
-  # Remove observations with 0 gear, species, or consumption weighting
-  filter(gear_weighting > 0 & species_weighting > 0 & consumption_weighting > 0) %>%
-  # Re-weight gear within species
-  group_by(species) %>%
-  mutate(gear_weights_new = gear_weighting/sum(gear_weighting)) %>%
-  ungroup() %>%
-  # Re-weight species and consumption within species_groups
-  group_by(species_group) %>%
-  mutate(species_weights_new = species_weighting/sum(species_weighting),
-         consumption_weights_new = consumption_weighting/sum(consumption_weighting)) %>%
-  ungroup() %>%
-  # Calculate overall weights and re-weight
-  mutate(prod_of_weights = gear_weights_new * species_weights_new * consumption_weights_new) %>%
-  group_by(species_group) %>%
-  mutate(overall_weights = prod_of_weights/sum(prod_of_weights)) %>%
-  ungroup() %>%
-  mutate(ghg_w = ghg * overall_weights) %>%
-  group_by(species_group) %>%
-  summarise(ghg_taxa_w = sum(ghg_w))
+# # 2-step weighting
+# jg_results <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>%
+# # Remove mixed gear and nei observations
+#   filter(!str_detect(pattern = " nei", species)) %>%
+#   filter(gear != "Other, Mixed, or Unknown") %>%
+#   # Remove observations with 0 gear, species, or consumption weighting
+#   filter(gear_weighting > 0 & species_weighting > 0 & consumption_weighting > 0) %>%
+#   # Re-weight gear within each species
+#   group_by(species_group, species) %>%
+#   mutate(gear_weighting_new = gear_weighting/sum(gear_weighting)) %>%
+#   # Create species gear-weighted means
+#   summarise(species_ghg_kg_t = sum(ghg*gear_weighting_new), 
+#             species_weighting = mean(species_weighting), 
+#             consumption_weighting = mean(consumption_weighting)) %>%
+#   # Re-weight species and consumption within taxa group
+#   ungroup() %>%
+#   group_by(species_group) %>%
+#   mutate(species_consumption_weighting = (species_weighting*consumption_weighting)/sum(species_weighting*consumption_weighting)) %>%
+#   summarise(ghg_kg_t = sum(species_ghg_kg_t*species_consumption_weighting))
+# 
+# # 1-step weighting
+# jg_results_2 <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>%
+#   # Remove mixed gear and nei observations
+#   filter(!str_detect(pattern = " nei", species)) %>%
+#   filter(gear != "Other, Mixed, or Unknown") %>%
+#   # Remove observations with 0 gear, species, or consumption weighting
+#   filter(gear_weighting > 0 & species_weighting > 0 & consumption_weighting > 0) %>%
+#   # Re-weight gear within species
+#   group_by(species) %>%
+#   mutate(gear_weights_new = gear_weighting/sum(gear_weighting)) %>%
+#   ungroup() %>%
+#   # Re-weight species and consumption within species_groups
+#   group_by(species_group) %>%
+#   mutate(species_weights_new = species_weighting/sum(species_weighting),
+#          consumption_weights_new = consumption_weighting/sum(consumption_weighting)) %>%
+#   ungroup() %>%
+#   # Calculate overall weights and re-weight
+#   mutate(prod_of_weights = gear_weights_new * species_weights_new * consumption_weights_new) %>%
+#   group_by(species_group) %>%
+#   mutate(overall_weights = prod_of_weights/sum(prod_of_weights)) %>%
+#   ungroup() %>%
+#   mutate(ghg_w = ghg * overall_weights) %>%
+#   group_by(species_group) %>%
+#   summarise(ghg_taxa_w = sum(ghg_w))
 
 # Set data, indices, and weights for STAN
 
@@ -271,22 +271,28 @@ summary(fit_no_na)$summary
 
 ######################################################################################################
 # STEP 3: OUTPUT RESULTS
+
 ###########################################################
 # RESTARTING POINT
 rm(list=ls()[!(ls() %in% c("datadir", "outdir", "impact", "set_allocation",
                            "wild_dat_new_weights", "fit_no_na"))])
-save(fit_no_na, file = file.path(outdir, paste(Sys.Date(), "_full-model-posterior_", impact, "_", set_allocation, "-allocation.RData", sep = "")))
+save.iamge(file = file.path(outdir, paste(Sys.Date(), "_full-model-posterior_Wild-capture-ghg.RData", sep = "")))
 
 ###########################################################
 
 # SET THEME
+x <- seq(0, 1, length.out = 16)
+base_color <- "#364F6B"
+show_col(seq_gradient_pal(base_color, "white")(x)) # Get hexadecimals for other colors
+interval_palette <- c("#9EA8B7", "#6A7A90", "#364F6B") # Order: light to dark
 sci_plot_theme <- theme(title = element_text(size = 18),
                         axis.title.x = element_text(size = 16),
                         axis.text=element_text(size=10, color = "black"))
-tx_plot_theme <- theme(title = element_text(size = 20),
+tx_plot_theme <- list(theme(title = element_text(size = 20),
                        axis.title.x = element_text(size = 20),
                        axis.text=element_text(size=20, color = "black"),
-                       legend.position = "none")
+                       legend.position = "none"),
+                      scale_color_manual(values = interval_palette))
 
 units_for_plot = "kg CO2-eq per tonne"
 
@@ -323,12 +329,12 @@ fit_no_na %>%
   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
   ggplot(aes(y = taxa, x = tx_ghg_w)) +
   geom_interval(aes(xmin = .lower, xmax = .upper)) +
-  scale_color_brewer() +
   theme_classic() + 
-  theme(axis.text.y = element_text(colour = a))
+  coord_cartesian(xlim = c(0, 12500)) +
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "")
 ggsave(filename = file.path(outdir, "plot_WILD-GHG-TAXA-LEVEL-WEIGHTED.png"), width = 11, height = 8.5)
+
 
 # Same but as CSV output
 fit_no_na %>%
@@ -346,7 +352,6 @@ fit_no_na %>%
   # SET plants and bivalves to 0
   ggplot(aes(y = taxa, x = tx_mu_ghg)) +
   geom_interval(aes(xmin = .lower, xmax = .upper)) +
-  scale_color_brewer() +
   theme_classic() + 
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "")

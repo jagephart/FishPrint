@@ -1,5 +1,9 @@
 # PLOT other intermediate-level calculations (these are universally shared among all models)
 
+# FIRST, load model output
+# FCR and Feed will be the same for C, N, P, land, and water so just pick one
+# But run separately for the different allocation methods: Mass, economic, gross energy content
+
 # FCR
 # Mean FCR sci-level
 fit_no_na %>%
@@ -22,15 +26,19 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 # Mean FCR taxa-level
 fit_no_na %>%
   spread_draws(tx_mu_fcr[tx]) %>%
-  median_qi(.width = 0.95) %>%
+  median_qi(.width = c(0.95, 0.8, 0.5)) %>%
   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
   # SET plants and bivalves to 0
   mutate(tx_mu_fcr = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_mu_fcr),
          .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
          .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
-  #mutate(clean_sci_name = fct_reorder(clean_sci_name, as.character(full_taxa_name))) %>%
-  ggplot(aes(y = full_taxa_name, x = tx_mu_fcr, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-  geom_pointinterval() +
+  # REORDER taxa axis
+  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
+  #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
+  ggplot(aes(y = full_taxa_name, x = tx_mu_fcr)) +
+  geom_interval(aes(xmin = .lower, xmax = .upper)) +
+  geom_point(x = c(0), y = c("bivalves")) +
+  geom_point(x = 0, y = "plants") +
   theme_classic() + 
   tx_plot_theme + 
   labs(x = "FCR", y = "", title = "Mean FCR", color = "taxa group")
@@ -88,12 +96,15 @@ feed_component <- c("soy", "crops", "fmfo", "animal")
 for (i in 1:length(feed_component)){
   plot_dat <- fit_no_na %>%
     spread_draws(tx_theta[tx, feed_index]) %>%
-    median_qi(.width = 0.95) %>%
+    median_qi(.width = c(0.95, 0.8, 0.5)) %>%
     left_join(tx_feed_key, by = c("tx" = "tx", "feed_index" = "feed_index")) %>% # Join with index key to get sci and taxa names
     filter(feed == feed_component[i]) %>%
-    filter(taxa %in% taxa_null_feed == FALSE)
-  p <- ggplot(plot_dat, aes(y = full_taxa_name, x = tx_theta, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-    geom_pointinterval() +
+    filter(taxa %in% taxa_null_feed == FALSE) %>%
+    # REORDER taxa axis
+    mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order))
+    #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
+  p <- ggplot(plot_dat, aes(y = full_taxa_name, x = tx_theta)) +
+    geom_interval(aes(xmin = .lower, xmax = .upper)) +
     #stat_halfeye(aes(slab_fill = full_taxa_name)) +
     coord_cartesian(xlim = c(0, 1)) +
     theme_classic() + 
