@@ -8,6 +8,9 @@ library(countrycode)
 library(ggplot2)
 library(hrbrthemes)
 library(viridis)
+library(RColorBrewer)
+library(ggthemes)
+library(ggpubr)
 
 source("Functions.R")
 
@@ -19,7 +22,7 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # Load data
 #_______________________________________________________________________________________________________________________#
 # Load full lca data with predicted parameters
-df <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-sqrt-n-farms.csv"))
+df <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"))
 
 # Load and join weightings
 prod_weightings <- read.csv(file.path(datadir, "aqua_prod_weightings.csv"))
@@ -143,145 +146,9 @@ df_taxa <- df %>%
     ) %>% 
   filter(taxa != "fresh_crust") # Freshwater crustaceans will drop out due to lack of data
 
-#_______________________________________________________________________________________________________________________#
-# Change in stressors with change in parameters function
-#_______________________________________________________________________________________________________________________#
-
-stressor_sensitivity <- function(data_lca, data_feed_stressors, data_feed_NP, data_energy,
-                             delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
-                             delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0){
-  # Set feed component stressor constants
-  soy_stressor_ghg <- data_feed_stressors %>% filter(stressor == "ghg" & feed_type == "soy") %>% pull(ave_stressor)
-  soy_stressor_N <- data_feed_stressors %>% filter(stressor == "N" & feed_type == "soy") %>% pull(ave_stressor)
-  soy_stressor_P <- data_feed_stressors %>% filter(stressor == "P" & feed_type == "soy") %>% pull(ave_stressor)
-  soy_stressor_land <- data_feed_stressors %>% filter(stressor == "land" & feed_type == "soy") %>% pull(ave_stressor)
-  soy_stressor_water <- data_feed_stressors %>% filter(stressor == "water" & feed_type == "soy") %>% pull(ave_stressor)
-  
-  crops_stressor_ghg <- data_feed_stressors %>% filter(stressor == "ghg" & feed_type == "crops") %>% pull(ave_stressor)
-  crops_stressor_N <- data_feed_stressors %>% filter(stressor == "N" & feed_type == "crops") %>% pull(ave_stressor)
-  crops_stressor_P <- data_feed_stressors %>% filter(stressor == "P" & feed_type == "crops") %>% pull(ave_stressor)
-  crops_stressor_land <- data_feed_stressors %>% filter(stressor == "land" & feed_type == "crops") %>% pull(ave_stressor)
-  crops_stressor_water <- data_feed_stressors %>% filter(stressor == "water" & feed_type == "crops") %>% pull(ave_stressor)
-  
-  animal_stressor_ghg <- data_feed_stressors %>% filter(stressor == "ghg" & feed_type == "animal") %>% pull(ave_stressor)
-  animal_stressor_N <- data_feed_stressors %>% filter(stressor == "N" & feed_type == "animal") %>% pull(ave_stressor)
-  animal_stressor_P <- data_feed_stressors %>% filter(stressor == "P" & feed_type == "animal") %>% pull(ave_stressor)
-  animal_stressor_land <- data_feed_stressors %>% filter(stressor == "land" & feed_type == "animal") %>% pull(ave_stressor)
-  animal_stressor_water <- data_feed_stressors %>% filter(stressor == "water" & feed_type == "animal") %>% pull(ave_stressor)
-  
-  fmfo_stressor_ghg <- data_feed_stressors %>% filter(stressor == "ghg" & feed_type == "fmfo") %>% pull(ave_stressor)
-  fmfo_stressor_N <- data_feed_stressors %>% filter(stressor == "N" & feed_type == "fmfo") %>% pull(ave_stressor)
-  fmfo_stressor_P <- data_feed_stressors %>% filter(stressor == "P" & feed_type == "fmfo") %>% pull(ave_stressor)
-  fmfo_stressor_land <- data_feed_stressors %>% filter(stressor == "land" & feed_type == "fmfo") %>% pull(ave_stressor)
-  fmfo_stressor_water <- data_feed_stressors %>% filter(stressor == "water" & feed_type == "fmfo") %>% pull(ave_stressor)
-  
-  # Set energy constants
-  diesel_ghg <- data_energy %>% filter(Input == "Diesel_L") %>% pull(Value)
-  petrol_ghg <- data_energy %>% filter(Input == "Petrol_L") %>% pull(Value)
-  natgas_ghg <- data_energy %>% filter(Input == "NaturalGas_L") %>% pull(Value)
-  
-  # Set feed N and P constants
-  N_content_soy <- data_feed_NP %>% filter(feed_type == "soy") %>% pull(N)
-  P_content_soy <- data_feed_NP %>% filter(feed_type == "soy") %>% pull(P)
-  
-  N_content_crops <- data_feed_NP %>% filter(feed_type == "crops") %>% pull(N)
-  P_content_crops <- data_feed_NP %>% filter(feed_type == "crops") %>% pull(P)
-  
-  N_content_animal <- data_feed_NP %>% filter(feed_type == "animal") %>% pull(N)
-  P_content_animal <- data_feed_NP %>% filter(feed_type == "animal") %>% pull(P)
-  
-  N_content_fmfo <- data_feed_NP %>% filter(feed_type == "fmfo") %>% pull(N)
-  P_content_fmfo <- data_feed_NP %>% filter(feed_type == "fmfo") %>% pull(P)
-
-  data_lca <- data_lca %>%
-    # Add deltas to calculate perturbation
-    mutate(fcr_weighted_mean = fcr_weighted_mean + delta_FCR,
-           feed_soy_weighted_mean = feed_soy_weighted_mean + delta_soy, 
-           feed_crops_weighted_mean = feed_crops_weighted_mean + delta_crops,
-           feed_animal_weighted_mean = feed_animal_weighted_mean + delta_animal,
-           feed_fmfo_weighted_mean = feed_fmfo_weighted_mean + delta_fmfo,
-           electricity_weighted_mean = electricity_weighted_mean + delta_electricity,
-           diesel_weighted_mean = diesel_weighted_mean + delta_diesel, 
-           petrol_weighted_mean = petrol_weighted_mean + delta_petrol, 
-           naturalgas_weighted_mean = naturalgas_weighted_mean + delta_natgas, 
-           yield_weighted_mean = yield_weighted_mean + delta_yield) %>% 
-    # Reweight feed components to ensure they still sum to 1
-    mutate(feed_soy_weighted_mean_new = feed_soy_weighted_mean/(feed_soy_weighted_mean + feed_crops_weighted_mean +
-                                                               feed_animal_weighted_mean + feed_fmfo_weighted_mean),
-           feed_crops_weighted_mean_new = feed_crops_weighted_mean/(feed_soy_weighted_mean + feed_crops_weighted_mean +
-                                                                      feed_animal_weighted_mean + feed_fmfo_weighted_mean),
-           feed_animal_weighted_mean_new = feed_animal_weighted_mean/(feed_soy_weighted_mean + feed_crops_weighted_mean +
-                                                                        feed_animal_weighted_mean + feed_fmfo_weighted_mean),
-           feed_fmfo_weighted_mean_new = feed_fmfo_weighted_mean/(feed_soy_weighted_mean + feed_crops_weighted_mean +
-                                                                    feed_animal_weighted_mean + feed_fmfo_weighted_mean)) %>%
-    mutate(feed_soy_weighted_mean_new = ifelse(is.na(feed_soy_weighted_mean_new), 0, feed_soy_weighted_mean_new),
-           feed_crops_weighted_mean_new = ifelse(is.na(feed_crops_weighted_mean_new), 0, feed_crops_weighted_mean_new),
-           feed_animal_weighted_mean_new = ifelse(is.na(feed_animal_weighted_mean_new), 0, feed_animal_weighted_mean_new),
-           feed_fmfo_weighted_mean_new = ifelse(is.na(feed_fmfo_weighted_mean_new), 0, feed_fmfo_weighted_mean_new)) %>%
-    # Calculate all stressors
-    mutate(
-      # Calculate feed-associate components
-      feed_ghg = 1000*fcr_weighted_mean*(feed_soy_weighted_mean_new*soy_stressor_ghg + 
-                             feed_crops_weighted_mean_new*crops_stressor_ghg + 
-                             feed_animal_weighted_mean_new*animal_stressor_ghg + 
-                             feed_fmfo_weighted_mean_new*fmfo_stressor_ghg),
-      
-      feed_N = 1000*fcr_weighted_mean*(feed_soy_weighted_mean_new*soy_stressor_N + 
-                             feed_crops_weighted_mean_new*crops_stressor_N + 
-                             feed_animal_weighted_mean_new*animal_stressor_N + 
-                             feed_fmfo_weighted_mean_new*fmfo_stressor_N),
-      
-      feed_P = 1000*fcr_weighted_mean*(feed_soy_weighted_mean_new*soy_stressor_P + 
-                             feed_crops_weighted_mean_new*crops_stressor_P + 
-                             feed_animal_weighted_mean_new*animal_stressor_P + 
-                             feed_fmfo_weighted_mean_new*fmfo_stressor_P),
-      
-      feed_land = 1000*fcr_weighted_mean*(feed_soy_weighted_mean_new*soy_stressor_land + 
-                             feed_crops_weighted_mean_new*crops_stressor_land + 
-                             feed_animal_weighted_mean_new*animal_stressor_land + 
-                             feed_fmfo_weighted_mean_new*fmfo_stressor_land),
-      
-      feed_water = 1000*fcr_weighted_mean*(feed_soy_weighted_mean_new*soy_stressor_water + 
-                             feed_crops_weighted_mean_new*crops_stressor_water + 
-                             feed_animal_weighted_mean_new*animal_stressor_water + 
-                             feed_fmfo_weighted_mean_new*fmfo_stressor_water), 
-      
-      # Calculate on farm GHG
-      onfarm_ghg = electricity_weighted_mean*electricity_ghg_weighted_mean +
-        diesel_weighted_mean*diesel_ghg + petrol_weighted_mean*petrol_ghg + naturalgas_weighted_mean*natgas_ghg,
-      
-      # Calculate on farm N and P
-      onfarm_N = 1000*((fcr_weighted_mean*(feed_soy_weighted_mean_new*N_content_soy + 
-                        feed_crops_weighted_mean_new*N_content_crops + 
-                        feed_animal_weighted_mean_new*N_content_animal + 
-                        feed_fmfo_weighted_mean_new*N_content_fmfo)) - fish_N_weighted_mean),
-      
-      onfarm_P = 1000*((fcr_weighted_mean*(feed_soy_weighted_mean_new*P_content_soy + 
-                        feed_crops_weighted_mean_new*P_content_crops + 
-                        feed_animal_weighted_mean_new*P_content_animal + 
-                        feed_fmfo_weighted_mean_new*P_content_fmfo)) - fish_P_weighted_mean),
-      
-      # Calculate on farm land
-      onfarm_land = yield_weighted_mean,
-      
-      # Calculate on farm water (for freshwater species only)
-      onfarm_water =  ifelse(taxa %in% c("oth_carp", "catfish", "hypoph_carp", "tilapia", "trouts", "fresh_crust"), 
-                             onfarm_land*evap_weighted_mean, 0),
-      
-      # Calculate totals
-      total_ghg = feed_ghg + onfarm_ghg,
-      total_N = feed_N + onfarm_N,
-      total_P = feed_P + onfarm_P,
-      total_land = feed_land + onfarm_land,
-      total_water = feed_water + onfarm_water
-    ) %>%
-    select(taxa, feed_ghg:total_water)
-  
-  return(data_lca)
-}
 
 #_______________________________________________________________________________________________________________________#
-# Loop through and perturb each parameter
+# Test sensitivity of each parameter
 #_______________________________________________________________________________________________________________________#
 # Estimates without any perturbation
 stressor_0 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
@@ -292,309 +159,46 @@ stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = fee
                                    delta_FCR = -0.1*df_taxa$fcr_weighted_mean, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
                                    delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
 
-# Function to compare change in variable with change (relative to sd)
-compare_perturbations_sd <- function(n.sd){
-  # Baseline data
-  stressor_0 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
-  stressor_0 <- stressor_0 %>%
-    select(taxa, "baseline_total_ghg" = "total_ghg", "baseline_total_N" = "total_N", "baseline_total_P" = "total_P", 
-           "baseline_total_land" = "total_land", "baseline_total_water" = "total_water")
-  
-  # FCR perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = n.sd*df_taxa$fcr_weighted_sd, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "fcr_total_ghg" = "total_ghg", "fcr_total_N" = "total_N", "fcr_total_P" = "total_P", 
-           "fcr_total_land" = "total_land", "fcr_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(fcr_ghg_percent_change = 100*(fcr_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           fcr_N_percent_change = (fcr_total_N - baseline_total_N)/baseline_total_N,
-           fcr_P_percent_change = (fcr_total_P - baseline_total_P)/baseline_total_P,
-           fcr_land_percent_change = (fcr_total_land - baseline_total_land)/baseline_total_land,
-           fcr_water_percent_change = (fcr_total_water - baseline_total_water)/baseline_total_water
-           ) 
-  
-  # Soy perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = n.sd*df_taxa$feed_soy_weighted_sd, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "soy_total_ghg" = "total_ghg", "soy_total_N" = "total_N", "soy_total_P" = "total_P", 
-           "soy_total_land" = "total_land", "soy_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(soy_ghg_percent_change = 100*(soy_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           soy_N_percent_change = 100*(soy_total_N - baseline_total_N)/baseline_total_N,
-           soy_P_percent_change = 100*(soy_total_P - baseline_total_P)/baseline_total_P,
-           soy_land_percent_change = 100*(soy_total_land - baseline_total_land)/baseline_total_land,
-           soy_water_percent_change = 100*(soy_total_water - baseline_total_water)/baseline_total_water
-    )
-  
-  # Crop perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = 0, delta_crops = n.sd*df_taxa$feed_crops_weighted_sd, delta_animal = 0, delta_fmfo = 0,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "crops_total_ghg" = "total_ghg", "crops_total_N" = "total_N", "crops_total_P" = "total_P", 
-           "crops_total_land" = "total_land", "crops_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-   left_join(stressor_1, by = "taxa") %>%
-    mutate(crops_ghg_percent_change = 100*(crops_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           crops_N_percent_change = 100*(crops_total_N - baseline_total_N)/baseline_total_N,
-           crops_P_percent_change = 100*(crops_total_P - baseline_total_P)/baseline_total_P,
-           crops_land_percent_change = 100*(crops_total_land - baseline_total_land)/baseline_total_land,
-           crops_water_percent_change = 100*(crops_total_water - baseline_total_water)/baseline_total_water
-    )
-
-  # Animal perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = n.sd*df_taxa$feed_animal_weighted_sd, delta_fmfo = 0,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "animal_total_ghg" = "total_ghg", "animal_total_N" = "total_N", "animal_total_P" = "total_P", 
-           "animal_total_land" = "total_land", "animal_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(animal_ghg_percent_change = 100*(animal_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           animal_N_percent_change = 100*(animal_total_N - baseline_total_N)/baseline_total_N,
-           animal_P_percent_change = 100*(animal_total_P - baseline_total_P)/baseline_total_P,
-           animal_land_percent_change = 100*(animal_total_land - baseline_total_land)/baseline_total_land,
-           animal_water_percent_change = 100*(animal_total_water - baseline_total_water)/baseline_total_water
-    )
-  
-  # FMFO perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = n.sd*df_taxa$feed_fmfo_weighted_sd,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "fmfo_total_ghg" = "total_ghg", "fmfo_total_N" = "total_N", "fmfo_total_P" = "total_P", 
-           "fmfo_total_land" = "total_land", "fmfo_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(fmfo_ghg_percent_change = 100*(fmfo_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           fmfo_N_percent_change = 100*(fmfo_total_N - baseline_total_N)/baseline_total_N,
-           fmfo_P_percent_change = 100*(fmfo_total_P - baseline_total_P)/baseline_total_P,
-           fmfo_land_percent_change = 100*(fmfo_total_land - baseline_total_land)/baseline_total_land,
-           fmfo_water_percent_change = 100*(fmfo_total_water - baseline_total_water)/baseline_total_water
-    )
-  
-  # Energy perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
-                                     delta_electricity = n.sd*df_taxa$electricity_weighted_sd, 
-                                     delta_diesel = n.sd*df_taxa$diesel_weighted_sd, 
-                                     delta_petrol = n.sd*df_taxa$petrol_weighted_sd, 
-                                     delta_natgas = n.sd*df_taxa$naturalgas_weighted_sd, delta_yield = 0)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "energy_total_ghg" = "total_ghg", "energy_total_N" = "total_N", "energy_total_P" = "total_P", 
-           "energy_total_land" = "total_land", "energy_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(energy_ghg_percent_change = 100*(energy_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           energy_N_percent_change = 100*(energy_total_N - baseline_total_N)/baseline_total_N,
-           energy_P_percent_change = 100*(energy_total_P - baseline_total_P)/baseline_total_P,
-           energy_land_percent_change = 100*(energy_total_land - baseline_total_land)/baseline_total_land,
-           energy_water_percent_change = 100*(energy_total_water - baseline_total_water)/baseline_total_water
-    )
-
-  # Yield perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, 
-                                     delta_yield = n.sd*df_taxa$yield_weighted_sd)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "yield_total_ghg" = "total_ghg", "yield_total_N" = "total_N", "yield_total_P" = "total_P", 
-           "yield_total_land" = "total_land", "yield_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(yield_ghg_percent_change = 100*(yield_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           yield_N_percent_change = 100*(yield_total_N - baseline_total_N)/baseline_total_N,
-           yield_P_percent_change = 100*(yield_total_P - baseline_total_P)/baseline_total_P,
-           yield_land_percent_change = 100*(yield_total_land - baseline_total_land)/baseline_total_land,
-           yield_water_percent_change = 100*(yield_total_water - baseline_total_water)/baseline_total_water
-    )
-  
-  # Only keep percent change columns
-  stressor_0 <- stressor_0 %>%
-    select(taxa, contains("percent_change"))
-  
-  return(stressor_0)
-}
-  
-# Test function
-perturbation_sd <- compare_perturbations_sd(n.sd = -2)
-
-# Reformat to plot as heatmap
-plot_perturbation <- perturbation_sd %>% 
-  pivot_longer(cols = fcr_ghg_percent_change:yield_water_percent_change, names_sep = "_", names_to = c("Parameter", "Stressor", "drop1", "drop2")) %>%
-  select(-contains("drop"))
-
-ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
-  geom_tile() +
-  facet_wrap(~Stressor)
-
-# Function to compare change in variable with change (relative to mean)
-compare_perturbations_mean <- function(n){
-  # Baseline data
-  stressor_0 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
-  stressor_0 <- stressor_0 %>%
-    select(taxa, "baseline_total_ghg" = "total_ghg", "baseline_total_N" = "total_N", "baseline_total_P" = "total_P", 
-           "baseline_total_land" = "total_land", "baseline_total_water" = "total_water")
-  
-  # FCR perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = n*df_taxa$fcr_weighted_mean, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "fcr_total_ghg" = "total_ghg", "fcr_total_N" = "total_N", "fcr_total_P" = "total_P", 
-           "fcr_total_land" = "total_land", "fcr_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(fcr_ghg_percent_change = 100*(fcr_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           fcr_N_percent_change = (fcr_total_N - baseline_total_N)/baseline_total_N,
-           fcr_P_percent_change = (fcr_total_P - baseline_total_P)/baseline_total_P,
-           fcr_land_percent_change = (fcr_total_land - baseline_total_land)/baseline_total_land,
-           fcr_water_percent_change = (fcr_total_water - baseline_total_water)/baseline_total_water
-    ) 
-  
-  # Soy perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = n*df_taxa$feed_soy_weighted_mean, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "soy_total_ghg" = "total_ghg", "soy_total_N" = "total_N", "soy_total_P" = "total_P", 
-           "soy_total_land" = "total_land", "soy_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(soy_ghg_percent_change = 100*(soy_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           soy_N_percent_change = 100*(soy_total_N - baseline_total_N)/baseline_total_N,
-           soy_P_percent_change = 100*(soy_total_P - baseline_total_P)/baseline_total_P,
-           soy_land_percent_change = 100*(soy_total_land - baseline_total_land)/baseline_total_land,
-           soy_water_percent_change = 100*(soy_total_water - baseline_total_water)/baseline_total_water
-    )
-  
-  # Crop perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = 0, delta_crops = n*df_taxa$feed_crops_weighted_mean, delta_animal = 0, delta_fmfo = 0,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "crops_total_ghg" = "total_ghg", "crops_total_N" = "total_N", "crops_total_P" = "total_P", 
-           "crops_total_land" = "total_land", "crops_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(crops_ghg_percent_change = 100*(crops_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           crops_N_percent_change = 100*(crops_total_N - baseline_total_N)/baseline_total_N,
-           crops_P_percent_change = 100*(crops_total_P - baseline_total_P)/baseline_total_P,
-           crops_land_percent_change = 100*(crops_total_land - baseline_total_land)/baseline_total_land,
-           crops_water_percent_change = 100*(crops_total_water - baseline_total_water)/baseline_total_water
-    )
-  
-  # Animal perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = n*df_taxa$feed_animal_weighted_mean, delta_fmfo = 0,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "animal_total_ghg" = "total_ghg", "animal_total_N" = "total_N", "animal_total_P" = "total_P", 
-           "animal_total_land" = "total_land", "animal_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(animal_ghg_percent_change = 100*(animal_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           animal_N_percent_change = 100*(animal_total_N - baseline_total_N)/baseline_total_N,
-           animal_P_percent_change = 100*(animal_total_P - baseline_total_P)/baseline_total_P,
-           animal_land_percent_change = 100*(animal_total_land - baseline_total_land)/baseline_total_land,
-           animal_water_percent_change = 100*(animal_total_water - baseline_total_water)/baseline_total_water
-    )
-  
-  # FMFO perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = n*df_taxa$feed_fmfo_weighted_mean,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "fmfo_total_ghg" = "total_ghg", "fmfo_total_N" = "total_N", "fmfo_total_P" = "total_P", 
-           "fmfo_total_land" = "total_land", "fmfo_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(fmfo_ghg_percent_change = 100*(fmfo_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           fmfo_N_percent_change = 100*(fmfo_total_N - baseline_total_N)/baseline_total_N,
-           fmfo_P_percent_change = 100*(fmfo_total_P - baseline_total_P)/baseline_total_P,
-           fmfo_land_percent_change = 100*(fmfo_total_land - baseline_total_land)/baseline_total_land,
-           fmfo_water_percent_change = 100*(fmfo_total_water - baseline_total_water)/baseline_total_water
-    )
-  
-  # Energy perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
-                                     delta_electricity = n*df_taxa$electricity_weighted_mean, 
-                                     delta_diesel = n*df_taxa$diesel_weighted_mean, 
-                                     delta_petrol = n*df_taxa$petrol_weighted_mean, 
-                                     delta_natgas = n*df_taxa$naturalgas_weighted_mean, delta_yield = 0)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "energy_total_ghg" = "total_ghg", "energy_total_N" = "total_N", "energy_total_P" = "total_P", 
-           "energy_total_land" = "total_land", "energy_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(energy_ghg_percent_change = 100*(energy_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           energy_N_percent_change = 100*(energy_total_N - baseline_total_N)/baseline_total_N,
-           energy_P_percent_change = 100*(energy_total_P - baseline_total_P)/baseline_total_P,
-           energy_land_percent_change = 100*(energy_total_land - baseline_total_land)/baseline_total_land,
-           energy_water_percent_change = 100*(energy_total_water - baseline_total_water)/baseline_total_water
-    )
-  
-  # Yield perturbation
-  stressor_1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
-                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
-                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, 
-                                     delta_yield = n*df_taxa$yield_weighted_mean)
-  stressor_1 <- stressor_1 %>%
-    select(taxa, "yield_total_ghg" = "total_ghg", "yield_total_N" = "total_N", "yield_total_P" = "total_P", 
-           "yield_total_land" = "total_land", "yield_total_water" = "total_water")
-  
-  stressor_0 <- stressor_0 %>%
-    left_join(stressor_1, by = "taxa") %>%
-    mutate(yield_ghg_percent_change = 100*(yield_total_ghg - baseline_total_ghg)/baseline_total_ghg,
-           yield_N_percent_change = 100*(yield_total_N - baseline_total_N)/baseline_total_N,
-           yield_P_percent_change = 100*(yield_total_P - baseline_total_P)/baseline_total_P,
-           yield_land_percent_change = 100*(yield_total_land - baseline_total_land)/baseline_total_land,
-           yield_water_percent_change = 100*(yield_total_water - baseline_total_water)/baseline_total_water
-    )
-  
-  # Only keep percent change columns
-  stressor_0 <- stressor_0 %>%
-    select(taxa, contains("percent_change"))
-}
-
-perturbation_mean <- compare_perturbations_mean(n = -0.25)
+# Run n perturbation function
+perturbation_mean <- compare_perturbations_mean(n = -0.10)
 
 # Reformat to plot as heatmap
 plot_perturbation <- perturbation_mean %>% 
   pivot_longer(cols = fcr_ghg_percent_change:yield_water_percent_change, names_sep = "_", names_to = c("Parameter", "Stressor", "drop1", "drop2")) %>%
-  select(-contains("drop"))
+  select(-contains("drop")) %>%
+  mutate(taxa = case_when(
+    taxa == "trout" ~ "trout",
+    taxa == "tilapia" ~ "tilapia",
+    taxa == "shrimp" ~ "shrimp",
+    taxa == "salmon" ~ "salmon",
+    taxa == "oth_carp" ~ "misc carps",
+    taxa == "misc_marine" ~ "misc marine fishes",
+    taxa == "misc_diad" ~ "misc diad fishes",
+    taxa == "milkfish" ~ "milkfish",
+    taxa == "hypoph_carp" ~ "big/silverhead carp",
+    taxa == "catfish" ~ "catfish",
+    taxa == "bivalves" ~"bivalves",
+    taxa == "plants" ~ "plants"
+  ))
+
+plot_perturbation$Parameter <- factor(plot_perturbation$Parameter, levels = c("fcr", "soy", "crops", "animal", "fmfo", "energy", "yield"))
+plot_perturbation$taxa <- factor(plot_perturbation$taxa, levels = c("misc marine fishes", "misc diad fishes",
+                                                    "shrimp", "trout", "milkfish", "salmon", 
+                                                    "tilapia", "catfish", "misc carps", 
+                                                    "big/silverhead carp", "bivalves", "plants"))
+plot_perturbation$taxa <- factor(plot_perturbation$taxa, levels=rev(levels(plot_perturbation$taxa)))
 
 base_size <- 10
 base_family <- "sans"
-ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
+color_lim <- max(plot_perturbation$value, na.rm = TRUE)*c(-1,1)
+
+plot_perturbation$Stressor <- factor(plot_perturbation$Stressor, levels = c("ghg", "land", "water", "N", "P"))
+
+fig_4a <- ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
   geom_tile() +
-  facet_wrap(~Stressor) +
-  scale_fill_viridis(discrete=FALSE) +
+  labs(x = "", y = "") +
+  facet_wrap(~Stressor, nrow = 1) +
+  scale_fill_distiller(palette = "RdBu", limit = color_lim, type = "div", na.value = "white") +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
@@ -613,4 +217,359 @@ ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
         plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
         plot.subtitle = element_text(size = ceiling(base_size*1.05)))
   
+
+# Run sd perturbation function
+# perturbation_sd <- compare_perturbations_sd(n.sd = -2)
+# 
+# # Reformat to plot as heatmap
+# plot_perturbation <- perturbation_sd %>% 
+#   pivot_longer(cols = fcr_ghg_percent_change:yield_water_percent_change, names_sep = "_", names_to = c("Parameter", "Stressor", "drop1", "drop2")) %>%
+#   select(-contains("drop"))
+# 
+# ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
+#   geom_tile() +
+#   facet_wrap(~Stressor)
+
+#_______________________________________________________________________________________________________________________#
+# Scenario analysis
+#_______________________________________________________________________________________________________________________#
+# Baseline
+stressor_baseline <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
+                                          delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
+                                          delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
+stressor_baseline <- stressor_baseline %>% 
+  select(taxa, contains("total")) %>%
+  pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
+  select(-contains("drop"))
+stressor_baseline$scenario <- "Baseline"
+
+# Scenario 1: Take lowest 20% point of FCR from data distribution by taxa
+fcr_20 <- df %>%
+  group_by(taxa) %>%
+  summarise(percentile_20 = quantile(fcr, probs = .2)[[1]])
+
+## Calculate how much to subtract off of the mean to get to the 20th percentile
+fcr_20_delta <- df_taxa$fcr_weighted_mean - fcr_20$percentile_20
+
+stressor_s1 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
+                                   delta_FCR = -1*fcr_20_delta, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
+                                   delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
+stressor_s1 <- stressor_s1 %>% 
+  select(taxa, contains("total")) %>%
+  pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
+  select(-contains("drop"))
+stressor_s1$scenario <- "FCR lower 20th"
+
+# Scenario 2a: Replace FMFO with all soy
+stressor_s2a <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
+                                    delta_FCR = 0, delta_soy = df_taxa$feed_fmfo_weighted_mean, delta_crops = 0, 
+                                    delta_animal = 0, delta_fmfo = -1*df_taxa$feed_fmfo_weighted_mean,
+                                    delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
+stressor_s2a <- stressor_s2a %>% 
+  select(taxa, contains("total")) %>%
+  pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
+  select(-contains("drop"))
+stressor_s2a$scenario <- "Replace FMFO w/ soy"
+
+# Scenario 2b: Replace FMFO with land change-free soy (currently only replacement soy is land change-free)
+## Land use change free soy
+feed_fp_s7 <- read.csv(file.path(datadir, "feed_fp_scenario_7_mass.csv"))
+
+stressor_s2b <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
+                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
+                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0,
+                                     fmfo_with_land_change_free_crops = feed_fp_s7)
+stressor_s2b <- stressor_s2b %>% 
+  select(taxa, contains("total")) %>%
+  pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
+  select(-contains("drop"))
+stressor_s2b$scenario <- "Replace FMFO w/ no land change soy"
+
+# Scenario 2c: Replace FMFO with fishery by-products
+feed_fp_s2c <- read.csv(file.path(datadir, "feed_fp_scenario_2c_mass.csv"))
+
+stressor_s2c <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
+                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
+                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, 
+                                     delta_yield = 0, fishery_byproducts = feed_fp_s2c)
+stressor_s2c <- stressor_s2c %>% 
+  select(taxa, contains("total")) %>%
+  pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
+  select(-contains("drop"))
+stressor_s2c$scenario <- "Replace FMFO w/ fish bp"
+
+# Scenario 2d: Replace FMFO with low impact fishery by-products
+feed_fp_s2d <- read.csv(file.path(datadir, "feed_fp_scenario_2d_mass.csv"))
+
+stressor_s2d <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
+                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, 
+                                     delta_animal = 0, delta_fmfo = 0,
+                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0,
+                                    low_impact_fishery_byproducts = feed_fp_s2d)
+stressor_s2d <- stressor_s2d %>% 
+  select(taxa, contains("total")) %>%
+  pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
+  select(-contains("drop"))
+stressor_s2d$scenario <- "Replace FMFO w/ low impact fishery by-products"
+
+# Scenario 3: Look at yield-FCR relationship and simultaneously change both in model; Take highest 20% yield and calculate FCR
+yield_20 <- df %>%
+  mutate(Yield_m2_per_t = ifelse(system %in% c("Ponds", "Recirculating and tanks"), Yield_m2_per_t, 0)) %>%
+  group_by(taxa) %>%
+  summarise(percentile_20 = quantile(Yield_m2_per_t, probs = .2, na.rm = TRUE)[[1]])
+
+## Calculate how much to subtract off of the mean to get to the 20th percentile
+yield_20_delta <- df_taxa$yield_weighted_mean - yield_20$percentile_20
+# One ends up negative (likely due to weighting), so replace with zero
+yield_20_delta[yield_20_delta<0] <- 0
+  
+df_taxa$yield_weighted_mean - yield_20_delta
+
+## Note: These FCR's end up heavily influenced by the intercept, so many take on the average FCR
+new_fcr <- lm(fcr ~ Yield_m2_per_t, data = df)$coefficients[1] + 
+  lm(fcr ~ Yield_m2_per_t, data = df)$coefficients[2] * yield_20$percentile_20
+
+## For now, just take the new yield
+stressor_s3 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
+                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
+                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, 
+                                    delta_yield = -1*yield_20_delta)
+stressor_s3 <- stressor_s3 %>% 
+  select(taxa, contains("total")) %>%
+  pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
+  select(-contains("drop"))
+stressor_s3$scenario <- "Yield lower 20th"
+
+# Scenario 4: Capture fisheries - catch 1.2 x as much fish with 60% less effort
+df_capture <- read.csv(file.path(datadir, "20210107_capture_stressors_nonbayes.csv"))
+
+delta_ghg <- 0.6/1.2 # Confirm with Rob
+
+stressor_s4 <- df_capture %>%
+  mutate(ghg_kg_t = delta_ghg*ghg_kg_t)
+stressor_s4$scenario <- "1.2 fish with 60% effort"
+
+df_capture$scenario <- "capture_baseline"
+
+
+# Scenario 5: Capture fisheries - Take minimum gear GHG per species and apply to the group
+df_capture_raw <- read.csv(file.path(datadir, "fisheries_fuel_use.csv"))
+
+stressor_s5 <- df_capture_raw %>%
+  # Remove mixed gear and nei observations
+  filter(!str_detect(pattern = " nei", species)) %>%
+  filter(gear != "Other, Mixed, or Unknown") %>%
+  # Remove observations with 0 gear, species, or consumption weighting
+  filter(gear_weighting > 0 & species_weighting > 0 & consumption_weighting > 0) %>%
+  # Represent each species by the min ghg gear type
+  group_by(species_group, species) %>%
+  # Create species gear-weighted means
+  summarise(species_ghg_kg_t = min(ghg), 
+            species_weighting = mean(species_weighting), 
+            consumption_weighting = mean(consumption_weighting)) %>%
+  # Re-weight species and consumption within taxa group
+  ungroup() %>%
+  group_by(species_group) %>%
+  mutate(species_consumption_weighting = (species_weighting*consumption_weighting)/sum(species_weighting*consumption_weighting)) %>%
+  summarise(ghg_kg_t = sum(species_ghg_kg_t*species_consumption_weighting))
+stressor_s5$scenario <- "Min GHG gear-type"
+
+# Bind capture scenarios
+capture_scenarios <- df_capture %>%
+  bind_rows(stressor_s4) %>%
+  bind_rows(stressor_s5)
+
+# Scenario 6: All by-products sourced from Alaska Pollock
+feed_fp_s6 <- read.csv(file.path(datadir, "feed_fp_scenario_6_mass.csv"))
+
+stressor_s6 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
+                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
+                                     delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0,
+                                     fmfo_low_impact_fishery_byproducts = feed_fp_s6)
+stressor_s6 <- stressor_s6 %>% 
+  select(taxa, contains("total")) %>%
+  pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
+  select(-contains("drop"))
+stressor_s6$scenario <- "All by-products sourced from low impact fisheries"
+
+# Scenario 7: All soy and crops from non-rainforest depleting sources
+feed_fp_s7 <- read.csv(file.path(datadir, "feed_fp_scenario_7_mass.csv"))
+
+stressor_s7 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
+                                    delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
+                                    delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0,
+                                    land_change_free_soy = feed_fp_s7, land_change_free_crops = feed_fp_s7)
+stressor_s7 <- stressor_s7 %>% 
+  select(taxa, contains("total")) %>%
+  pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
+  select(-contains("drop"))
+stressor_s7$scenario <- "Land use free soy"
+
+# Scenario 8: Use 0 for electricity GHG constant
+stressor_s8 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
+                                    delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
+                                    delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0,
+                                    zero_emissions_electric = TRUE)
+stressor_s8 <- stressor_s8 %>% 
+  select(taxa, contains("total")) %>%
+  pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
+  select(-contains("drop"))
+stressor_s8$scenario <- "Zero emission electricity"
+
+# Bind all scenarios
+scenarios <- stressor_baseline %>%
+  bind_rows(stressor_s1) %>%
+  bind_rows(stressor_s2a) %>%
+  bind_rows(stressor_s2b) %>%
+  bind_rows(stressor_s2c) %>%
+  bind_rows(stressor_s2d) %>%
+  bind_rows(stressor_s3) %>%
+  bind_rows(stressor_s6) %>%
+  bind_rows(stressor_s7) %>%
+  bind_rows(stressor_s8) %>%
+  filter(!(taxa %in% c("bivalves", "plants"))) %>%
+  mutate(taxa = case_when(
+    taxa == "trout" ~ "trout",
+    taxa == "tilapia" ~ "tilapia",
+    taxa == "shrimp" ~ "shrimp",
+    taxa == "salmon" ~ "salmon",
+    taxa == "oth_carp" ~ "misc carps",
+    taxa == "misc_marine" ~ "misc marine fishes",
+    taxa == "misc_diad" ~ "misc diad fishes",
+    taxa == "milkfish" ~ "milkfish",
+    taxa == "hypoph_carp" ~ "big/silverhead carp",
+    taxa == "catfish" ~ "catfish"
+  ))
+
+scenarios$Stressor <- factor(scenarios$Stressor, levels = c("ghg", "land", "water", "N", "P"))
+scenarios$taxa <- factor(scenarios$taxa, levels = c("misc marine fishes", "misc diad fishes",
+                                                    "shrimp", "trout", "milkfish", "salmon", 
+                                                    "tilapia", "catfish", "misc carps", 
+                                                    "big/silverhead carp"))
+scenarios$taxa <- factor(scenarios$taxa, levels=rev(levels(scenarios$taxa)))
+
+png("scenarios_facetwrap_20120107.png", height = 11, width = 8.5, units = "in", res = 300)
+ggplot(scenarios, aes(x = value, y = scenario)) +
+  geom_bar(stat = "identity") +
+  facet_grid(rows = vars(taxa), cols = vars(Stressor), scales = "free")
+dev.off()
+
+
+scenarios_diff <- scenarios %>%
+  filter(scenario != "Baseline") %>%
+  left_join(scenarios %>% filter(scenario == "Baseline") %>% select(taxa, Stressor, "baseline_value" = "value"), 
+            by = c("taxa", "Stressor")) %>%
+  mutate(value_change = value - baseline_value, value_percent_change = 100*(value - baseline_value)/baseline_value)
+
+
+fig_4b <- ggplot(scenarios_diff %>% 
+         filter(scenario %in% c("FCR lower 20th", "Replace FMFO w/ fish bp", 
+                                "Yield lower 20th", "Land use free soy")), 
+       aes(x = value_percent_change, y = taxa)) +
+  geom_point() + 
+  geom_segment(aes(x = 0, xend=value_percent_change, yend = taxa)) +
+  geom_vline(xintercept = 0) +
+  labs(x = "% Change", y = "") +
+  facet_grid(rows = vars(scenario), cols = vars(Stressor), labeller = label_wrap_gen(15)) +
+  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
+        axis.title = element_text(size = ceiling(base_size*0.8)), 
+        axis.text.x = element_text(angle = 90),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(), panel.border = element_blank(),
+        strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), strip.text.y = element_text(angle = -90), 
+        legend.text = element_text(size = ceiling(base_size*0.9), family = "sans"), 
+        legend.title = element_blank(), 
+        legend.key = element_rect(fill = "white", colour = NA), 
+        legend.position="bottom",
+        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+png("fig_4.png", width = 4, height = 8, units = "in", res = 300)
+ggarrange(fig_4a, fig_4b, nrow = 2, heights = c(1.25, 2), labels = c("a", "b"))
+dev.off()
+
+                            
+
+# SI Fig for the other scenarios
+SI_fig_4b_other_scenarios <- ggplot(scenarios_diff %>% 
+                   filter(scenario %in% c("Replace FMFO w/ soy", "Replace FMFO w/ no land change soy", 
+                                          "Replace FMFO w/ low impact fishery by-products", 
+                                          "All by-products sourced from low impact fisheries",
+                                          "Zero emission electricity" )), 
+                 aes(x = value_percent_change, y = taxa)) +
+  geom_point() + 
+  geom_segment(aes(x = 0, xend=value_percent_change, yend = taxa)) +
+  geom_vline(xintercept = 0) +
+  labs(x = "% Change", y = "") +
+  facet_grid(rows = vars(scenario), cols = vars(Stressor), labeller = label_wrap_gen(20)) +
+  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
+        axis.title = element_text(size = ceiling(base_size*0.8)), 
+        axis.text.x = element_text(angle = 90),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(), panel.border = element_blank(),
+        strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), strip.text.y = element_text(angle = -90), 
+        legend.text = element_text(size = ceiling(base_size*0.9), family = "sans"), 
+        legend.title = element_blank(), 
+        legend.key = element_rect(fill = "white", colour = NA), 
+        legend.position="bottom",
+        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+png("fig_4_other_scenarios.png", width = 4, height = 8, units = "in", res = 300)
+SI_fig_4b_other_scenarios
+dev.off()
+
+# Capture fishery intervention figures
+capture_scenarios_diff <- capture_scenarios %>%
+  filter(scenario != "capture_baseline") %>%
+  rename("value" = "ghg_kg_t") %>%
+  left_join(capture_scenarios %>% filter(scenario == "capture_baseline") %>% select(species_group, "baseline_value" = "ghg_kg_t"), 
+            by = c("species_group")) %>%
+  mutate(value_change = value - baseline_value, value_percent_change = 100*(value - baseline_value)/baseline_value)
+
+# SI Fig for the other scenarios
+SI_fig_4b_capture_scenarios <- ggplot(capture_scenarios_diff, 
+                                    aes(x = value_percent_change, y = species_group)) +
+  geom_point() + 
+  geom_segment(aes(x = 0, xend=value_percent_change, yend = species_group)) +
+  geom_vline(xintercept = 0) +
+  labs(x = "% Change", y = "") +
+  facet_grid(rows = vars(scenario), labeller = label_wrap_gen(20)) +
+  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
+        axis.title = element_text(size = ceiling(base_size*0.8)), 
+        axis.text.x = element_text(angle = 90),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(), panel.border = element_blank(),
+        strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), strip.text.y = element_text(angle = -90), 
+        legend.text = element_text(size = ceiling(base_size*0.9), family = "sans"), 
+        legend.title = element_blank(), 
+        legend.key = element_rect(fill = "white", colour = NA), 
+        legend.position="bottom",
+        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+png("fig_4_capture_scenarios.png", width = 4, height = 4, units = "in", res = 300)
+SI_fig_4b_capture_scenarios
+dev.off()
+
+#_______________________________________________________________________________________________________________________#
+# Identify common features of low stressor systems for 
+#_______________________________________________________________________________________________________________________#
+
+
 

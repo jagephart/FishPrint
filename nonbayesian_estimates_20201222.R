@@ -17,7 +17,7 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 #_______________________________________________________________________________________________________________________#
 # Load full data with predicted parameters
 #df <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-n-farms.csv"))
-df <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-sqrt-n-farms.csv"))
+df <- read.csv(file.path(datadir,"2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv")) 
 
 prod_weightings <- read.csv(file.path(datadir, "aqua_prod_weightings.csv"))
 
@@ -179,9 +179,18 @@ fw_taxa <- c("oth_carp", "catfish", "hypoph_carp", "tilapia", "trouts", "fresh_c
 
 df_onfarm_water <- df %>%
   left_join(evap, by = "iso3c") %>%
+  # Add grow out period constants
+  mutate(grow_out_yr_prop = case_when(
+    taxa == "oth_carp" ~ 300/365,
+    taxa == "hypoph_carp" ~ 300/365,
+    taxa == "catfish" ~ 210/365,
+    taxa == "tilapia" ~ 200/365,
+    taxa == "trouts" ~ 365/365,
+    taxa == "fresh_crust" ~ 240/365
+  )) %>%
   # Apply evap only to freshwater ponds
   mutate(on_farm_water = ifelse(taxa %in% fw_taxa & system %in% c("Ponds", "Recirculating and tanks"), 
-                                Yield_m2_per_t*evap_rate_m3_per_m2, 0))
+                                Yield_m2_per_t*evap_rate_m3_per_m2*grow_out_yr_prop, 0))
 
 df_onfarm_water_taxa <- df_onfarm_water %>% 
   # Calculate species means
@@ -219,6 +228,7 @@ df_capture_ghg <- df_capture %>%
   mutate(species_consumption_weighting = (species_weighting*consumption_weighting)/sum(species_weighting*consumption_weighting)) %>%
   summarise(ghg_kg_t = sum(species_ghg_kg_t*species_consumption_weighting))
 
+write.csv(df_capture_ghg, file.path(datadir, "20210107_capture_stressors_nonbayes.csv"), row.names = FALSE)
 #_______________________________________________________________________________________________________________________#
 # Summarize all by species
 #_______________________________________________________________________________________________________________________#
@@ -245,7 +255,7 @@ stressor_species_summary <- df %>%
   select(study_id, taxa, intensity, system, clean_sci_name, feed_GHG, "feed_N" = "feed_N.x", "feed_P" = "feed_P.x",
          feed_land, feed_water, "onfarm_ghg" = "onfarm_ghg_kgCO2", "onfarm_N" = "N_emissions_kg_per_t", 
         "onfarm_P" = "P_emissions_kg_per_t", "onfarm_land" = "Yield_m2_per_t.x", "onfarm_water" = "on_farm_water")
-
+write.csv(stressor_species_summary, file.path(datadir, "20210107_stressor_species_summary.csv"), row.names = FALSE)
 #_______________________________________________________________________________________________________________________#
 # Summarize all by taxa
 #_______________________________________________________________________________________________________________________#
@@ -279,3 +289,4 @@ stressor_taxa_summary <- df_feed_taxa_summary %>%
          prop_onfarm_water = onfarm_water_weighted_stressor/total_water,
          prop_onfarm_land = onfarm_land_weighted_stressor/total_land)
 
+write.csv(stressor_taxa_summary, file.path(datadir,"20210107_aquaculture_stressors_nonbayes.csv"), row.names = FALSE)

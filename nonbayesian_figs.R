@@ -6,87 +6,16 @@ library(ggridges)
 library(cowplot)
 library(egg)
 
-#source("nonbayesian_estimates_20201222.R")
-
 #_______________________________________________________________________________________________________________________#
-# Plot feed-associated stressors
+# Read in data
 #_______________________________________________________________________________________________________________________#
+# Set data directories
+datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
-ggplot(df_feed_taxa %>% filter(Impact.category == "Global warming potential"), 
-       aes(x = weighted_stressor, y = taxa, fill = Allocation)) +
-  geom_bar(position="dodge", stat="identity") + 
-  labs(x = "GHG kg CO2-eq/t", y = "", title = "GHG") +
-  theme_clean()
-
-ggplot(df_feed_taxa %>% filter(Impact.category == "Marine eutrophication"), 
-       aes(x = weighted_stressor, y = taxa, fill = Allocation)) +
-  geom_bar(position="dodge", stat="identity") + 
-  labs(x = "Feed-associated N (kg N-eq/t)", y = "", title = "Nitrogen") +
-  theme_clean()
-
-ggplot(df_feed_taxa %>% filter(Impact.category == "Freshwater eutrophication"), 
-       aes(x = weighted_stressor, y = taxa, fill = Allocation)) +
-  geom_bar(position="dodge", stat="identity") + 
-  labs(x = "Feed-associated P (kg P-eq/t)", y = "", title = "Phosphorus") +
-  theme_clean()
-
-ggplot(df_feed_taxa %>% filter(Impact.category == "Land use"), 
-       aes(x = weighted_stressor, y = taxa, fill = Allocation)) +
-  geom_bar(position="dodge", stat="identity") + 
-  labs(x = "m2a/t", y = "", title = "Land") +
-  theme_clean()
-
-ggplot(df_feed_taxa %>% filter(Impact.category == "Water consumption"), 
-       aes(x = weighted_stressor, y = taxa, fill = Allocation)) +
-  geom_bar(position="dodge", stat="identity") + 
-  labs(x = "m3/t", y = "", title = "Water") +
-  theme_clean()
-
-# Compare weighted and unweighted values
-ggplot(df_feed_taxa, aes(x = weighted_stressor, y = unweighted_stressor, colour = factor(taxa))) + 
-  geom_point() + 
-  geom_abline(intercept = 0, slope = 1)
-#_______________________________________________________________________________________________________________________#
-# Plot on farm GHG
-#_______________________________________________________________________________________________________________________#
-ggplot(stressor_taxa_summary, 
-       aes(y = taxa, x = onfarm_GHG_weighted_stressor)) +
-  geom_bar(stat = "identity") + 
-  labs(x = "On farm GHG (kg CO2-eq per t)", y = "") +
-  theme_clean()
-
-#_______________________________________________________________________________________________________________________#
-# Plot on farm N and P
-#_______________________________________________________________________________________________________________________#
-ggplot(stressor_taxa_summary, 
-       aes(y = taxa, x = onfarm_N_weighted_stressor)) +
-  geom_bar(stat = "identity") + 
-  labs(x = "On farm N (kg N per t)", y = "") +
-  theme_clean()
-
-ggplot(stressor_taxa_summary, 
-       aes(y = taxa, x = onfarm_P_weighted_stressor)) +
-  geom_bar(stat = "identity") + 
-  labs(x = "On farm P (kg P per t)", y = "") +
-  theme_clean()
-
-#_______________________________________________________________________________________________________________________#
-# Plot on farm land
-#_______________________________________________________________________________________________________________________#
-ggplot(stressor_taxa_summary, 
-       aes(y = taxa, x = onfarm_land_weighted_stressor)) +
-  geom_bar(stat = "identity") + 
-  labs(x = "On farm land (m2 per t)", y = "") +
-  theme_clean()
-
-#_______________________________________________________________________________________________________________________#
-# Plot on farm water
-#_______________________________________________________________________________________________________________________#
-ggplot(stressor_taxa_summary, 
-       aes(y = taxa, x = onfarm_water_weighted_stressor)) +
-  geom_bar(stat = "identity") + 
-  labs(x = "On farm water (m3 per t)", y = "") +
-  theme_clean()
+stressor_taxa_summary <- read.csv(file.path(datadir,"20210107_aquaculture_stressors_nonbayes.csv"))
+stressor_species_summary <- read.csv(file.path(datadir, "20210107_stressor_species_summary.csv"))
+df_capture_ghg <- read.csv(file.path(datadir, "20210107_capture_stressors_nonbayes.csv"))
 
 #_______________________________________________________________________________________________________________________#
 # Summary plots
