@@ -8,7 +8,7 @@
 rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups"))])
 
 # Or just read in:
-#lca_dat_clean_groups <- read.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"), row.names = FALSE)
+#lca_dat_clean_groups <- read.csv(file.path(datadir, "lca_clean_with_groups.csv"))
 
 ######################################################################################################
 # Section 1: Create feed_model_dat_categories for modeling FCR and feed proportions
@@ -1481,4 +1481,4 @@ lca_dat_imputed <- feed_dat_merge %>%
          feed_animal = if_else(fcr==0, true = 0, false = feed_animal))
 
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-write.csv(lca_dat_imputed, file.path(datadir, "lca-dat-imputed-vars.csv"), row.names = FALSE)
+write.csv(lca_dat_imputed, file.path(datadir, paste(Sys.Date(), "_lca-dat-imputed-vars.csv", sep = "")), row.names = FALSE)

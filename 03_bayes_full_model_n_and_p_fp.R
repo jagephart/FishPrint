@@ -31,18 +31,20 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # STEP 1: LOAD AND FORMAT DATA
 
 # Phosphorus model:
-# fish_element <- "P_t_liveweight_t"
-# impact <- "Freshwater eutrophication"
-# feed_element <- "P"
+fish_element <- "P_t_liveweight_t"
+impact <- "Freshwater eutrophication"
+feed_element <- "P"
+interval_palette <- c("#FFB4C4", "#FF86A4", "#FC5185") # Order: light to dark
 
 # Nitrogen model:
-fish_element <- "N_t_liveweight_t"
-impact <- "Marine eutrophication"
-feed_element <- "N"
+# fish_element <- "N_t_liveweight_t"
+# impact <- "Marine eutrophication"
+# feed_element <- "N"
+# interval_palette <- c("#FFEDAD", "#FFE37D", "#FFD947") # Order: light to dark
 
 # FIX IT - decide how much replication to create in the dataset (e.g., n-farms vs sqrt-n-farms)
 # Load Data
-lca_full_dat <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
 
 # Format data for model:
 # Merge this with FISH/SHELLFISH CONTENT CONSTANTS so this can also be passed as data - paired to the correct clean_sci_name
@@ -404,29 +406,39 @@ fit_no_na <- sampling(object = no_na_mod,
 summary(fit_no_na)$summary
 
 #launch_shinystan(fit_no_na)
-######################################################################################################
-# RESTARTING POINT
-# FIX IT - which objects to clear before saving?
-# rm(list=ls()[!(ls() %in% c("datadir", "outdir", 
-#                            "lca_dat_clean_groups", "feed_model_dat_categories",
-#                            "full_feed_dat", "full_fcr_dat", "feed_footprint_dat", "fit_no_na"))])
-save.image(file.path(outdir, paste(Sys.Date(), "_full-model_", impact, "_", set_allocation, "-allocation_all-data-prior-to-plotting.RData", sep = "")))
 
-# datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-# outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
-# load(file.path(outdir, "<file-name>.RData"))
-# set_allocation <- "Mass"
-######################################################################################################
-# STEP 3: PLOT RESULTS
+###########################################################
+# STEP 3: OUTPUT RESULTS
+###########################################################
+# RESTARTING POINT
+rm(list=ls()[!(ls() %in% c("datadir", "outdir", "impact", "set_allocation",
+                           "lca_model_dat", "fit_no_na", "interval_palette"))])
+save.image(file = file.path(outdir, paste(Sys.Date(), "_full-model-posterior_", impact, "_", set_allocation, "-allocation.RData", sep = "")))
+
+###########################################################
 
 # SET THEME
+# FOR N and P, interval_palette is set at the top of the code:
+# Nitrogen:
+# x <- seq(0, 1, length.out = 16)
+# base_color <- "#FFD947"
+# show_col(seq_gradient_pal(base_color, "white")(x)) # Get hexadecimals for other colors
+# interval_palette <- c("FFEDAD", "FFE37D", "#FFD947") # Order: light to dark
+# Phosphorus:
+# x <- seq(0, 1, length.out = 16)
+# base_color <- "#FC5185"
+# show_col(seq_gradient_pal(base_color, "white")(x)) # Get hexadecimals for other colors
+# interval_palette <- c("FFB4C4", "#FF86A4", "#FC5185") # Order: light to dark
+
+full_taxa_name_order <- c("plants", "bivalves", "shrimp", "misc marine fishes", "milkfish", "salmon", "misc diadromous fishes", "trout", "tilapia", "catfish", "misc carps", "bighead/silverhead carp")
 sci_plot_theme <- theme(title = element_text(size = 18),
                         axis.title.x = element_text(size = 16),
                         axis.text=element_text(size=14, color = "black"))
-tx_plot_theme <- theme(title = element_text(size = 20),
+tx_plot_theme <- list(theme(title = element_text(size = 20),
                        axis.title.x = element_text(size = 20),
                        axis.text=element_text(size=20, color = "black"),
-                       legend.position = "none")
+                       legend.position = "none"), 
+                      scale_color_manual(values = interval_palette))
 
 # Set units:
 if (impact == "Global warming potential") {
@@ -551,43 +563,84 @@ get_variables(fit_no_na)
 # Mean off-farm (feed) impact taxa-level
 fit_no_na %>%
   spread_draws(tx_feed_fp_w[tx]) %>%
-  median_qi(.width = 0.95) %>%
+  median_qi(.width = c(0.95, 0.8, 0.5)) %>%
   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
   mutate(tx_feed_fp_w = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_feed_fp_w),
          .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
          .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
-  ggplot(aes(y = full_taxa_name, x = tx_feed_fp_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-  geom_pointinterval() +
+  # REORDER taxa axis
+  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
+  #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
+  ggplot(aes(y = full_taxa_name, x = tx_feed_fp_w)) +
+  geom_interval(aes(xmin = .lower, xmax = .upper)) +
+  geom_point(x = 0, y = "bivalves") +
+  geom_point(x = 0, y = "plants") +
   theme_classic() + 
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "Mean off-farm (feed) impact")
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
+# Same but as CSV output
+fit_no_na %>%
+  spread_draws(tx_feed_fp_w[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  mutate(tx_feed_fp_w = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_feed_fp_w),
+         .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
+         .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
+  rename(off_farm = tx_feed_fp_w) %>%
+  write.csv(file = file.path(outdir, paste("summary_", impact, "_", set_allocation, "-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv", sep = "")), row.names = FALSE)
+
 # Mean on-farm impact taxa-level
 fit_no_na %>%
   spread_draws(tx_farm_fp_w[tx]) %>%
-  median_qi(.width = 0.95) %>%
+  median_qi(.width = c(0.95, 0.8, 0.5)) %>%
   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  ggplot(aes(y = full_taxa_name, x = tx_farm_fp_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-  geom_pointinterval() +
+  # REORDER taxa axis
+  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
+  #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
+  ggplot(aes(y = full_taxa_name, x = tx_farm_fp_w)) +
+  geom_interval(aes(xmin = .lower, xmax = .upper)) +
   theme_classic() + 
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "Mean on-farm impact")
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
+# Same but as CSV output
+fit_no_na %>%
+  spread_draws(tx_farm_fp_w[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  rename(on_farm = tx_farm_fp_w) %>%
+  write.csv(file = file.path(outdir, paste("summary_", impact, "_", set_allocation, "-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv", sep = "")), row.names = FALSE)
+
 # Mean total impact taxa-level
+fit_no_na %>%
+  spread_draws(tx_total_fp_w[tx]) %>%
+  median_qi(.width = c(0.95, 0.8, 0.5)) %>%
+  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # Set .lower limit of plants and bivalves to be 0
+  #mutate(.lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower)) %>% 
+  # REORDER taxa axis
+  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
+  #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
+  ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
+  geom_interval(aes(xmin = .lower, xmax = .upper)) +
+  theme_classic() + 
+  tx_plot_theme + 
+  labs(x = units_for_plot, y = "", title = "Total (on and off-farm) impact", color = "taxa group")
+ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+# Same but as CSV output
 fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
   median_qi(.width = 0.95) %>%
   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
   # Set .lower limit of plants and bivalves to be 0
   mutate(.lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower)) %>% 
-  ggplot(aes(y = full_taxa_name, x = tx_total_fp_w, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-  geom_pointinterval() +
-  theme_classic() + 
-  tx_plot_theme + 
-  labs(x = units_for_plot, y = "", title = "Total (on and off-farm) impact", color = "taxa group")
-ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
+  rename(total_stressor = tx_total_fp_w) %>%
+  write.csv(file = file.path(outdir, paste("summary_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv", sep = "")), row.names = FALSE)
+
 
 ###########################################################
 ## PLOT WEIGHTED SCI-LEVEL ESTIMATES ANYWAY TO COMPARE WITH UNWEIGHTED ESTIMATES
@@ -641,14 +694,19 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 # Taxa-level
 fit_no_na %>%
   spread_draws(tx_feed_fp[tx]) %>%
-  median_qi(.width = 0.95) %>%
+  median_qi(.width = c(0.95, 0.8, 0.5)) %>%
   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
   # SET plants and bivalves to 0
   mutate(tx_feed_fp = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_feed_fp),
          .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
          .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
-  ggplot(aes(y = full_taxa_name, x = tx_feed_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-  geom_pointinterval() +
+  # REORDER taxa axis
+  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
+  #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
+  ggplot(aes(y = full_taxa_name, x = tx_feed_fp)) +
+  geom_point(x = c(0), y = c("bivalves")) +
+  geom_point(x = 0, y = "plants") +
+  geom_interval(aes(xmin = .lower, xmax = .upper)) +
   theme_classic() + 
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "Mean off-farm (feed) impact")
