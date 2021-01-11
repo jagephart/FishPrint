@@ -193,27 +193,31 @@ base_family <- "sans"
 color_lim <- max(plot_perturbation$value, na.rm = TRUE)*c(-1,1)
 
 plot_perturbation$Stressor <- factor(plot_perturbation$Stressor, levels = c("ghg", "land", "water", "N", "P"))
+label_names <- c("GHG", "Land", "Water", "N", "P")
+names(label_names) <- c("ghg", "land", "water", "N", "P")
 
 fig_4a <- ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
   geom_tile() +
   labs(x = "", y = "") +
-  facet_wrap(~Stressor, nrow = 1) +
+  facet_wrap(~Stressor, nrow = 1, labeller = labeller(Stressor = label_names)) +
   scale_fill_distiller(palette = "RdBu", limit = color_lim, type = "div", na.value = "white") +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
         axis.title = element_text(size = ceiling(base_size*0.8)), 
-        axis.text.x = element_text(angle = 90),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
         panel.grid.minor = element_blank(), 
         panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
         panel.grid.major.x = element_blank(), 
         panel.background = element_blank(), panel.border = element_blank(),
         strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
-        strip.text.x = element_text(vjust = 0.5), strip.text.y = element_text(angle = -90), 
-        legend.text = element_text(size = ceiling(base_size*0.9), family = "sans"), 
+        strip.text.x = element_text(vjust = 0, hjust = 0), 
+        strip.text.y = element_text(angle = -90), 
+        legend.text = element_text(size = ceiling(base_size*0.7), family = "sans"), 
         legend.title = element_blank(), 
         legend.key = element_rect(fill = "white", colour = NA), 
         legend.position="bottom",
+        legend.margin=margin(t=-0.5, r=0, b=0, l=0, unit="cm"),
         plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
         plot.subtitle = element_text(size = ceiling(base_size*1.05)))
   
@@ -338,7 +342,7 @@ stressor_s3 <- stressor_s3 %>%
   select(taxa, contains("total")) %>%
   pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
   select(-contains("drop"))
-stressor_s3$scenario <- "Yield lower 20th"
+stressor_s3$scenario <- "Yield upper 20th"
 
 # Scenario 4: Capture fisheries - catch 1.2 x as much fish with 60% less effort
 df_capture <- read.csv(file.path(datadir, "20210107_capture_stressors_nonbayes.csv"))
@@ -403,7 +407,7 @@ stressor_s7 <- stressor_s7 %>%
   select(taxa, contains("total")) %>%
   pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
   select(-contains("drop"))
-stressor_s7$scenario <- "Land use free soy"
+stressor_s7$scenario <- "Land use free soy & crops"
 
 # Scenario 8: Use 0 for electricity GHG constant
 stressor_s8 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
@@ -463,14 +467,19 @@ scenarios_diff <- scenarios %>%
 
 
 fig_4b <- ggplot(scenarios_diff %>% 
-         filter(scenario %in% c("FCR lower 20th", "Replace FMFO w/ fish bp", 
-                                "Yield lower 20th", "Land use free soy")), 
-       aes(x = value_percent_change, y = taxa)) +
-  geom_point() + 
+                   filter(scenario %in% c("FCR lower 20th", "Replace FMFO w/ fish bp", 
+                                "Yield upper 20th", "Land use free soy & crops")) %>%
+                   mutate(plot_shape = ifelse(value_percent_change < -100, "over", "under")) %>%
+                   mutate(value_percent_change = ifelse(value_percent_change < -100, -100, value_percent_change)), 
+       aes(x = value_percent_change, y = taxa, shape = plot_shape)) +
+  geom_point(size = 2) + 
+  scale_shape_manual(values=c(60, 20)) +
   geom_segment(aes(x = 0, xend=value_percent_change, yend = taxa)) +
   geom_vline(xintercept = 0) +
   labs(x = "% Change", y = "") +
-  facet_grid(rows = vars(scenario), cols = vars(Stressor), labeller = label_wrap_gen(15)) +
+  scale_x_continuous(limits = c(-100, 25)) +
+  facet_grid(rows = vars(scenario), cols = vars(Stressor), 
+             labeller = labeller(Stressor = label_names, scenario =label_wrap_gen(15))) +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
@@ -482,14 +491,14 @@ fig_4b <- ggplot(scenarios_diff %>%
         panel.background = element_blank(), panel.border = element_blank(),
         strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
         strip.text.x = element_text(vjust = 0.5), strip.text.y = element_text(angle = -90), 
-        legend.text = element_text(size = ceiling(base_size*0.9), family = "sans"), 
+        legend.text = element_blank(), 
         legend.title = element_blank(), 
-        legend.key = element_rect(fill = "white", colour = NA), 
-        legend.position="bottom",
+        legend.key = element_blank(), 
+        legend.position="none",
         plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
         plot.subtitle = element_text(size = ceiling(base_size*1.05)))
 
-png("fig_4.png", width = 4, height = 8, units = "in", res = 300)
+png("fig_4.png", width = 4.5, height = 8, units = "in", res = 300)
 ggarrange(fig_4a, fig_4b, nrow = 2, heights = c(1.25, 2), labels = c("a", "b"))
 dev.off()
 
@@ -497,7 +506,7 @@ dev.off()
 
 # SI Fig for the other scenarios
 SI_fig_4b_other_scenarios <- ggplot(scenarios_diff %>% 
-                   filter(scenario %in% c("Replace FMFO w/ soy", "Replace FMFO w/ no land change soy", 
+                   filter(scenario %in% c("Replace FMFO w/ soy & crops", "Replace FMFO w/ no land change soy", 
                                           "Replace FMFO w/ low impact fishery by-products", 
                                           "All by-products sourced from low impact fisheries",
                                           "Zero emission electricity" )), 
