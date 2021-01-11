@@ -91,6 +91,22 @@ lca_model_dat <- lca_full_dat %>%
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
 
+# Get priors on taxa-level FCR
+# Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
+source("Functions.R")
+priors_csv <- clean_priors("Priors - Nonfeed.csv") %>%
+  select(contains(c("taxa", "FCR"))) %>%
+  arrange(taxa) # Arrange by taxa so that index matches tx in lca_model_dat
+
+# Format priors for STAN
+# can't pass NAs into STAN - drop NAs but keep track of vector positions
+prior_vec_index <- which(is.na(priors_csv$Ave.FCR)==FALSE)
+priors <- priors_csv$Ave.FCR[prior_vec_index]
+# priors_1 <- priors_csv$Ave.FCR[1]
+# priors_4 <- priors_csv$Ave.FCR[4]
+# priors_6_12 <- priors_csv$Ave.FCR[6:12]
+
+
 # Set data, indices, constants, weights for STAN
 
 # VARIABLE-SPECIFIC DATA:
@@ -217,8 +233,27 @@ slice_where_tx <- c(0, slice_where_tx)
 # STEP 2: RUN STAN MODEL
 
 # Set data for stan:
+# stan_data <- list(N = N,
+#                   N_SCI = N_SCI, 
+#                   n_to_sci = n_to_sci,
+#                   N_TX = N_TX,
+#                   sci_to_tx = sci_to_tx,
+#                   fcr = fcr,
+#                   K = K,
+#                   feed_weights = feed_weights,
+#                   sci_kappa = sci_kappa,
+#                   tx_kappa = tx_kappa,
+#                   fp_constant = fp_constant,
+#                   fish_content = fish_content,
+#                   feed_content = feed_content,
+#                   sci_w = sci_w,
+#                   where_tx = where_tx,
+#                   n_sci_in_tx = n_sci_in_tx,
+#                   slice_where_tx = slice_where_tx)
+
+# WITH PRIORS
 stan_data <- list(N = N,
-                  N_SCI = N_SCI, 
+                  N_SCI = N_SCI,
                   n_to_sci = n_to_sci,
                   N_TX = N_TX,
                   sci_to_tx = sci_to_tx,
@@ -233,7 +268,9 @@ stan_data <- list(N = N,
                   sci_w = sci_w,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
-                  slice_where_tx = slice_where_tx)
+                  slice_where_tx = slice_where_tx,
+                  priors = priors,
+                  prior_vec_index = prior_vec_index)
 
 # NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {
@@ -250,6 +287,10 @@ stan_no_na <- 'data {
   simplex[K] feed_weights[N]; // array of observed feed weights simplexes
   int sci_kappa[N_SCI]; // number of observations per sci-name
   int tx_kappa[N_TX]; // number of observations per taxa group
+
+  // values for priors
+  vector[11] priors;
+  int prior_vec_index[11];
 
   // constants to apply to feed footrpint
   vector[K] fp_constant;
@@ -293,7 +334,8 @@ transformed parameters {
 }
 model {
   // example priors for gamma model for FCRs
-  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
+  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive
+  tx_mu_fcr[prior_vec_index] ~ normal(priors, 0.1);
   //tx_mu ~ uniform(0, 100);
   //tx_sigma ~ uniform(0, 100);
 
@@ -396,6 +438,7 @@ no_na_mod <- stan_model(model_code = stan_no_na)
 
 # Fit model:
 # Set seed while testing
+start_sampling <- Sys.time()
 fit_no_na <- sampling(object = no_na_mod, 
                       data = stan_data, 
                       cores = 4, 
@@ -403,6 +446,8 @@ fit_no_na <- sampling(object = no_na_mod,
                       iter = 2500, 
                       control = list(adapt_delta = 0.99, max_treedepth = 15))
 #fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 5000, control = list(adapt_delta = 0.99))
+end_sampling <- Sys.time()
+end_sampling - start_sampling
 summary(fit_no_na)$summary
 
 #launch_shinystan(fit_no_na)

@@ -276,6 +276,45 @@ rebuild_fish <- function(path_to_zipfile) {
   return(time_series_join)
 }
 
+
+#_____________________________________________________________________________________________________#
+# Clean priors data, add taxa grouping
+# Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
+clean_priors <- function(priors_dat){
+  priors_csv <- read.csv(file.path(datadir, priors_dat)) %>%
+    select(Group.name, Mean.Annual.Yield.t.ha, Annual.Yield.t.ha.Variance, Ave.FCR, Upper.FCR, Lower.FCR) %>%
+    # Deal with "-" entries
+    mutate(across(everything(), str_replace, pattern = "-", replacement = "")) %>%
+    # Convert data cols to numeric
+    mutate(across(contains(c("Yield", "FCR")), as.numeric)) %>%
+    # Add taxa group name:
+    mutate(taxa = case_when(Group.name %in% c("Mussels", "Oysters") ~ "bivalves",
+                            Group.name %in% c("Catfish", "Miscellaneous freshwater fishes") ~ "catfish",
+                            Group.name == "Silver and bighead carp" ~ "hypoph_carp",
+                            Group.name == "Milkfish" ~ "milkfish",
+                            Group.name == "Miscellaneous diadromous fishes" ~ "misc_diad",
+                            Group.name == "Other miscellaneous marine fishes" ~ "misc_marine",
+                            Group.name %in% c("Common carp", "Crucian carp", "Grass carp", "Other Carps, barbels and other cyprinids") ~ "oth_carp",
+                            Group.name == "Aquatic plants" ~ "plants",
+                            Group.name == "Salmon" ~ "salmon",
+                            Group.name == "Shrimps, prawns" ~ "shrimp",
+                            Group.name == "Tilapias and other cichlids" ~ "tilapia",
+                            Group.name == "Trouts" ~ "trout",
+                            TRUE ~ "not_grouped")) %>%
+    group_by(taxa) %>%
+    summarise(Mean.Annual.Yield.t.ha = mean(Mean.Annual.Yield.t.ha, na.rm = TRUE), 
+              Annual.Yield.t.ha.Variance = mean(Annual.Yield.t.ha.Variance, na.rm = TRUE),
+              Ave.FCR = mean(Ave.FCR, na.rm = TRUE),
+              Upper.FCR = mean(Upper.FCR, na.rm = TRUE),
+              Lower.FCR = mean(Lower.FCR, na.rm = TRUE)) %>%
+    ungroup() %>%
+    # Manually add other freshwater fishes to catfish
+    filter(taxa != "not_grouped") %>%
+    arrange(taxa)
+}
+
+#_____________________________________________________________________________________________________#
+
 #_____________________________________________________________________________________________________#
 # Add taxa grouping
 #_____________________________________________________________________________________________________#
