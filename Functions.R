@@ -278,8 +278,9 @@ rebuild_fish <- function(path_to_zipfile) {
 
 
 #_____________________________________________________________________________________________________#
-# Clean priors data, add taxa grouping
+# Clean aquaculture priors data, add taxa grouping
 # Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
+#_____________________________________________________________________________________________________#
 clean_priors <- function(priors_dat){
   priors_csv <- read.csv(file.path(datadir, priors_dat)) %>%
     select(Group.name, Mean.Annual.Yield.t.ha, Annual.Yield.t.ha.Variance, Ave.FCR, Upper.FCR, Lower.FCR) %>%
@@ -314,6 +315,21 @@ clean_priors <- function(priors_dat){
 }
 
 #_____________________________________________________________________________________________________#
+# Clean WILD CAPTURE priors data, add taxa grouping
+# Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
+#_____________________________________________________________________________________________________#
+clean_wild_priors <- function(wild_priors_dat = "Priors - Capture.csv"){
+  priors_csv <- read.csv(file.path(datadir, wild_priors_dat)) %>%
+    select(Group.name, Mean.FUI, Median.FUI) %>%
+    # Convert to GHG values (as in Parker et al. 2018, see Rob's note in CSV file)
+    mutate(Mean.GHG = Mean.FUI*3.3*1.33,
+           Median.GHG = Median.FUI*3.3*1.33)  %>%
+    mutate(Group.name = case_when(str_detect(Group.name, "Lobsters") ~ "Lobsters",
+                                  str_detect(Group.name, "Shrimps") ~ "Shrimps",
+                                  TRUE ~ Group.name)) %>%
+    drop_na()
+}
+
 
 #_____________________________________________________________________________________________________#
 # Add taxa grouping

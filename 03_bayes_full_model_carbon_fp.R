@@ -251,10 +251,6 @@ stan_data <- list(N = N,
                   slice_where_tx = slice_where_tx,
                   priors = priors,
                   prior_vec_index = prior_vec_index)
-# 
-#                   priors_1 = priors_1,
-#                   priors_4 = priors_4,
-#                   priors_6_12 = priors_6_12)
 
 
 # NORMAL DISTRIBUTION model - fed and non-fed
@@ -273,10 +269,7 @@ stan_no_na <- 'data {
   int sci_kappa[N_SCI]; // number of observations per sci-name
   int tx_kappa[N_TX]; // number of observations per taxa group
   
-  // values for priors
-  //real priors_1;
-  //real priors_4;
-  //vector[7] priors_6_12;
+  // PRIORS
   vector[11] priors;
   int prior_vec_index[11];
   
@@ -326,14 +319,8 @@ transformed parameters {
   }
 }
 model {
-  // Priors for FCRs
-  //tx_mu_fcr[1] ~ normal(priors_1, 0.1);
-  //tx_mu_fcr[4] ~ normal(priors_4, 0.1);
-  //tx_mu_fcr[6:12] ~ normal(priors_6_12, 0.1);
+  // PRIORS
   tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
-  //for (i in 1,4,6:12) {
-  //  tx_mu_fcr[i] ~ normal(priors[i], 0.1);
-  //}
   
   // example priors for dirichlet model for feed proportions
   // sci_phi defined as sci_phi[n_to_sci][K]

@@ -233,25 +233,7 @@ slice_where_tx <- c(0, slice_where_tx)
 # STEP 2: RUN STAN MODEL
 
 # Set data for stan:
-# stan_data <- list(N = N,
-#                   N_SCI = N_SCI, 
-#                   n_to_sci = n_to_sci,
-#                   N_TX = N_TX,
-#                   sci_to_tx = sci_to_tx,
-#                   fcr = fcr,
-#                   K = K,
-#                   feed_weights = feed_weights,
-#                   sci_kappa = sci_kappa,
-#                   tx_kappa = tx_kappa,
-#                   fp_constant = fp_constant,
-#                   fish_content = fish_content,
-#                   feed_content = feed_content,
-#                   sci_w = sci_w,
-#                   where_tx = where_tx,
-#                   n_sci_in_tx = n_sci_in_tx,
-#                   slice_where_tx = slice_where_tx)
-
-# WITH PRIORS
+# NO PRIORS
 stan_data <- list(N = N,
                   N_SCI = N_SCI,
                   n_to_sci = n_to_sci,
@@ -268,9 +250,28 @@ stan_data <- list(N = N,
                   sci_w = sci_w,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
-                  slice_where_tx = slice_where_tx,
-                  priors = priors,
-                  prior_vec_index = prior_vec_index)
+                  slice_where_tx = slice_where_tx)
+
+# WITH PRIORS
+# stan_data <- list(N = N,
+#                   N_SCI = N_SCI,
+#                   n_to_sci = n_to_sci,
+#                   N_TX = N_TX,
+#                   sci_to_tx = sci_to_tx,
+#                   fcr = fcr,
+#                   K = K,
+#                   feed_weights = feed_weights,
+#                   sci_kappa = sci_kappa,
+#                   tx_kappa = tx_kappa,
+#                   fp_constant = fp_constant,
+#                   fish_content = fish_content,
+#                   feed_content = feed_content,
+#                   sci_w = sci_w,
+#                   where_tx = where_tx,
+#                   n_sci_in_tx = n_sci_in_tx,
+#                   slice_where_tx = slice_where_tx,
+#                   priors = priors,
+#                   prior_vec_index = prior_vec_index)
 
 # NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {
@@ -288,9 +289,9 @@ stan_no_na <- 'data {
   int sci_kappa[N_SCI]; // number of observations per sci-name
   int tx_kappa[N_TX]; // number of observations per taxa group
 
-  // values for priors
-  vector[11] priors;
-  int prior_vec_index[11];
+  // PRIORS
+  //vector[11] priors;
+  //int prior_vec_index[11];
 
   // constants to apply to feed footrpint
   vector[K] fp_constant;
@@ -333,11 +334,8 @@ transformed parameters {
   }
 }
 model {
-  // example priors for gamma model for FCRs
-  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive
-  tx_mu_fcr[prior_vec_index] ~ normal(priors, 0.1);
-  //tx_mu ~ uniform(0, 100);
-  //tx_sigma ~ uniform(0, 100);
+  // PRIORS
+  //tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
 
   // example priors for dirichlet model for feed proportions
   // sci_phi defined as sci_phi[n_to_sci][K]

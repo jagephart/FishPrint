@@ -71,6 +71,21 @@ lca_model_dat <- lca_full_dat %>%
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
 
+# Get priors on taxa-level FCR
+# Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
+source("Functions.R")
+priors_csv <- clean_priors("Priors - Nonfeed.csv") %>%
+  select(contains(c("taxa", "FCR"))) %>%
+  arrange(taxa) # Arrange by taxa so that index matches tx in lca_model_dat
+
+# Format priors for STAN
+# can't pass NAs into STAN - drop NAs but keep track of vector positions
+prior_vec_index <- which(is.na(priors_csv$Ave.FCR)==FALSE)
+priors <- priors_csv$Ave.FCR[prior_vec_index]
+# priors_1 <- priors_csv$Ave.FCR[1]
+# priors_4 <- priors_csv$Ave.FCR[4]
+# priors_6_12 <- priors_csv$Ave.FCR[6:12]
+
 #####################
 
 # Set data, indices, constants, weights for STAN
@@ -167,6 +182,25 @@ slice_where_tx <- c(0, slice_where_tx)
 
 # FIX IT - remove data related to water impact model since this is now separated out
 # Set data for stan:
+# NO PRIORS
+# stan_data <- list(N = N,
+#                   N_SCI = N_SCI, 
+#                   n_to_sci = n_to_sci,
+#                   N_TX = N_TX,
+#                   sci_to_tx = sci_to_tx,
+#                   fcr = fcr,
+#                   K = K,
+#                   feed_weights = feed_weights,
+#                   land = land,
+#                   sci_kappa = sci_kappa,
+#                   tx_kappa = tx_kappa,
+#                   land_feed_fp = land_feed_fp,
+#                   sci_w = sci_w,
+#                   where_tx = where_tx,
+#                   n_sci_in_tx = n_sci_in_tx,
+#                   slice_where_tx = slice_where_tx)
+
+# WITH PRIORS
 stan_data <- list(N = N,
                   N_SCI = N_SCI, 
                   n_to_sci = n_to_sci,
@@ -182,7 +216,9 @@ stan_data <- list(N = N,
                   sci_w = sci_w,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
-                  slice_where_tx = slice_where_tx)
+                  slice_where_tx = slice_where_tx,
+                  priors = priors,
+                  prior_vec_index = prior_vec_index)
 
 # NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {
@@ -200,6 +236,10 @@ stan_no_na <- 'data {
   int sci_kappa[N_SCI]; // number of observations per sci-name
   int tx_kappa[N_TX]; // number of observations per taxa group
   
+  // PRIORS
+  vector[11] priors;
+  int prior_vec_index[11];
+  
   // data for on-farm footrpint
   vector<lower=0>[N] land; // data
 
@@ -216,8 +256,8 @@ parameters {
   // FCR model
   vector[N_TX] tx_mu_fcr; // putting lower=0 bounds will cause mu_fcr to skew positive when zero (eg, plants, bivalves)
   vector[N_SCI] sci_mu_fcr;
-  real<lower=0> tx_sigma_fcr;
-  real<lower=0> sci_sigma_fcr;
+  real tx_sigma_fcr;
+  real sci_sigma_fcr;
   
   // Feed proportion model:
   simplex[K] sci_theta[N_SCI]; // vectors of estimated sci-level feed weight simplexes
@@ -226,8 +266,8 @@ parameters {
   // On farm model
   vector[N_TX] tx_land_farm; // putting lower=0 bounds will cause tx_land_farm to skew positive when zero
   vector[N_SCI] sci_land_farm;
-  real<lower=0> tx_sigma_land;
-  real<lower=0> sci_sigma_land;
+  real tx_sigma_land;
+  real sci_sigma_land;
 }
 transformed parameters {
   // define params for dirichlet model for feed proportions
@@ -246,10 +286,8 @@ transformed parameters {
   }
 }
 model {
-  // example priors for gamma model for FCRs
-  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-  //tx_mu ~ uniform(0, 100);
-  //tx_sigma ~ uniform(0, 100);
+  // PRIORS
+  tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
 
   // example priors for dirichlet model for feed proportions
   // sci_phi defined as sci_phi[n_to_sci][K]
