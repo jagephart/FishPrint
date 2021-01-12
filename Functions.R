@@ -146,7 +146,7 @@ clean.lca <- function(LCA_data){
     mutate(study_id = row_number()) %>%
     # Drop columns we no longer need
     # Subset to columns to keep
-    select(SeaWEED.ID, Source, study_id, Country, iso3c, Common.Name = Species.common.name, Scientific.Name = Species.scientific.name, clean_sci_name, 
+    select(SeaWEED.ID, Source, Sample_size_n_farms, study_id, Country, iso3c, Common.Name = Species.common.name, Scientific.Name = Species.scientific.name, clean_sci_name, 
            Production_system_group, Intensity, Product, Yield_m2_per_t, Grow_out_period_days, FCR = FCR_overall, 
            Feed_type, feed_soy_new, feed_crops_new, feed_fmfo_new, feed_animal_new,
            Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L)
