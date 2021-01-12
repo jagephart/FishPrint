@@ -43,6 +43,22 @@ wild_dat_new_weights <- wild_dat %>%
          taxa = as.factor(species_group),
          tx = as.numeric(taxa)) 
 
+# Get priors on taxa-level GHG
+source("Functions.R")
+priors_csv <- clean_wild_priors("Priors - Capture.csv") %>%
+  select(taxa = Group.name, Mean.GHG) %>%
+  filter(taxa %in% unique(wild_dat_new_weights$taxa)) %>%
+  right_join(wild_dat_new_weights %>% select(taxa) %>% unique(), ty = "taxa") %>%
+  arrange(taxa)
+  
+
+# Format priors for STAN
+# can't pass NAs into STAN - drop NAs but keep track of vector positions
+prior_vec_index <- which(is.na(priors_csv$Mean.GHG)==FALSE)
+priors <- priors_csv$Mean.GHG[prior_vec_index]
+# priors_1 <- priors_csv$Ave.FCR[1]
+# priors_4 <- priors_csv$Ave.FCR[4]
+# priors_6_12 <- priors_csv$Ave.FCR[6:12]
 
 ##### COMPARE with non-Bayesian calculation
 
@@ -135,11 +151,22 @@ n_sci_in_tx <- wild_dat_new_weights %>%
 slice_where_tx <- cumsum(n_sci_in_tx) # These are the breaks in where_tx corresponding to each taxa level - need this to split up where_tx
 slice_where_tx <- c(0, slice_where_tx)
 
-
-
 # Set data for stan:
+# NO PRIORS
+# stan_data <- list(N = N,
+#                   N_SCI = N_SCI,
+#                   n_to_sci = n_to_sci,
+#                   N_TX = N_TX,
+#                   sci_to_tx = sci_to_tx,
+#                   ghg = ghg,
+#                   sci_w = sci_w,
+#                   where_tx = where_tx,
+#                   n_sci_in_tx = n_sci_in_tx,
+#                   slice_where_tx = slice_where_tx)
+
+# WITH PRIORS
 stan_data <- list(N = N,
-                  N_SCI = N_SCI, 
+                  N_SCI = N_SCI,
                   n_to_sci = n_to_sci,
                   N_TX = N_TX,
                   sci_to_tx = sci_to_tx,
@@ -147,50 +174,9 @@ stan_data <- list(N = N,
                   sci_w = sci_w,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
-                  slice_where_tx = slice_where_tx)
-
-# GAMMA distribution model no levels
-# stan_no_na <- 'data {
-#   // data for gamma model
-#   int<lower=0> N;  // number of observations
-#   vector<lower=0>[N] ghg; // data
-#   int n_to_tx[N]; // tx index
-#   int N_TX; // number of taxa groups
-# }
-# parameters {
-#   vector<lower=0>[N_TX] tx_mu;
-#   //real<lower=0> tx_sigma;
-#   vector<lower=0>[N_TX] tx_shape;
-# }
-# transformed parameters {
-#   // define transfomed params for gamma model
-#   // vector<lower=0>[N_TX] tx_shape;
-#   vector<lower=0>[N_TX] tx_rate;
-# 
-#   // reparamaterize gamma to get mu and sigma; defining these here instead of the model section allows us to see these parameters in the output
-#   //for (n_tx in 1:N_TX){
-#   //  tx_shape[n_tx] = square(tx_mu[n_tx]) ./ square(tx_sigma);
-#   //  tx_rate[n_tx] = tx_mu[n_tx] ./ square(tx_sigma);
-#   //}
-#   // reparamaterize option 2:
-#   for (n_tx in 1:N_TX){
-#     tx_rate[n_tx] = tx_shape[n_tx] / tx_mu[n_tx];
-#   }
-# }
-# model {
-#   // define priors for gamma model
-#   // Put priors on mu and sigma:
-#   //tx_mu ~ uniform(0, 100); // 
-#   //sci_mu ~ uniform(0, 100);
-#   //tx_sigma ~ uniform(0, 100);
-#   tx_shape ~ cauchy(0, 5);
-# 
-#   // likelihood
-#   // gamma model sci-name and taxa-level
-#   for (n in 1:N){
-#     ghg[n] ~ gamma(tx_shape[n_to_tx[n]], tx_rate[n_to_tx[n]]);
-#   }
-# }'
+                  slice_where_tx = slice_where_tx,
+                  priors = priors,
+                  prior_vec_index = prior_vec_index)
 
 # NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {
@@ -203,6 +189,10 @@ stan_no_na <- 'data {
   
   // data 
   vector<lower=0>[N] ghg; // data
+  
+  // PRIORS
+  vector[8] priors;
+  int prior_vec_index[8];
   
   // indices for slicing vectors for calculating weighted means
   vector<lower=0>[N_SCI] sci_w; // sci-level production weights
@@ -218,19 +208,16 @@ parameters {
   real<lower=0> sci_sigma_ghg;
 }
 model {
-  // example priors for gamma model for FCRs
-  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-  //tx_mu ~ uniform(0, 100);
-  //tx_sigma ~ uniform(0, 100);
+  // PRIORS
+  tx_mu_ghg[prior_vec_index] ~ normal(priors, 1000);
 
   // example priors for dirichlet model for feed proportions
   // sci_phi defined as sci_phi[n_to_sci][K]
   // sci_phi[2][1] ~ normal(0.13, 5); // mean for Oncorhynhchus mykiss soy feed
 
   // weak priors on sigma
-  tx_sigma_ghg ~ cauchy(0, 1);
-  sci_sigma_ghg ~ cauchy(0, 1);
-
+  tx_sigma_ghg ~ cauchy(0, 10000);
+  sci_sigma_ghg ~ cauchy(0, 10000);
 
   // normal model for sci and taxa-level on-farm footrpint
   ghg ~ normal(sci_mu_ghg[n_to_sci], sci_sigma_ghg);
@@ -276,7 +263,7 @@ summary(fit_no_na)$summary
 # RESTARTING POINT
 rm(list=ls()[!(ls() %in% c("datadir", "outdir", "impact", "set_allocation",
                            "wild_dat_new_weights", "fit_no_na"))])
-save.iamge(file = file.path(outdir, paste(Sys.Date(), "_full-model-posterior_Wild-capture-ghg.RData", sep = "")))
+save.image(file = file.path(outdir, paste(Sys.Date(), "_full-model-posterior_Wild-capture-ghg.RData", sep = "")))
 
 ###########################################################
 

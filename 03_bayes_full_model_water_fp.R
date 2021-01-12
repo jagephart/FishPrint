@@ -97,6 +97,21 @@ lca_model_dat <- lca_full_dat %>%
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
 
+# Get priors on taxa-level FCR
+# Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
+source("Functions.R")
+priors_csv <- clean_priors("Priors - Nonfeed.csv") %>%
+  select(contains(c("taxa", "FCR"))) %>%
+  arrange(taxa) # Arrange by taxa so that index matches tx in lca_model_dat
+
+# Format priors for STAN
+# can't pass NAs into STAN - drop NAs but keep track of vector positions
+prior_vec_index <- which(is.na(priors_csv$Ave.FCR)==FALSE)
+priors <- priors_csv$Ave.FCR[prior_vec_index]
+# priors_1 <- priors_csv$Ave.FCR[1]
+# priors_4 <- priors_csv$Ave.FCR[4]
+# priors_6_12 <- priors_csv$Ave.FCR[6:12]
+
 #####################
 
 # Set data, indices, constants, weights for STAN
@@ -192,8 +207,9 @@ slice_where_tx <- c(0, slice_where_tx)
 # STEP 2: RUN STAN MODEL
 
 # Set data for stan:
+# NO PRIORS
 stan_data <- list(N = N,
-                  N_SCI = N_SCI, 
+                  N_SCI = N_SCI,
                   n_to_sci = n_to_sci,
                   N_TX = N_TX,
                   sci_to_tx = sci_to_tx,
@@ -208,6 +224,26 @@ stan_data <- list(N = N,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
                   slice_where_tx = slice_where_tx)
+
+# WITH PRIORS
+# stan_data <- list(N = N,
+#                   N_SCI = N_SCI, 
+#                   n_to_sci = n_to_sci,
+#                   N_TX = N_TX,
+#                   sci_to_tx = sci_to_tx,
+#                   fcr = fcr,
+#                   K = K,
+#                   feed_weights = feed_weights,
+#                   farm = farm,
+#                   sci_kappa = sci_kappa,
+#                   tx_kappa = tx_kappa,
+#                   fp_constant = fp_constant,
+#                   sci_w = sci_w,
+#                   where_tx = where_tx,
+#                   n_sci_in_tx = n_sci_in_tx,
+#                   slice_where_tx = slice_where_tx,
+#                   priors = priors,
+#                   prior_vec_index = prior_vec_index)
 
 # NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {
@@ -224,6 +260,10 @@ stan_no_na <- 'data {
   simplex[K] feed_weights[N]; // array of observed feed weights simplexes
   int sci_kappa[N_SCI]; // number of observations per sci-name
   int tx_kappa[N_TX]; // number of observations per taxa group
+  
+  // PRIORS
+  //vector[11] priors;
+  //int prior_vec_index[11];
   
   // data for on-farm footrpint
   vector<lower=0>[N] farm; // data
@@ -271,10 +311,8 @@ transformed parameters {
   }
 }
 model {
-  // example priors for gamma model for FCRs
-  // Put priors on mu and sigma (instead of shape and rate) since this is more intuitive:
-  //tx_mu ~ uniform(0, 100);
-  //tx_sigma ~ uniform(0, 100);
+  // PRIORS
+  //tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
 
   // example priors for dirichlet model for feed proportions
   // sci_phi defined as sci_phi[n_to_sci][K]
@@ -283,8 +321,8 @@ model {
   // weak priors on sigma
   tx_sigma_fcr ~ cauchy(0, 1);
   sci_sigma_fcr ~ cauchy(0, 1);
-  tx_sigma_farm ~ cauchy(0, 10);
-  sci_sigma_farm ~ cauchy(0, 10);
+  tx_sigma_farm ~ cauchy(0, 100);
+  sci_sigma_farm ~ cauchy(0, 1000);
 
   // likelihood
   // normal model sci-name and taxa-level for FCR
@@ -787,6 +825,4 @@ fit_no_na %>%
   labs(x = units_for_plot, y = "", title = "Total (on and off-farm) impact", color = "taxa group")
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
-######################################################################################################
-# NEXT: Before clearing workspace, use 04_plot_common_outputs.R to plot other intermediate-level calculations (these are universally shared among all models)
-
+# BEFORE CLEARING WORKSPACE, run 04_plot_fcr_and_feed at least once (outputs will be the same for all models)
