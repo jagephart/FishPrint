@@ -287,7 +287,7 @@ stressor_s2b <- stressor_s2b %>%
   select(taxa, contains("total")) %>%
   pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
   select(-contains("drop"))
-stressor_s2b$scenario <- "Replace FMFO w/ no land change soy"
+stressor_s2b$scenario <- "Replace FMFO w/ deforestation-free soy"
 
 # Scenario 2c: Replace FMFO with fishery by-products
 feed_fp_s2c <- read.csv(file.path(datadir, "feed_fp_scenario_2c_mass.csv"))
@@ -407,7 +407,7 @@ stressor_s7 <- stressor_s7 %>%
   select(taxa, contains("total")) %>%
   pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
   select(-contains("drop"))
-stressor_s7$scenario <- "Land use free soy & crops"
+stressor_s7$scenario <- "Deforestation-free soy & crops"
 
 # Scenario 8: Use 0 for electricity GHG constant
 stressor_s8 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
@@ -468,7 +468,7 @@ scenarios_diff <- scenarios %>%
 
 fig_4b <- ggplot(scenarios_diff %>% 
                    filter(scenario %in% c("FCR lower 20th", "Replace FMFO w/ fish bp", 
-                                "Yield upper 20th", "Land use free soy & crops")) %>%
+                                "Yield upper 20th", "Deforestation-free soy & crops")) %>%
                    mutate(plot_shape = ifelse(value_percent_change < -100, "over", "under")) %>%
                    mutate(value_percent_change = ifelse(value_percent_change < -100, -100, value_percent_change)), 
        aes(x = value_percent_change, y = taxa, shape = plot_shape)) +
@@ -478,7 +478,7 @@ fig_4b <- ggplot(scenarios_diff %>%
   geom_vline(xintercept = 0) +
   labs(x = "% Change", y = "") +
   scale_x_continuous(limits = c(-100, 25)) +
-  facet_grid(rows = vars(scenario), cols = vars(Stressor), 
+  facet_grid(rows = vars(scenario), cols = vars(Stressor), switch = "y",  
              labeller = labeller(Stressor = label_names, scenario =label_wrap_gen(15))) +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
@@ -489,8 +489,11 @@ fig_4b <- ggplot(scenarios_diff %>%
         panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
         panel.grid.major.x = element_blank(), 
         panel.background = element_blank(), panel.border = element_blank(),
-        strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
-        strip.text.x = element_text(vjust = 0.5), strip.text.y = element_text(angle = -90), 
+        strip.background = element_rect(linetype = 1, fill = "white"), 
+        strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), 
+        strip.text.y = element_text(angle = -90), 
+        strip.placement.y = "outside",
         legend.text = element_blank(), 
         legend.title = element_blank(), 
         legend.key = element_blank(), 
@@ -506,7 +509,7 @@ dev.off()
 
 # SI Fig for the other scenarios
 SI_fig_4b_other_scenarios <- ggplot(scenarios_diff %>% 
-                   filter(scenario %in% c("Replace FMFO w/ soy & crops", "Replace FMFO w/ no land change soy", 
+                   filter(scenario %in% c("Replace FMFO w/ soy & crops", "Replace FMFO w/ deforestation-free soy", 
                                           "Replace FMFO w/ low impact fishery by-products", 
                                           "All by-products sourced from low impact fisheries",
                                           "Zero emission electricity" )), 
@@ -515,7 +518,8 @@ SI_fig_4b_other_scenarios <- ggplot(scenarios_diff %>%
   geom_segment(aes(x = 0, xend=value_percent_change, yend = taxa)) +
   geom_vline(xintercept = 0) +
   labs(x = "% Change", y = "") +
-  facet_grid(rows = vars(scenario), cols = vars(Stressor), labeller = label_wrap_gen(20)) +
+  facet_grid(rows = vars(scenario), cols = vars(Stressor), switch = "y",
+             labeller = label_wrap_gen(20)) +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
@@ -525,8 +529,11 @@ SI_fig_4b_other_scenarios <- ggplot(scenarios_diff %>%
         panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
         panel.grid.major.x = element_blank(), 
         panel.background = element_blank(), panel.border = element_blank(),
-        strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
-        strip.text.x = element_text(vjust = 0.5), strip.text.y = element_text(angle = -90), 
+        strip.background = element_rect(linetype = 1, fill = "white"), 
+        strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), 
+        strip.text.y = element_text(angle = -90), 
+        strip.placement.y = "outside",
         legend.text = element_text(size = ceiling(base_size*0.9), family = "sans"), 
         legend.title = element_blank(), 
         legend.key = element_rect(fill = "white", colour = NA), 
@@ -579,6 +586,30 @@ dev.off()
 #_______________________________________________________________________________________________________________________#
 # Identify common features of low stressor systems for 
 #_______________________________________________________________________________________________________________________#
+df_species <- read.csv(file.path(datadir, "20210107_stressor_species_summary.csv"))
+df_species <- df_species %>%
+  filter(taxa %in% c("salmon", "hypoph_carp", "oth_carp", "catfish", "tilapia", "shrimp")) %>%
+  mutate(total_ghg = feed_GHG + onfarm_ghg, total_N = feed_N + onfarm_N, total_P = feed_P + onfarm_P,
+         total_water = feed_water + onfarm_water, total_land = feed_land + onfarm_land) 
+
+df_species_lower20 <- df_species %>%
+  group_by(taxa) %>%
+  summarise(ghg_lower_20 = quantile(total_ghg, probs = .2, na.rm = TRUE)[[1]], 
+            N_lower_20 = quantile(total_N, probs = .2, na.rm = TRUE)[[1]], 
+            P_lower_20 = quantile(total_P, probs = .2, na.rm = TRUE)[[1]], 
+            water_lower_20 = quantile(total_water, probs = .2, na.rm = TRUE)[[1]], 
+            land_lower_20 = quantile(total_land, probs = .2, na.rm = TRUE)[[1]])
+
+df_species <- df_species %>%
+  left_join(df_species_lower20, by = "taxa") %>%
+  mutate(ghg_lower_20_logic = ifelse(total_ghg <= ghg_lower_20, 1, 0),
+         N_lower_20_logic = ifelse(total_N <= N_lower_20, 1, 0),
+         P_lower_20_logic = ifelse(total_P <= P_lower_20, 1, 0),
+         water_lower_20_logic = ifelse(total_water <= water_lower_20, 1, 0),
+         land_lower_20_logic = ifelse(total_land <= land_lower_20, 1, 0)) %>%
+  mutate(lower_total = ghg_lower_20_logic + N_lower_20_logic + P_lower_20_logic +
+                           water_lower_20_logic + land_lower_20_logic)
+
 
 
 
