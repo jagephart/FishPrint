@@ -45,11 +45,11 @@ tx_index_key <- lca_model_dat %>%
   unique() %>%
   arrange(taxa) %>%
   mutate(taxa = as.character(taxa),
-         full_taxa_name = case_when(taxa == "hypoph_carp" ~ "big/silverhead carp",
-                                    taxa == "misc_marine" ~ "misc marine fishes",
-                                    taxa == "misc_fresh" ~ "misc freshwater fishes",
-                                    taxa == "misc_diad" ~ "misc diad fishes",
+         full_taxa_name = case_when(taxa == "hypoph_carp" ~ "big/silverhead",
                                     taxa == "oth_carp" ~ "misc carps",
+                                    taxa == "misc_diad" ~ "misc diad",
+                                    taxa == "misc_fresh" ~ "misc freshwater",
+                                    taxa == "misc_marine" ~ "misc marine",
                                     taxa == "fresh_crust" ~ "freshwater crustaceans",
                                     TRUE ~ taxa),
          taxa = as.factor(taxa),

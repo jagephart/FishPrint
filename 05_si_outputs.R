@@ -57,11 +57,70 @@ prod_by_taxa <- prod_clean %>%
 prod_by_taxa %>%
   filter(plot_name != "other_taxa") %>%
   pull(taxa_prod) %>% sum() / sum(prod_by_taxa$taxa_prod)
-# Proportion of global aquaculture production represented by analysis: 0.747532
-  
+# Proportion of global aquaculture production represented in our study: 0.747532
+
+# How much of total production is carps?
+prod_by_taxa %>%
+  filter(plot_name %in% c("misc carps", "silver/bighead")) %>%
+  pull(taxa_prod) %>% sum() / sum(prod_by_taxa$taxa_prod)
+
+# How much of total WILD CAPTURE production do our wild taxa groupings represent?
+# Match taxa group to ISSCAAP group(s)
+# 2012 - 2019
+# Aligning Rob's groupings with ISSCAAP: according to http://www.fao.org/3/Y5852E10.htm
+# Jacks, mullets, sauries are Misc demersal fishes
+# Redfishes, basses, and congers are Misc coastal fishes
+# Large pelagic fishes are Tunas, bonitos, billfishes + Misc pelagic fishes
+# Small pelagic fishes are Herrings, sardines, anchovies <- all Clupeidae found here, find number to adjust this
+wild_prod_clean <- fishstat_dat %>% 
+  filter(year > 2012) %>%
+  filter(unit == "t") %>%
+  filter(source_name_en == "Capture production") %>%
+  filter(is.na(quantity)==FALSE) %>%
+  #filter(species_scientific_name != "Osteichthyes") %>%
+  # Identify rows that are part of this study
+  mutate(taxa_group_name = case_when(isscaap_group %in% c("Mussels", "Oysters", "Scallops, pectens", "Clams, cockles, arkshells")  ~ "bivalves",
+                                     isscaap_group == "Squids, cuttlefishes, octopuses"  ~ "cephalopods",
+                                     isscaap_group == "Flouders, halibuts, soles"  ~ "flatfishes",
+                                     isscaap_group == "Cods, hakes, haddocks"  ~ "gadiformes",
+                                     isscaap_group == "Miscellaneous diadromous fishes"  ~ "jacks, mullets, sauries",
+                                     isscaap_group %in% c("Tunas, bonitos, billfishes", "Miscellaneous pelagic fishes") ~ "large pelagic fishes",
+                                     isscaap_group == "Lobsters, spiny-rock lobsters" ~ "lobsters",
+                                     isscaap_group == "Miscellaneous coastal fishes" ~ "redfishes, basses, congers",
+                                     isscaap_group == "Salmons, trouts, smelts" ~ "salmonids",
+                                     isscaap_group == "Shrimps, prawns" ~ "shrimps", 
+                                     isscaap_group == "Herrings, sardines, anchovies" ~ "small pelagic fishes",
+                                     TRUE ~ "other_taxa"))
+
+# From Tacon A, Metian M. Fishing for feed or fishing for food: increasing global competition for small pelagic forage fish. Ambio J Hum Environ (2009) 38(6): 294-302.
+# 36.2% of the total catch of small pelagics went to non human use in 2006 (63.8% went to human use)
+wild_prod_by_taxa <- wild_prod_clean %>%
+  group_by(taxa_group_name) %>%
+  summarise(taxa_prod = sum(quantity, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(taxa_prod = if_else(taxa_group_name == "small pelagic fishes", true = taxa_prod * .638, false = taxa_prod))
+
+# How much of total production do our wild capture taxa groupings represent?
+wild_prod_by_taxa %>%
+  filter(taxa_group_name != "other_taxa") %>%
+  pull(taxa_prod) %>% sum() / sum(wild_prod_by_taxa$taxa_prod)
+# Proportion of global wild capture production represented in our study: 
+# 0.7839467 (no Osteichthyes, adjust small pelagics)
+# 0.8006024 (no Osteichthyes, no adjustment to small pelagics)
+# 0.6472026 (with Osteichthyes, adjust small pelagics)
+# 0.6699618 (with Osteichthyes, no adjustment to small pelagics)
+
 #########################################
 # Plot n studies (and n farms) per taxa group vs production (shape = taxa group)
-# CHOOSE n_type: sum of n_farms or n_studies
+# CHOOSE n_type: sum of "n_farms" or "n_studies"
+
+plot_theme <- theme(axis.title.x = element_text(size = 20),
+                    axis.text = element_text(size = 18, color = "black", margin = margin(t = 20)),
+                    axis.title.y = element_text(size = 20, margin = margin(t = 0, r = 20, b = 0, l = 0)),
+                    legend.title = element_text(size = 16), 
+                    legend.text = element_text(size = 14),
+                    plot.margin = unit(c(1,1,1,1), "cm"))
+
 n_type <- "n_farms"
 taxa_dat <- read.csv(file.path(outdir, "taxa_group_n_and_composition.csv")) %>%
   group_by(taxa_group_name) %>%
@@ -75,16 +134,21 @@ plot_dat <- prod_by_taxa %>%
 summary(lm(taxa_prod ~ n, data = plot_dat))
         
 ggplot(data = plot_dat, aes(x = n, y = taxa_prod, shape = plot_name)) +
-  geom_point() + 
+  geom_point(size=5) + 
   scale_shape_manual(values = c(0:11)) +
   geom_smooth(method = "lm", color = "red") +
   theme_classic() +
-  labs(x = paste(unlist(str_split(n_type, "_")), collapse = " "), y = "Total Aquaculture Production 2012-2017", shape = "taxa group")
-ggsave(filename = file.path(outdir, paste("plot_production_vs_", n_type, ".png", sep = "")), width = 11, height = 8.5)
+  labs(x = paste(unlist(str_split(n_type, "_")), collapse = " "), y = "Total Aquaculture Production \n2012-2017 (tonnes)", shape = "taxa group") +
+  theme(legend.position=c(0.8, 0.75)) +
+  plot_theme 
+ggsave(filename = file.path(outdir, paste("plot_production_vs_", n_type, ".png", sep = "")), width = 8.5, height = 8.5)
 
 
 #########################################
 # Plot n farms (and n studies) per country vs national production per taxa group (shape = country)
+# CHOOSE n_type: sum of "n_farms" or "n_studies"
+n_type <- "n_studies"
+
 
 # Clean LCA data
 country_dat <- read.csv(file.path(outdir, "taxa_group_n_and_composition.csv")) %>%
@@ -111,8 +175,9 @@ ggplot(data = plot_country_dat, aes(x = n, y = taxa_iso_prod)) +
   scale_shape_manual(values = c(0:11)) +
   geom_smooth(method = "lm", color = "red") +
   theme_classic() +
-  labs(x = paste(unlist(str_split(n_type, "_")), collapse = " "), y = "Total Aquaculture Production 2012-2017")
-ggsave(filename = file.path(outdir, paste("plot_national_production_vs_", n_type, ".png", sep = "")), width = 11, height = 8.5)
+  labs(x = paste(unlist(str_split(n_type, "_")), collapse = " "), y = "Total Aquaculture Production \n2012-2017 (tonnes)") +
+  plot_theme 
+ggsave(filename = file.path(outdir, paste("plot_national_production_vs_", n_type, ".png", sep = "")), width = 8.5, height = 8.5)
 
 # Which are the three outlier studies
 plot_country_dat %>%
