@@ -65,6 +65,9 @@ prod_by_taxa %>%
   pull(taxa_prod) %>% sum() / sum(prod_by_taxa$taxa_prod)
 
 # How much of total WILD CAPTURE production do our wild taxa groupings represent?
+# First, REMOVE the following isscaap groups (mostly non-human purposes)
+non_human_isscaap <- c("Pearls, mother-of-pearl, shells", "Corals", "Sponges", "Brown seaweeds", "Red seaweeds", "Green seaweeds", "Miscellaneous aquatic plants") 
+
 # Match taxa group to ISSCAAP group(s)
 # 2012 - 2019
 # Aligning Rob's groupings with ISSCAAP: according to http://www.fao.org/3/Y5852E10.htm
@@ -76,6 +79,7 @@ wild_prod_clean <- fishstat_dat %>%
   filter(year > 2012) %>%
   filter(unit == "t") %>%
   filter(source_name_en == "Capture production") %>%
+  filter(isscaap_group %in% non_human_isscaap == FALSE) %>%
   filter(is.na(quantity)==FALSE) %>%
   #filter(species_scientific_name != "Osteichthyes") %>%
   # Identify rows that are part of this study
@@ -97,19 +101,25 @@ wild_prod_clean <- fishstat_dat %>%
 wild_prod_by_taxa <- wild_prod_clean %>%
   group_by(taxa_group_name) %>%
   summarise(taxa_prod = sum(quantity, na.rm = TRUE)) %>%
-  ungroup() %>%
+  ungroup() #%>%
   mutate(taxa_prod = if_else(taxa_group_name == "small pelagic fishes", true = taxa_prod * .638, false = taxa_prod))
 
 # How much of total production do our wild capture taxa groupings represent?
 wild_prod_by_taxa %>%
   filter(taxa_group_name != "other_taxa") %>%
   pull(taxa_prod) %>% sum() / sum(wild_prod_by_taxa$taxa_prod)
+# Including non-human isscaap groups:
 # Proportion of global wild capture production represented in our study: 
 # 0.6339886 (filter Osteichthyes, adjust small pelagics) 
 # 0.6622046 (filter Osteichthyes, no adjustment to small pelagics)
 # 0.5234017 (keep Osteichthyes, adjust small pelagics)
 # 0.5541475 (keep Osteichthyes, no adjustment to small pelagics)
 
+# Removing non-human isscaap groups:
+# 0.6724095 (filter Osteichthyes, adjust small pelagics)
+# 0.6445885 (filter Osteichthyes, no adjustment to small pelagics)
+# 0.5306052 (keep Osteichthyes, adjust small pelagics)
+# 0.5612758 (keep Osteichthyes, no adjustment to small pelagics)
 #########################################
 # Plot n studies (and n farms) per taxa group vs production (shape = taxa group)
 # CHOOSE n_type: sum of "n_farms" or "n_studies"
