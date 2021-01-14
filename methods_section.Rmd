@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Off-farm (feed-associated) stressors
 
-  For off-farm impacts, we modelled the dry weight feed conversion ratio of study $i$, $FCR_i$, as:
+  For off-farm stressors, we modelled the dry weight feed conversion ratio of study $i$, $FCR_i$, as:
 
 $$FCR_i \sim normal(\mu_{FCR_{j[i]}}, \sigma_{FCR_{j[i]}})$$
 $$\mu_{FCR_{j[i]}} \sim normal(\mu_{FCR_{k[j]}}, \sigma_{FCR_{k[j]}})$$
@@ -22,7 +22,7 @@ $$\sigma_{FCR_{j[i]}}, \sigma_{FCR_{k[j]}}\sim halfCauchy(0,1)$$
 
 such that $\mu_{FCRj[i]}$ and $\mu_{FCRk[j]}$ are the mean FCR for scientific name $j$ and and taxa group $k$, respectively, and $\sigma_{FCRj[i]}$ and $\sigma_{FCRk[j]}$ are their respective standard deviations. To help with convergence we apply weakly-informative half-Cauchy priors on the scientific name and taxa group level $\sigma$’s. 
 
-  For off-farm impacts, we also modelled the proportions of feed originating from soy, crops, livestock, and fisheries. For each study i, Xi is a vector of feed proportions that sums to 1. We modelled this vector as:
+  For off-farm stressors, we also modelled the proportions of feed originating from soy, crops, livestock, and fisheries. For each study i, Xi is a vector of feed proportions that sums to 1. We modelled this vector as:
 
 $$X_i = (X_{soy}, X_{crops}, X_{livestock}, X_{fisheries}) \sim Dirichlet(\alpha_{j[i]})$$
 such that $\alpha_{j[i]}$ is a shape parameter describing the distribution (uniform or degenerate) of the feed proportions for scientific name $j$. We then reparameterized  $\alpha_{j[i]}$ as:
@@ -38,7 +38,7 @@ Here, $f$ indexes the four feed ingredients (soy, other crops, fishmeal and fish
 
 ## On-farm stressors
 
-  On-farm nitrogen and phosphorus stressors are calculated from the same species and taxa-level means of $FCR$ and feed proportions, $p_f$, described above for off-farm impacts. Here, on-farm N and P stress are estimated as the difference between the N and P content of each feed component and the species-specific N and P contents of each seafood product such that:
+  On-farm nitrogen and phosphorus stressors are calculated from the same species and taxa-level means of $FCR$ and feed proportions, $p_f$, described above for off-farm stressors. Here, on-farm N and P stress are estimated as the difference between the N and P content of each feed component and the species-specific N and P contents of each seafood product such that:
 $$S_{nonfeed[nitrogen]}=FCR\sum_{f=1}^{4}N_fp_f−N_{fish}$$
 $$S_{nonfeed[nitrogen]}=FCR\sum_{f=1}^{4}P_fp_f−N_{fish}$$
 where $N_f$ and $P_f$ represent the nitrogen and phosphorus content of feed component $f$ and $N_{fish}$ and $P_{fish}$ represent the species-specific nitrogen and phosphorus content of a unit of fish or shellfish. 
