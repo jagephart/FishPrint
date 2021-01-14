@@ -408,9 +408,13 @@ save.image(file = file.path(outdir, paste(Sys.Date(), "_full-model-posterior_", 
 
 # SET THEME
 x <- seq(0, 1, length.out = 16)
-base_color <- "#A9D158"
+base_color <- "#57D182"
+library(scales)
 show_col(seq_gradient_pal(base_color, "white")(x)) # Get hexadecimals for other colors
-interval_palette <- c("#D9EAB2", "#C2DD86", "#A9D158") # Order: light to dark
+# COMPLEMENTARY GREEN (Azote guidelines)
+interval_palette <- c("#B7EBC4", "#8BDEA3", "#57D182")
+# PRIMARY GREEN:
+#interval_palette <- c("#D9EAB2", "#C2DD86", "#A9D158") # Order: light to dark
 full_taxa_name_order <- c("plants", "bivalves", "shrimp", "misc marine fishes", "milkfish", "salmon", "misc diadromous fishes", "trout", "tilapia", "catfish", "misc carps", "bighead/silverhead carp")
 
 sci_plot_theme <- theme(title = element_text(size = 18),

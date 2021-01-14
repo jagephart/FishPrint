@@ -13,13 +13,35 @@ datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # Set filenames:
-c_results <- "PRIORS/Carbon/2021-01-11_full-model-posterior_Global warming potential_Mass-allocation.RData"
-n_results <- "PRIORS/Nitrogen/2021-01-11_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-p_results <- "PRIORS/Phosphorus/2021-01-11_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-land_results <- "PRIORS/Land/2021-01-11_full-model-posterior_Land Use_Mass-allocation.RData"
-water_results <- "PRIORS/Water/2021-01-11_full-model-posterior_Water Consumption_Mass-allocation.RData"
-wild_results <- "PRIORS/Wild/2021-01-12_full-model-posterior_Wild-Capture-ghg.RData"
+# Mass allocation
+# c_results <- "PRIORS/Carbon/2021-01-11_full-model-posterior_Global warming potential_Mass-allocation.RData"
+# n_results <- "PRIORS/Nitrogen/2021-01-11_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+# p_results <- "PRIORS/Phosphorus/2021-01-11_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+# land_results <- "PRIORS/Land/2021-01-11_full-model-posterior_Land Use_Mass-allocation.RData"
+# water_results <- "PRIORS/Water/2021-01-11_full-model-posterior_Water Consumption_Mass-allocation.RData"
+# wild_results <- "PRIORS/Wild/2021-01-12_full-model-posterior_Wild-Capture-ghg.RData"
 
+# Gross energy allocation (no wild capture results)
+# c_results <- "PRIORS/Carbon/2021-01-11_full-model-posterior_Global warming potential_Gross energy content-allocation.RData"
+# n_results <- "PRIORS/Nitrogen/2021-01-11_full-model-posterior_Marine eutrophication_Gross energy content-allocation.RData"
+# p_results <- "PRIORS/Phosphorus/2021-01-11_full-model-posterior_Freshwater eutrophication_Gross energy content-allocation.RData"
+# land_results <- "PRIORS/Land/2021-01-12_full-model-posterior_Land Use_Gross energy content-allocation.RData"
+# water_results <- "PRIORS/Water/2021-01-11_full-model-posterior_Water Consumption_Gross energy content-allocation.RData"
+
+# Economic allocation (no wild capture results)
+# c_results <- "PRIORS/Carbon/2021-01-11_full-model-posterior_Global warming potential_Economic-allocation.RData"
+# n_results <- "PRIORS/Nitrogen/2021-01-11_full-model-posterior_Marine eutrophication_Economic-allocation.RData"
+# p_results <- "PRIORS/Phosphorus/2021-01-11_full-model-posterior_Freshwater eutrophication_Economic-allocation.RData"
+# land_results <- "PRIORS/Land/2021-01-13_full-model-posterior_Land Use_Economic-allocation.RData"
+# water_results <- "PRIORS/Water/2021-01-11_full-model-posterior_Water Consumption_Economic-allocation.RData"
+
+# Mass allocation NO PRIORS
+c_results <- "NO PRIORS/Carbon/2021-01-11_full-model-posterior_Global warming potential_Mass-allocation.RData"
+n_results <- "NO PRIORS/Nitrogen/2021-01-11_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+p_results <- "NO PRIORS/Phosphorus/2021-01-11_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+land_results <- "NO PRIORS/Land/2021-01-12_full-model-posterior_Land Use_Mass-allocation.RData"
+water_results <- "NO PRIORS/Water/2021-01-11_full-model-posterior_Water Consumption_Mass-allocation.RData"
+wild_results <- "NO PRIORS/Wild/2021-01-13_full-model-posterior_Wild-capture-ghg.RData"
 
 ######################################################################################################
 # Carbon
@@ -31,7 +53,7 @@ interval_palette <- c("#9EA8B7", "#6A7A90", "#364F6B") # Order: light to dark
 # Theme
 tx_plot_theme <- theme(axis.title = element_text(size = 9),
                        axis.text.x = element_text(size = 9, color = "black"),
-                       axis.text.y = element_text(size = 9, color = "black"),
+                       axis.text.y = element_text(size = 8, color = "black"),
                        legend.position = "none",
                        plot.margin = unit(c(0, 3, 0, 0), "mm")) # increase the right margin so that there can be some pillover from x-axis
 
@@ -45,12 +67,12 @@ tx_index_key <- lca_model_dat %>%
   unique() %>%
   arrange(taxa) %>%
   mutate(taxa = as.character(taxa),
-         full_taxa_name = case_when(taxa == "hypoph_carp" ~ "big/silverhead",
-                                    taxa == "oth_carp" ~ "misc carps",
+         full_taxa_name = case_when(taxa == "hypoph_carp" ~ "silver/bighead",
+                                    taxa == "oth_carp" ~ "misc carp",
                                     taxa == "misc_diad" ~ "misc diad",
                                     taxa == "misc_fresh" ~ "misc freshwater",
                                     taxa == "misc_marine" ~ "misc marine",
-                                    taxa == "fresh_crust" ~ "freshwater crustaceans",
+                                    taxa == "fresh_crust" ~ "freshwater crust",
                                     TRUE ~ taxa),
          taxa = as.factor(taxa),
          full_taxa_name = as.factor(full_taxa_name))
@@ -113,7 +135,11 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 # Load model outputs individually, save to plot_grid, and create multi-panel plot
 load(file.path(outdir, land_results))
 units_for_plot = bquote('m'^2*'a per tonne')
-interval_palette <- c("#D9EAB2", "#C2DD86", "#A9D158") # Order: light to dark
+# COMPLEMENTARY GREEN (Azote guidelines)
+interval_palette <- c("#B7EBC4", "#8BDEA3", "#57D182")
+# PRIMARY GREEN:
+#interval_palette <- c("#D9EAB2", "#C2DD86", "#A9D158") # Order: light to dark
+
 
 # Use for land:
 p_land <- fit_no_na %>%
@@ -151,7 +177,10 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 # NITROGEN 
 load(file.path(outdir, n_results))
 units_for_plot = "kg N-eq per tonne"
-interval_palette <- c("#FFEDAD", "#FFE37D", "#FFD947") # Order: light to dark
+# PRIMARY COLOR (Azote guidelines)
+# interval_palette <- c("#FFEDAD", "#FFE37D", "#FFD947") # Order: light to dark
+# COMPLEMENTARY COLOR
+interval_palette <- c("#FFD5A9", "#FFBD79", "#FFA647")
 
 p_nitrogen <- fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
@@ -271,7 +300,34 @@ wild_index_key <- wild_dat_new_weights %>%
   ungroup() %>%
   select(taxa, tx) %>%
   unique() %>%
-  arrange(taxa) 
+  arrange(taxa) %>%
+  mutate(taxa = tolower(taxa)) %>%
+  mutate(plot_taxa = case_when(taxa == "bivalves" ~ "bivalves",
+                               taxa == "cephalopods" ~ "squid, etc",
+                               taxa == "flatfishes" ~ "flounder, etc",
+                               taxa == "gadiformes" ~ "cod, etc",
+                               taxa == "jacks, mullets, sauries" ~ "jack, etc",
+                               taxa == "large pelagic fishes" ~ "tuna, etc",
+                               taxa == "lobsters" ~ "lobster",
+                               taxa == "redfishes, basses, congers" ~ "redfish, etc",
+                               taxa == "salmonids" ~ "salmon, etc",
+                               taxa == "shrimps" ~ "shrimp",
+                               taxa == "small pelagic fishes" ~ "herring, etc"
+                               ))
+
+# With out etc
+# mutate(plot_taxa = case_when(taxa == "bivalves" ~ "bivalves",
+#                              taxa == "cephalopods" ~ "squid",
+#                              taxa == "flatfishes" ~ "flounder",
+#                              taxa == "gadiformes" ~ "cod",
+#                              taxa == "jacks, mullets, sauries" ~ "jack",
+#                              taxa == "large pelagic fishes" ~ "tuna",
+#                              taxa == "lobsters" ~ "lobster",
+#                              taxa == "redfishes, basses, congers" ~ "redfish",
+#                              taxa == "salmonids" ~ "salmon",
+#                              taxa == "shrimps" ~ "shrimp",
+#                              taxa == "small pelagic fishes" ~ "herringactually, "
+# ))
 
 # Wild:
 p_wild <- fit_no_na %>%
@@ -279,11 +335,11 @@ p_wild <- fit_no_na %>%
   median_qi(tx_ghg_w, .width = c(0.95, 0.8, 0.5)) %>%
   left_join(wild_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
   # Reorder from highest to lowest
-  mutate(taxa = tolower(taxa)) %>%
-  mutate(taxa = fct_reorder(taxa, tx_ghg_w)) %>%
-  ggplot(aes(y = taxa, x = tx_ghg_w)) +
+  mutate(plot_taxa = as.factor(plot_taxa)) %>%
+  mutate(plot_taxa = fct_reorder(plot_taxa, tx_ghg_w)) %>%
+  ggplot(aes(y = plot_taxa, x = tx_ghg_w)) +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 3) +
-  geom_point(aes(y = taxa, x = tx_ghg_w)) +
+  geom_point(aes(y = plot_taxa, x = tx_ghg_w)) +
   geom_hline(yintercept = 1:11, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
   theme_classic() + 
@@ -302,10 +358,18 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 
 
 # COMBINE INTO PANEL:
+# 6 panel plot:
 p_left <- plot_grid(p_carbon, p_wild, ncol = 1, nrow = 2, align = "hv", labels = c("a", "d"))
-p_right <- plot_grid(p_nitrogen, p_phosphorus, p_water, p_land, ncol = 2, nrow = 2, align = "h", labels = c("b", "c", "e", "f"))
-plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.7, 1))
+p_right <- plot_grid(p_nitrogen, p_phosphorus, p_water, p_land, ncol = 2, nrow = 2, align = "h", labels = c("b", "c", "e", "f"), rel_widths = c(1.3, 1))
+plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
 ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm")
 ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
+
+# 5 panel plot
+# p_left <- plot_grid(p_carbon, p_water, nrow = 2, ncol = 1, labels = c("a", "d"))
+# p_right <- plot_grid(p_nitrogen, p_phosphorus, p_land, ncol = 2, nrow = 2, align = "h", labels = c("b", "c", "e"))
+# plot_grid(p_left, p_right, ncol = 2, nrow = 1, align = "v", rel_widths = c(0.6, 1))
+# ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm")
+# ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
 
 

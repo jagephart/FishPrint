@@ -84,7 +84,7 @@ wild_prod_clean <- fishstat_dat %>%
                                      isscaap_group == "Flouders, halibuts, soles"  ~ "flatfishes",
                                      isscaap_group == "Cods, hakes, haddocks"  ~ "gadiformes",
                                      isscaap_group == "Miscellaneous diadromous fishes"  ~ "jacks, mullets, sauries",
-                                     isscaap_group %in% c("Tunas, bonitos, billfishes", "Miscellaneous pelagic fishes") ~ "large pelagic fishes",
+                                     isscaap_group == "Tunas, bonitos, billfishes" ~ "large pelagic fishes",
                                      isscaap_group == "Lobsters, spiny-rock lobsters" ~ "lobsters",
                                      isscaap_group == "Miscellaneous coastal fishes" ~ "redfishes, basses, congers",
                                      isscaap_group == "Salmons, trouts, smelts" ~ "salmonids",
@@ -105,10 +105,10 @@ wild_prod_by_taxa %>%
   filter(taxa_group_name != "other_taxa") %>%
   pull(taxa_prod) %>% sum() / sum(wild_prod_by_taxa$taxa_prod)
 # Proportion of global wild capture production represented in our study: 
-# 0.7839467 (no Osteichthyes, adjust small pelagics)
-# 0.8006024 (no Osteichthyes, no adjustment to small pelagics)
-# 0.6472026 (with Osteichthyes, adjust small pelagics)
-# 0.6699618 (with Osteichthyes, no adjustment to small pelagics)
+# 0.6339886 (filter Osteichthyes, adjust small pelagics) 
+# 0.6622046 (filter Osteichthyes, no adjustment to small pelagics)
+# 0.5234017 (keep Osteichthyes, adjust small pelagics)
+# 0.5541475 (keep Osteichthyes, no adjustment to small pelagics)
 
 #########################################
 # Plot n studies (and n farms) per taxa group vs production (shape = taxa group)
