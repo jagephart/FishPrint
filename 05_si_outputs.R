@@ -81,7 +81,7 @@ wild_prod_clean <- fishstat_dat %>%
   filter(source_name_en == "Capture production") %>%
   filter(isscaap_group %in% non_human_isscaap == FALSE) %>%
   filter(is.na(quantity)==FALSE) %>%
-  #filter(species_scientific_name != "Osteichthyes") %>%
+  filter(species_scientific_name != "Osteichthyes") %>%
   # Identify rows that are part of this study
   mutate(taxa_group_name = case_when(isscaap_group %in% c("Mussels", "Oysters", "Scallops, pectens", "Clams, cockles, arkshells")  ~ "bivalves",
                                      isscaap_group == "Squids, cuttlefishes, octopuses"  ~ "cephalopods",
@@ -101,7 +101,7 @@ wild_prod_clean <- fishstat_dat %>%
 wild_prod_by_taxa <- wild_prod_clean %>%
   group_by(taxa_group_name) %>%
   summarise(taxa_prod = sum(quantity, na.rm = TRUE)) %>%
-  ungroup() #%>%
+  ungroup() %>%
   mutate(taxa_prod = if_else(taxa_group_name == "small pelagic fishes", true = taxa_prod * .638, false = taxa_prod))
 
 # How much of total production do our wild capture taxa groupings represent?
@@ -116,10 +116,37 @@ wild_prod_by_taxa %>%
 # 0.5541475 (keep Osteichthyes, no adjustment to small pelagics)
 
 # Removing non-human isscaap groups:
-# 0.6724095 (filter Osteichthyes, adjust small pelagics)
-# 0.6445885 (filter Osteichthyes, no adjustment to small pelagics)
+# 0.6445885 (filter Osteichthyes, adjust small pelagics)
+# 0.6724095 (filter Osteichthyes, no adjustment to small pelagics)
 # 0.5306052 (keep Osteichthyes, adjust small pelagics)
 # 0.5612758 (keep Osteichthyes, no adjustment to small pelagics)
+
+# CHECK CODE:
+# wild_study <- wild_prod_by_taxa %>%
+#   filter(taxa_group_name != "other_taxa") %>%
+#   pull(taxa_prod) %>% sum()
+# 
+# wild_global <- wild_prod_by_taxa %>%
+#   pull(taxa_prod) %>% sum()
+# 
+# wild_study / wild_global
+
+
+# How much of total capture AND aquaculture production do our taxa groupings represent?
+global_total <- prod_by_taxa %>%
+  bind_rows(wild_prod_by_taxa) %>%
+  select(-plot_name) %>%
+  pull(taxa_prod) %>% sum()
+
+study_total <- prod_by_taxa %>%
+  bind_rows(wild_prod_by_taxa) %>%
+  filter(taxa_group_name != "other_taxa") %>%
+  select(-plot_name) %>%
+  pull(taxa_prod) %>% sum()
+
+study_total / global_total
+# 0.6335239
+
 #########################################
 # Plot n studies (and n farms) per taxa group vs production (shape = taxa group)
 # CHOOSE n_type: sum of "n_farms" or "n_studies"
