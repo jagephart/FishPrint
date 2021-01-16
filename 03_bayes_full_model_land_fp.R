@@ -129,9 +129,9 @@ sci_to_tx <- lca_model_dat %>%
 # FEED IMPACT CONSTANTS: need to include both land and water constants in the model
 
 # Choose allocation method
-set_allocation <- "Mass"
+#set_allocation <- "Mass"
 #set_allocation <- "Gross energy content"
-#set_allocation <- "Economic"
+set_allocation <- "Economic"
 
 fp_dat <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv")) %>%
   filter(Allocation == set_allocation) %>%
@@ -184,7 +184,7 @@ slice_where_tx <- c(0, slice_where_tx)
 # Set data for stan:
 # NO PRIORS
 # stan_data <- list(N = N,
-#                   N_SCI = N_SCI, 
+#                   N_SCI = N_SCI,
 #                   n_to_sci = n_to_sci,
 #                   N_TX = N_TX,
 #                   sci_to_tx = sci_to_tx,
@@ -202,7 +202,7 @@ slice_where_tx <- c(0, slice_where_tx)
 
 # WITH PRIORS
 stan_data <- list(N = N,
-                  N_SCI = N_SCI, 
+                  N_SCI = N_SCI,
                   n_to_sci = n_to_sci,
                   N_TX = N_TX,
                   sci_to_tx = sci_to_tx,
@@ -296,8 +296,8 @@ model {
   // weak priors on sigma
   tx_sigma_fcr ~ cauchy(0, 1);
   sci_sigma_fcr ~ cauchy(0, 1);
-  tx_sigma_land ~ cauchy(0, 10000);
-  sci_sigma_land ~ cauchy(0, 10000);
+  //tx_sigma_land ~ cauchy(0, 1000); // 10,000 - 3 hours; removing prior - 1.5 hours; try 1,000
+  //sci_sigma_land ~ cauchy(0, 1000);
 
   // likelihood
   // normal model sci-name and taxa-level for FCR
@@ -381,8 +381,7 @@ start_sampling <- Sys.time()
 fit_no_na <- sampling(object = no_na_mod, 
                       data = stan_data, 
                       cores = 4, 
-                      seed = "11729", 
-                      iter = 2500, 
+                      iter = 2000, 
                       control = list(adapt_delta = 0.99, max_treedepth = 15))
 #fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 5000, control = list(adapt_delta = 0.99))
 end_sampling <- Sys.time()
@@ -409,9 +408,13 @@ save.image(file = file.path(outdir, paste(Sys.Date(), "_full-model-posterior_", 
 
 # SET THEME
 x <- seq(0, 1, length.out = 16)
-base_color <- "#A9D158"
+base_color <- "#57D182"
+library(scales)
 show_col(seq_gradient_pal(base_color, "white")(x)) # Get hexadecimals for other colors
-interval_palette <- c("#D9EAB2", "#C2DD86", "#A9D158") # Order: light to dark
+# COMPLEMENTARY GREEN (Azote guidelines)
+interval_palette <- c("#B7EBC4", "#8BDEA3", "#57D182")
+# PRIMARY GREEN:
+#interval_palette <- c("#D9EAB2", "#C2DD86", "#A9D158") # Order: light to dark
 full_taxa_name_order <- c("plants", "bivalves", "shrimp", "misc marine fishes", "milkfish", "salmon", "misc diadromous fishes", "trout", "tilapia", "catfish", "misc carps", "bighead/silverhead carp")
 
 sci_plot_theme <- theme(title = element_text(size = 18),

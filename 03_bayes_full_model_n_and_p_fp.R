@@ -40,7 +40,10 @@ interval_palette <- c("#FFB4C4", "#FF86A4", "#FC5185") # Order: light to dark
 # fish_element <- "N_t_liveweight_t"
 # impact <- "Marine eutrophication"
 # feed_element <- "N"
-# interval_palette <- c("#FFEDAD", "#FFE37D", "#FFD947") # Order: light to dark
+## PRIMARY COLOR (Azote guideliens)
+## interval_palette <- c("#FFEDAD", "#FFE37D", "#FFD947") # Order: light to dark
+# COMPLEMENTARY COLOR
+# interval_palette <- c("#FFD5A9", "#FFBD79", "#FFA647")
 
 # FIX IT - decide how much replication to create in the dataset (e.g., n-farms vs sqrt-n-farms)
 # Load Data
