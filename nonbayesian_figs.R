@@ -26,6 +26,8 @@ stressor_species_summary_plot <- stressor_species_summary %>%
                names_to = c("source", "stressor")) %>%
   filter(!is.na(value)) 
 
+stressor_species_summary_plot$stressor[stressor_species_summary_plot$stressor == "GHG"] <- "ghg"
+
 # Plot GHG by taxa
 ggplot(stressor_species_summary_plot %>% filter(stressor %in% c("GHG", "ghg")),
        aes(x = value, y = taxa)) +
