@@ -75,7 +75,7 @@ lca_model_dat <- lca_full_dat %>%
 # Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
 source("Functions.R")
 priors_csv <- clean_priors("Priors - Nonfeed.csv") %>%
-  select(contains(c("taxa", "FCR"))) %>%
+  #select(contains(c("taxa", "FCR"))) %>%
   arrange(taxa) # Arrange by taxa so that index matches tx in lca_model_dat
 
 # Format priors for STAN
@@ -85,6 +85,11 @@ priors <- priors_csv$Ave.FCR[prior_vec_index]
 # priors_1 <- priors_csv$Ave.FCR[1]
 # priors_4 <- priors_csv$Ave.FCR[4]
 # priors_6_12 <- priors_csv$Ave.FCR[6:12]
+
+# Try land priors:
+# prior_vec_index_land <- which(is.na(priors_csv$Mean.Annual.Yield.m2.per.tonne)==FALSE)
+# priors_land <- priors_csv$Mean.Annual.Yield.m2.per.tonne[prior_vec_index_land]
+# priors_land_sigma <- 10^(floor(log10(priors_land)))
 
 #####################
 
@@ -126,29 +131,6 @@ sci_to_tx <- lca_model_dat %>%
   unique() %>%
   pull(tx)
 
-# FEED IMPACT CONSTANTS: need to include both land and water constants in the model
-
-# Choose allocation method
-#set_allocation <- "Mass"
-#set_allocation <- "Gross energy content"
-set_allocation <- "Economic"
-
-fp_dat <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv")) %>%
-  filter(Allocation == set_allocation) %>%
-  mutate(ave_stressor_per_tonne = ave_stressor * 1000) # Multiply by 1000 to convert to kg CO2 per tonne
-
-# ORDER OF feed_weights data vector: soy, crops, fmfo, animal
-head(feed_weights)
-# ORDER of footprint data vector should match this:
-set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
-
-land_feed_fp <- fp_dat %>%
-  filter(Impact.category == "Land use") %>% 
-  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
-  select(ave_stressor_per_tonne) %>%
-  as.matrix() %>%
-  c()
-
 # WEIGHTS:
 # Get sci-level weightings for generating taxa-level quantities:
 # IMPORTANT arrange by clean_sci_name so that the order matches data
@@ -177,30 +159,35 @@ n_sci_in_tx <- lca_model_dat %>%
 slice_where_tx <- cumsum(n_sci_in_tx) # These are the breaks in where_tx corresponding to each taxa level - need this to split up where_tx
 slice_where_tx <- c(0, slice_where_tx)
 
+# FEED IMPACT CONSTANTS: need to include both land and water constants in the model
+
+# Choose allocation method
+set_allocation <- "Mass"
+#set_allocation <- "Gross energy content"
+#set_allocation <- "Economic"
+
+fp_dat <- read.csv(file.path(datadir, "weighted_feed_fp.csv")) %>%
+  filter(Allocation == set_allocation) %>%
+  mutate(ave_stressor_per_tonne = ave_stressor * 1000) # Multiply by 1000 to convert to kg CO2 per tonne
+
+# ORDER OF feed_weights data vector: soy, crops, fmfo, animal
+head(feed_weights)
+# ORDER of footprint data vector should match this:
+set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
+
+land_feed_fp <- fp_dat %>%
+  filter(Impact.category == "Land use") %>% 
+  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
+  select(ave_stressor_per_tonne) %>%
+  as.matrix() %>%
+  c()
+
 ######################################################################################################
 # STEP 2: RUN STAN MODEL
 
 # FIX IT - remove data related to water impact model since this is now separated out
 # Set data for stan:
 # NO PRIORS
-# stan_data <- list(N = N,
-#                   N_SCI = N_SCI,
-#                   n_to_sci = n_to_sci,
-#                   N_TX = N_TX,
-#                   sci_to_tx = sci_to_tx,
-#                   fcr = fcr,
-#                   K = K,
-#                   feed_weights = feed_weights,
-#                   land = land,
-#                   sci_kappa = sci_kappa,
-#                   tx_kappa = tx_kappa,
-#                   land_feed_fp = land_feed_fp,
-#                   sci_w = sci_w,
-#                   where_tx = where_tx,
-#                   n_sci_in_tx = n_sci_in_tx,
-#                   slice_where_tx = slice_where_tx)
-
-# WITH PRIORS
 stan_data <- list(N = N,
                   N_SCI = N_SCI,
                   n_to_sci = n_to_sci,
@@ -216,9 +203,50 @@ stan_data <- list(N = N,
                   sci_w = sci_w,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
-                  slice_where_tx = slice_where_tx,
-                  priors = priors,
-                  prior_vec_index = prior_vec_index)
+                  slice_where_tx = slice_where_tx)
+
+# WITH FCR PRIORS
+# stan_data <- list(N = N,
+#                   N_SCI = N_SCI,
+#                   n_to_sci = n_to_sci,
+#                   N_TX = N_TX,
+#                   sci_to_tx = sci_to_tx,
+#                   fcr = fcr,
+#                   K = K,
+#                   feed_weights = feed_weights,
+#                   land = land,
+#                   sci_kappa = sci_kappa,
+#                   tx_kappa = tx_kappa,
+#                   land_feed_fp = land_feed_fp,
+#                   sci_w = sci_w,
+#                   where_tx = where_tx,
+#                   n_sci_in_tx = n_sci_in_tx,
+#                   slice_where_tx = slice_where_tx,
+#                   priors = priors,
+#                   prior_vec_index = prior_vec_index)
+
+# WITH PRIORS (FCR AND LAND)
+# stan_data <- list(N = N,
+#                   N_SCI = N_SCI,
+#                   n_to_sci = n_to_sci,
+#                   N_TX = N_TX,
+#                   sci_to_tx = sci_to_tx,
+#                   fcr = fcr,
+#                   K = K,
+#                   feed_weights = feed_weights,
+#                   land = land,
+#                   sci_kappa = sci_kappa,
+#                   tx_kappa = tx_kappa,
+#                   land_feed_fp = land_feed_fp,
+#                   sci_w = sci_w,
+#                   where_tx = where_tx,
+#                   n_sci_in_tx = n_sci_in_tx,
+#                   slice_where_tx = slice_where_tx,
+#                   priors = priors,
+#                   prior_vec_index = prior_vec_index,
+#                   priors_land = priors_land, 
+#                   prior_vec_index_land = prior_vec_index_land,
+#                   priors_land_sigma = priors_land_sigma)
 
 # NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {
@@ -237,8 +265,11 @@ stan_no_na <- 'data {
   int tx_kappa[N_TX]; // number of observations per taxa group
   
   // PRIORS
-  vector[11] priors;
-  int prior_vec_index[11];
+  //vector[11] priors; // priors on FCR
+  //int prior_vec_index[11];
+  //vector[9] priors_land; // priors on land
+  //int prior_vec_index_land[9];
+  //vector[9] priors_land_sigma; // different scales for each taxa
   
   // data for on-farm footrpint
   vector<lower=0>[N] land; // data
@@ -256,8 +287,8 @@ parameters {
   // FCR model
   vector[N_TX] tx_mu_fcr; // putting lower=0 bounds will cause mu_fcr to skew positive when zero (eg, plants, bivalves)
   vector[N_SCI] sci_mu_fcr;
-  real tx_sigma_fcr;
-  real sci_sigma_fcr;
+  real<lower=0> tx_sigma_fcr;
+  real<lower=0> sci_sigma_fcr;
   
   // Feed proportion model:
   simplex[K] sci_theta[N_SCI]; // vectors of estimated sci-level feed weight simplexes
@@ -266,8 +297,8 @@ parameters {
   // On farm model
   vector[N_TX] tx_land_farm; // putting lower=0 bounds will cause tx_land_farm to skew positive when zero
   vector[N_SCI] sci_land_farm;
-  real tx_sigma_land;
-  real sci_sigma_land;
+  real<lower=0> tx_sigma_land;
+  real<lower=0> sci_sigma_land;
 }
 transformed parameters {
   // define params for dirichlet model for feed proportions
@@ -287,7 +318,8 @@ transformed parameters {
 }
 model {
   // PRIORS
-  tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
+  //tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
+  //tx_land_farm[prior_vec_index_land] ~ normal(priors_land, priors_land_sigma);
 
   // example priors for dirichlet model for feed proportions
   // sci_phi defined as sci_phi[n_to_sci][K]
@@ -296,8 +328,8 @@ model {
   // weak priors on sigma
   tx_sigma_fcr ~ cauchy(0, 1);
   sci_sigma_fcr ~ cauchy(0, 1);
-  //tx_sigma_land ~ cauchy(0, 1000); // 10,000 - 3 hours; removing prior - 1.5 hours; try 1,000
-  //sci_sigma_land ~ cauchy(0, 1000);
+  tx_sigma_land ~ cauchy(0, 10000); // helps with convergence when there are NO FCR priors
+  sci_sigma_land ~ cauchy(0, 10000);
 
   // likelihood
   // normal model sci-name and taxa-level for FCR
@@ -382,6 +414,7 @@ fit_no_na <- sampling(object = no_na_mod,
                       data = stan_data, 
                       cores = 4, 
                       iter = 2000, 
+                      seed = "11729",
                       control = list(adapt_delta = 0.99, max_treedepth = 15))
 #fit_no_na <- sampling(object = no_na_mod, data = stan_data, cores = 4, iter = 5000, control = list(adapt_delta = 0.99))
 end_sampling <- Sys.time()

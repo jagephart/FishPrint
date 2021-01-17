@@ -14,34 +14,34 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # Set filenames:
 # Mass allocation
-c_results <- "PRIORS/Carbon/2021-01-11_full-model-posterior_Global warming potential_Mass-allocation.RData"
-n_results <- "PRIORS/Nitrogen/2021-01-11_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-p_results <- "PRIORS/Phosphorus/2021-01-11_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-land_results <- "PRIORS/Land/2021-01-11_full-model-posterior_Land Use_Mass-allocation.RData"
-water_results <- "PRIORS/Water/2021-01-11_full-model-posterior_Water Consumption_Mass-allocation.RData"
-wild_results <- "PRIORS/Wild/2021-01-12_full-model-posterior_Wild-Capture-ghg.RData"
+# c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
+# n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+# p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+# land_results <- "PRIORS/Land/2021-01-16_full-model-posterior_Land Use_Mass-allocation.RData"
+# water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Mass-allocation.RData"
+# wild_results <- "PRIORS/Wild/2021-01-16_full-model-posterior_Wild-Capture-ghg.RData"
 
 # Gross energy allocation (no wild capture results)
-# c_results <- "PRIORS/Carbon/2021-01-11_full-model-posterior_Global warming potential_Gross energy content-allocation.RData"
-# n_results <- "PRIORS/Nitrogen/2021-01-11_full-model-posterior_Marine eutrophication_Gross energy content-allocation.RData"
-# p_results <- "PRIORS/Phosphorus/2021-01-11_full-model-posterior_Freshwater eutrophication_Gross energy content-allocation.RData"
-# land_results <- "PRIORS/Land/2021-01-12_full-model-posterior_Land Use_Gross energy content-allocation.RData"
-# water_results <- "PRIORS/Water/2021-01-11_full-model-posterior_Water Consumption_Gross energy content-allocation.RData"
+# c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Gross energy content-allocation.RData"
+# n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Gross energy content-allocation.RData"
+# p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Gross energy content-allocation.RData"
+# land_results <- "PRIORS/Land/2021-01-16_full-model-posterior_Land Use_Gross energy content-allocation.RData"
+# water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Gross energy content-allocation.RData"
 
 # Economic allocation (no wild capture results)
-# c_results <- "PRIORS/Carbon/2021-01-11_full-model-posterior_Global warming potential_Economic-allocation.RData"
-# n_results <- "PRIORS/Nitrogen/2021-01-11_full-model-posterior_Marine eutrophication_Economic-allocation.RData"
-# p_results <- "PRIORS/Phosphorus/2021-01-11_full-model-posterior_Freshwater eutrophication_Economic-allocation.RData"
-# land_results <- "PRIORS/Land/2021-01-13_full-model-posterior_Land Use_Economic-allocation.RData"
-# water_results <- "PRIORS/Water/2021-01-11_full-model-posterior_Water Consumption_Economic-allocation.RData"
+# c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Economic-allocation.RData"
+# n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Economic-allocation.RData"
+# p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Economic-allocation.RData"
+# land_results <- "PRIORS/Land/2021-01-16_full-model-posterior_Land Use_Economic-allocation.RData"
+# water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Economic-allocation.RData"
 
 # Mass allocation NO PRIORS
-# c_results <- "NO PRIORS/Carbon/2021-01-11_full-model-posterior_Global warming potential_Mass-allocation.RData"
-# n_results <- "NO PRIORS/Nitrogen/2021-01-11_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-# p_results <- "NO PRIORS/Phosphorus/2021-01-11_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-# land_results <- "NO PRIORS/Land/2021-01-12_full-model-posterior_Land Use_Mass-allocation.RData"
-# water_results <- "NO PRIORS/Water/2021-01-11_full-model-posterior_Water Consumption_Mass-allocation.RData"
-# wild_results <- "NO PRIORS/Wild/2021-01-13_full-model-posterior_Wild-capture-ghg.RData"
+c_results <- "NO PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
+n_results <- "NO PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+p_results <- "NO PRIORS/Phosphorus/2021-01-15_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+land_results <- "NO PRIORS/Land/2021-01-17_full-model-posterior_Land Use_Mass-allocation.RData"
+water_results <- "NO PRIORS/Water/2021-01-16_full-model-posterior_Water Consumption_Mass-allocation.RData"
+wild_results <- "NO PRIORS/Wild/2021-01-16_full-model-posterior_Wild-capture-ghg.RData"
 
 ######################################################################################################
 # Carbon
@@ -73,9 +73,11 @@ tx_index_key <- lca_model_dat %>%
                                     taxa == "misc_fresh" ~ "misc freshwater",
                                     taxa == "misc_marine" ~ "misc marine",
                                     taxa == "fresh_crust" ~ "freshwater crust",
+                                    taxa == "plants" ~ "seaweeds",
                                     TRUE ~ taxa),
          taxa = as.factor(taxa),
-         full_taxa_name = as.factor(full_taxa_name))
+         full_taxa_name = as.factor(full_taxa_name)) %>%
+  mutate(source = "Farmed")
 
 
 # Set taxa order from low to high GHG (keep this order for all plots)
@@ -313,7 +315,8 @@ wild_index_key <- wild_dat_new_weights %>%
                                taxa == "salmonids" ~ "salmon, etc",
                                taxa == "shrimps" ~ "shrimp",
                                taxa == "small pelagic fishes" ~ "herring, etc"
-                               ))
+                               )) %>%
+  mutate(source = "Wild")
 
 # With out etc
 # mutate(plot_taxa = case_when(taxa == "bivalves" ~ "bivalves",
@@ -356,14 +359,35 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
                            "p_water",
                            "p_wild"))])
 
+# COMBINE INTO PANEL WITH FACET LABELS:
+# USE: facet_grid(switch = "y") # "switch" moves y-axis label from right to left side
 
-# COMBINE INTO PANEL:
 # 6 panel plot:
-p_left <- plot_grid(p_carbon, p_wild, ncol = 1, nrow = 2, align = "hv", labels = c("a", "d"))
-p_right <- plot_grid(p_nitrogen, p_phosphorus, p_water, p_land, ncol = 2, nrow = 2, align = "h", labels = c("b", "c", "e", "f"), rel_widths = c(1.3, 1))
+p_carbon_facet <- p_carbon + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
+p_wild_facet <- p_wild + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
+p_left <- plot_grid(p_carbon_facet, p_wild_facet, ncol = 1, nrow = 2, align = "hv", labels = c("a", "d"), axis = "l")
+p_water_facet <- p_water + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
+p_right <- plot_grid(p_nitrogen, p_phosphorus, p_water_facet, p_land, ncol = 2, nrow = 2, align = "h", axis = "b", labels = c("b", "c", "e", "f"), rel_widths = c(1.3, 1))
 plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
-ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm")
-ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
+ggsave(filename = file.path(outdir, "plot_Figure-X_facet-labels.png"), width = 183, height = 90, units = "mm")
+ggsave(filename = file.path(outdir, "plot_Figure-X_facet-labels.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
+
+# 5 panel plot:
+# p_carbon_facet <- p_carbon + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
+# p_water_facet <- p_water + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
+# p_left <- plot_grid(p_carbon_facet, p_water_facet, nrow = 2, ncol = 1, labels = c("a", "d"), align = "hv", axis = "l")
+# p_right <- plot_grid(p_nitrogen, p_phosphorus, p_land, ncol = 2, nrow = 2, align = "h", labels = c("b", "c", "e"))
+# plot_grid(p_left, p_right, ncol = 2, nrow = 1, align = "v", rel_widths = c(0.6, 1))
+# ggsave(filename = file.path(outdir, "plot_Figure-X_facet-labels.png"), width = 183, height = 90, units = "mm")
+# ggsave(filename = file.path(outdir, "plot_Figure-X_facet-labels.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
+
+# NO FACET LABELS:
+# 6 panel plot:
+# p_left <- plot_grid(p_carbon, p_wild, ncol = 1, nrow = 2, align = "hv", labels = c("a", "d"))
+# p_right <- plot_grid(p_nitrogen, p_phosphorus, p_water, p_land, ncol = 2, nrow = 2, align = "h", labels = c("b", "c", "e", "f"), rel_widths = c(1.3, 1))
+# plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
+#ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm")
+#ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
 
 # 5 panel plot
 # p_left <- plot_grid(p_carbon, p_water, nrow = 2, ncol = 1, labels = c("a", "d"))

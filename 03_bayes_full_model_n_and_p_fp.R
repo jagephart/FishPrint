@@ -40,12 +40,9 @@ interval_palette <- c("#FFB4C4", "#FF86A4", "#FC5185") # Order: light to dark
 # fish_element <- "N_t_liveweight_t"
 # impact <- "Marine eutrophication"
 # feed_element <- "N"
-## PRIMARY COLOR (Azote guideliens)
-## interval_palette <- c("#FFEDAD", "#FFE37D", "#FFD947") # Order: light to dark
-# COMPLEMENTARY COLOR
-# interval_palette <- c("#FFD5A9", "#FFBD79", "#FFA647")
+# interval_palette <- c("#FFD5A9", "#FFBD79", "#FFA647") # COMPLEMENTARY COLOR - use orange instead of yellow
+## interval_palette <- c("#FFEDAD", "#FFE37D", "#FFD947") ## PRIMARY COLOR (Azote guideliens)# Order: light to dark
 
-# FIX IT - decide how much replication to create in the dataset (e.g., n-farms vs sqrt-n-farms)
 # Load Data
 lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
 
@@ -93,6 +90,34 @@ lca_model_dat <- lca_full_dat %>%
          sci = as.numeric(clean_sci_name),
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
+
+
+# CHOOSE FEED IMPACT CONSTANT:
+# current looping code doesn't work, need to add Nitrogen vs Phosphorus parameters from top of code to list in save.image
+# for (i in c("Mass", "Gross energy content", "Economic")){
+# set_allocation <- i
+
+# Choose allocation method MANUALLY:
+#set_allocation <- "Mass"
+#set_allocation <- "Gross energy content"
+set_allocation <- "Economic"
+
+# IMPORTANT - multiply all values by 1000 to convert to kg CO2 per tonne (currently in kg CO2 per kg)
+  fp_dat <- read.csv(file.path(datadir, "weighted_feed_fp.csv")) %>%
+    filter(Allocation == set_allocation) %>%
+    mutate(ave_stressor_per_tonne = ave_stressor * 1000)
+  
+  # ORDER OF feed_weights data vector: soy, crops, fmfo, animal
+  #head(feed_weights)
+  # ORDER of footprint data vector should match this:
+  set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
+  
+  fp_constant <- fp_dat %>%
+    filter(Impact.category == impact) %>% 
+    arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
+    select(ave_stressor_per_tonne) %>%
+    as.matrix() %>%
+    c()
 
 # Get priors on taxa-level FCR
 # Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
@@ -153,32 +178,6 @@ fish_content <- lca_model_dat %>%
   unique() %>%
   pull(!!sym(fish_element))
 
-# FEED IMPACT CONSTANTS (for off-farm model):
-# Choose Impact.category - this is set at the top of the code
-#impact <- "Freshwater eutrophication" # i.e., Phosphorus impact
-#impact <- "Marine eutrophication" # i.e., Nitrogen impact
-
-# Choose allocation method
-set_allocation <- "Mass"
-#set_allocation <- "Gross energy content"
-#set_allocation <- "Economic"
-
-# IMPORTANT - multiply all values by 1000 to convert to kg CO2 per tonne (currently in kg CO2 per kg)
-fp_dat <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv")) %>%
-  filter(Allocation == set_allocation) %>%
-  mutate(ave_stressor_per_tonne = ave_stressor * 1000)
-
-# ORDER OF feed_weights data vector: soy, crops, fmfo, animal
-head(feed_weights)
-# ORDER of footprint data vector should match this:
-set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
-
-fp_constant <- fp_dat %>%
-  filter(Impact.category == impact) %>% 
-  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
-  select(ave_stressor_per_tonne) %>%
-  as.matrix() %>%
-  c()
 
 # FEED CONTENT CONSTANTS (for on-farm model):
 source("Functions.R") 
@@ -237,25 +236,6 @@ slice_where_tx <- c(0, slice_where_tx)
 
 # Set data for stan:
 # NO PRIORS
-stan_data <- list(N = N,
-                  N_SCI = N_SCI,
-                  n_to_sci = n_to_sci,
-                  N_TX = N_TX,
-                  sci_to_tx = sci_to_tx,
-                  fcr = fcr,
-                  K = K,
-                  feed_weights = feed_weights,
-                  sci_kappa = sci_kappa,
-                  tx_kappa = tx_kappa,
-                  fp_constant = fp_constant,
-                  fish_content = fish_content,
-                  feed_content = feed_content,
-                  sci_w = sci_w,
-                  where_tx = where_tx,
-                  n_sci_in_tx = n_sci_in_tx,
-                  slice_where_tx = slice_where_tx)
-
-# WITH PRIORS
 # stan_data <- list(N = N,
 #                   N_SCI = N_SCI,
 #                   n_to_sci = n_to_sci,
@@ -272,9 +252,28 @@ stan_data <- list(N = N,
 #                   sci_w = sci_w,
 #                   where_tx = where_tx,
 #                   n_sci_in_tx = n_sci_in_tx,
-#                   slice_where_tx = slice_where_tx,
-#                   priors = priors,
-#                   prior_vec_index = prior_vec_index)
+#                   slice_where_tx = slice_where_tx)
+
+#WITH PRIORS
+stan_data <- list(N = N,
+                  N_SCI = N_SCI,
+                  n_to_sci = n_to_sci,
+                  N_TX = N_TX,
+                  sci_to_tx = sci_to_tx,
+                  fcr = fcr,
+                  K = K,
+                  feed_weights = feed_weights,
+                  sci_kappa = sci_kappa,
+                  tx_kappa = tx_kappa,
+                  fp_constant = fp_constant,
+                  fish_content = fish_content,
+                  feed_content = feed_content,
+                  sci_w = sci_w,
+                  where_tx = where_tx,
+                  n_sci_in_tx = n_sci_in_tx,
+                  slice_where_tx = slice_where_tx,
+                  priors = priors,
+                  prior_vec_index = prior_vec_index)
 
 # NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {
@@ -293,8 +292,8 @@ stan_no_na <- 'data {
   int tx_kappa[N_TX]; // number of observations per taxa group
 
   // PRIORS
-  //vector[11] priors;
-  //int prior_vec_index[11];
+  vector[11] priors;
+  int prior_vec_index[11];
 
   // constants to apply to feed footrpint
   vector[K] fp_constant;
@@ -338,7 +337,7 @@ transformed parameters {
 }
 model {
   // PRIORS
-  //tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
+  tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
 
   // example priors for dirichlet model for feed proportions
   // sci_phi defined as sci_phi[n_to_sci][K]
@@ -812,6 +811,9 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 #   tx_plot_theme + 
 #   labs(x = units_for_plot, y = "", title = "Total (on and off-farm) impact", color = "taxa group")
 # ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+#rm(fit_no_na) # Clear fit-no-na before restarting loop
+# } # loop currently not working - End Loop through allocation_method: for (i in c("Mass", "Gross energy content", "Economic")){
 
 ######################################################################################################
 # NEXT: Before clearing workspace, use 04_plot_common_outputs.R - plot other intermediate-level calculations (these are universally shared among all models)
