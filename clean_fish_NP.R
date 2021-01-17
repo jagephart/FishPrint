@@ -383,21 +383,19 @@ fishNutrition <- fishNutrition %>%
   mutate(N_t_liveweight_t = (N_avg/100)*(1-(Water_content/100)),
          P_t_liveweight_t = (P_avg/100)*(1-(Water_content/100)))
 
-# Manually add aquatic plants from Alon's calculation (already in wet weight)
-fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Laminaria digitata"] <- 1.37/100
-fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Laminaria digitata"] <- 0.2320/100
+# Manually add aquatic plants from Alon's calculation (use dry weight - from aquatic_plants_N_P.xls)
+fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Laminaria digitata"] <- 6.85/100
+fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Laminaria digitata"] <- 1.16/100
 
-fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Saccharina latissima"] <- 1.21/100
-fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Saccharina latissima"] <- 0.1555/100
+fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Saccharina latissima"] <- 3.46/100
+fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Saccharina latissima"] <- 0.44/100
 
-ave_plant_N <- ((1.37+1.21)/2)/100
-ave_plant_P <- ((0.2320+0.1555)/2)/100
 
-fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Macrocystis pyrifera"] <- ave_plant_N
-fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Macrocystis pyrifera"] <- ave_plant_P
+fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Macrocystis pyrifera"] <- 2.87/100
+fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Macrocystis pyrifera"] <- 0.78/100
 
-fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Gracilaria chilensis"] <- ave_plant_N
-fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Gracilaria chilensis"] <- ave_plant_P
+fishNutrition$N_t_liveweight_t[fishNutrition$clean_sci_name == "Gracilaria chilensis"] <- 2.69/100
+fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Gracilaria chilensis"] <- 1.82/100
 
 fishNutrition <- fishNutrition %>%
   select(clean_sci_name, N_t_liveweight_t, P_t_liveweight_t)

@@ -25,7 +25,7 @@ taxa_weights <- read.csv(file.path(datadir, "aqua_prod_weightings.csv"))
 #_______________________________________________________________________________________________________________________#
 # Calculate feed-associated stressors 
 #_______________________________________________________________________________________________________________________#
-feed_fp <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv"))
+feed_fp <- read.csv(file.path(datadir, "weighted_feed_fp.csv"))
 # Change names to match df
 feed_fp <- feed_fp %>%
   mutate(feed_type = case_when(

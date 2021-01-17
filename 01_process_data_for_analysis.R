@@ -213,7 +213,7 @@ weighted_crop <- feed_fp %>%
 #   # If weighting ingredient types, do here along with country weightings
 #   group_by(Input.type, Impact.category, Allocation, Units) %>%
 #   summarise(ave_stressor = mean(Value, na.rm = TRUE))
-# 
+
 weightings <-  faostat %>%
   filter(Unit == "tonnes") %>%
   filter(Item %in% c("Poultry Meat")) %>%
@@ -249,37 +249,36 @@ weighted_chicken <- feed_fp %>%
 weighted_livestock <- weighted_chicken
 
 # Fishery products
-# UN Comtrade data for 2015
-fmfo_trade <- read.csv(file.path(datadir, "FMFO_trade.csv"))
-weightings <- fmfo_trade %>% 
-  filter(!(Importer %in% c("Other Asia, nes", "Areas, nes", "Other Europe, nes", "Free Zones"))) %>%
-  filter(!(Exporter %in% c("Other Asia, nes", "Areas, nes", "Other Europe, nes", "Free Zones")))%>% 
-  group_by(Exporter.ISO) %>% 
-  summarise(Exports = sum(Max.Weight.Live, na.rm = TRUE)) %>% 
-  mutate(weighting = Exports/sum(Exports)) %>%
-  select("iso3c" = "Exporter.ISO", weighting)
+# # UN Comtrade data for 2015
+# fmfo_trade <- read.csv(file.path(datadir, "FMFO_trade.csv"))
+# Use landings weightings instead of trade weightings
+fmfo_prod <- read.csv(file.path(datadir, "fish_weightings.csv"))
+
+# weightings <- fmfo_trade %>% 
+#   filter(!(Importer %in% c("Other Asia, nes", "Areas, nes", "Other Europe, nes", "Free Zones"))) %>%
+#   filter(!(Exporter %in% c("Other Asia, nes", "Areas, nes", "Other Europe, nes", "Free Zones")))%>% 
+#   group_by(Exporter.ISO) %>% 
+#   summarise(Exports = sum(Max.Weight.Live, na.rm = TRUE)) %>% 
+#   mutate(weighting = Exports/sum(Exports)) %>%
+#   select("iso3c" = "Exporter.ISO", weighting)
   
 weighted_fishery <- feed_fp %>%
   filter(Input.type == c("Fishery")) %>% 
-  left_join(weightings, by = "iso3c") %>%
-  filter(is.na(weighting) == FALSE) %>% 
-  group_by(Input.type, Input, Impact.category, Allocation, Units) %>%
+  left_join(fmfo_prod, by = c("Input" = "Name")) %>%
+  group_by(Input.type, Impact.category, Allocation, Units) %>%
   # Normalize weightings to sum to 1
-  mutate(reweighting = weighting/sum(weighting, na.rm = TRUE)) %>%
+  mutate(reweighting = Weighting/sum(Weighting, na.rm = TRUE)) %>%
   summarise(Value = sum(Value * reweighting)) %>%
-  # If weighting ingredient types, do here along with country weightings
   group_by(Impact.category, Allocation, Units) %>%
   summarise(ave_stressor = mean(Value, na.rm = TRUE))
 
 weighted_fishbyproduct <- feed_fp %>%
   filter(Input.type == c("Fishery by-product")) %>% 
-  left_join(weightings, by = "iso3c") %>%
-  filter(is.na(weighting) == FALSE) %>% 
-  group_by(Input.type, Input, Impact.category, Allocation, Units) %>%
+  left_join(fmfo_prod, by = c("Input" = "Name")) %>%
+  group_by(Input.type,  Impact.category, Allocation, Units) %>%
   # Normalize weightings to sum to 1
-  mutate(reweighting = weighting/sum(weighting, na.rm = TRUE)) %>%
+  mutate(reweighting = Weighting/sum(Weighting, na.rm = TRUE)) %>%
   summarise(Value = sum(Value * reweighting)) %>%
-  # If weighting ingredient types, do here along with country weightings
   group_by(Impact.category, Allocation, Units) %>%
   summarise(ave_stressor = mean(Value, na.rm = TRUE))
 
@@ -294,5 +293,5 @@ weighted_fp <- rbind(weighted_soy, weighted_crop)
 weighted_fp <- rbind(weighted_fp, weighted_livestock)
 weighted_fp <- rbind(weighted_fp, weighted_fish)
 
-write.csv(weighted_fp, file.path(datadir, "20210106_weighted_feed_fp.csv"), row.names = FALSE)
+write.csv(weighted_fp, file.path(datadir, "weighted_feed_fp.csv"), row.names = FALSE)
 

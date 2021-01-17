@@ -60,7 +60,7 @@ df <- df %>%
   left_join(evap, by = "iso3c")
 
 # Load feed data
-feed_fp <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv"))
+feed_fp <- read.csv(file.path(datadir, "weighted_feed_fp.csv"))
 # Change names to match df
 feed_fp <- feed_fp %>%
   mutate(feed_type = case_when(
@@ -171,21 +171,21 @@ plot_perturbation <- perturbation_mean %>%
     taxa == "tilapia" ~ "tilapia",
     taxa == "shrimp" ~ "shrimp",
     taxa == "salmon" ~ "salmon",
-    taxa == "oth_carp" ~ "misc carps",
-    taxa == "misc_marine" ~ "misc marine fishes",
-    taxa == "misc_diad" ~ "misc diad fishes",
+    taxa == "oth_carp" ~ "misc carp",
+    taxa == "misc_marine" ~ "misc marine",
+    taxa == "misc_diad" ~ "misc diad",
     taxa == "milkfish" ~ "milkfish",
-    taxa == "hypoph_carp" ~ "big/silverhead carp",
+    taxa == "hypoph_carp" ~ "big/silverhead",
     taxa == "catfish" ~ "catfish",
     taxa == "bivalves" ~"bivalves",
-    taxa == "plants" ~ "plants"
+    taxa == "plants" ~ "seaweeds"
   ))
 
 plot_perturbation$Parameter <- factor(plot_perturbation$Parameter, levels = c("fcr", "soy", "crops", "animal", "fmfo", "energy", "yield"))
-plot_perturbation$taxa <- factor(plot_perturbation$taxa, levels = c("misc marine fishes", "misc diad fishes",
-                                                    "shrimp", "trout", "milkfish", "salmon", 
-                                                    "tilapia", "catfish", "misc carps", 
-                                                    "big/silverhead carp", "bivalves", "plants"))
+plot_perturbation$taxa <- factor(plot_perturbation$taxa, levels = c("misc diad", "misc marine", 
+                                                    "shrimp", "milkfish", "tilapia", "catfish", 
+                                                    "misc carp", "trout", "salmon", 
+                                                    "big/silverhead", "seaweeds", "bivalves"))
 plot_perturbation$taxa <- factor(plot_perturbation$taxa, levels=rev(levels(plot_perturbation$taxa)))
 
 base_size <- 10
@@ -196,11 +196,16 @@ plot_perturbation$Stressor <- factor(plot_perturbation$Stressor, levels = c("ghg
 label_names <- c("GHG", "Land", "Water", "N", "P")
 names(label_names) <- c("ghg", "land", "water", "N", "P")
 
+plot_perturbation$value[is.na(plot_perturbation$value)] <- 0
+plot_perturbation$value[plot_perturbation$value > 20] <- NA 
+
 fig_4a <- ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
   geom_tile() +
   labs(x = "", y = "") +
   facet_wrap(~Stressor, nrow = 1, labeller = labeller(Stressor = label_names)) +
-  scale_fill_distiller(palette = "RdBu", limit = color_lim, type = "div", na.value = "white") +
+  scale_fill_gradientn(colours = c("#FFD947", "#FFE78B", "#FFF3C4", "#FFFBEC", "#F3F5F6", "#C3CAD3", "#758699", "#364F6B"),
+                       na.value = "black") +
+  guides(fill = guide_colourbar(barwidth = 10, barheight = 0.5)) +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
@@ -502,7 +507,7 @@ fig_4b <- ggplot(scenarios_diff %>%
         plot.subtitle = element_text(size = ceiling(base_size*1.05)))
 
 png("fig_4.png", width = 4.5, height = 8, units = "in", res = 300)
-ggarrange(fig_4a, fig_4b, nrow = 2, heights = c(1.25, 2), labels = c("a", "b"))
+ggarrange(fig_4a, fig_4b, nrow = 2, heights = c(1, 2.25), labels = c("a", "b"))
 dev.off()
 
                             
@@ -511,7 +516,7 @@ dev.off()
 SI_fig_4b_other_scenarios <- ggplot(scenarios_diff %>% 
                    filter(scenario %in% c("Replace FMFO w/ soy & crops", "Replace FMFO w/ deforestation-free soy", 
                                           "Replace FMFO w/ low impact fishery by-products", 
-                                          "All by-products sourced from low impact fisheries",
+                                          #"All by-products sourced from low impact fisheries",
                                           "Zero emission electricity" )), 
                  aes(x = value_percent_change, y = taxa)) +
   geom_point() + 
