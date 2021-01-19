@@ -153,18 +153,6 @@ slice_where_tx <- c(0, slice_where_tx)
 
 # Set data for stan:
 # NO PRIORS
-# stan_data <- list(N = N,
-#                   N_SCI = N_SCI,
-#                   n_to_sci = n_to_sci,
-#                   N_TX = N_TX,
-#                   sci_to_tx = sci_to_tx,
-#                   ghg = ghg,
-#                   sci_w = sci_w,
-#                   where_tx = where_tx,
-#                   n_sci_in_tx = n_sci_in_tx,
-#                   slice_where_tx = slice_where_tx)
-
-# WITH PRIORS
 stan_data <- list(N = N,
                   N_SCI = N_SCI,
                   n_to_sci = n_to_sci,
@@ -174,9 +162,21 @@ stan_data <- list(N = N,
                   sci_w = sci_w,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
-                  slice_where_tx = slice_where_tx,
-                  priors = priors,
-                  prior_vec_index = prior_vec_index)
+                  slice_where_tx = slice_where_tx)
+
+# WITH PRIORS
+# stan_data <- list(N = N,
+#                   N_SCI = N_SCI,
+#                   n_to_sci = n_to_sci,
+#                   N_TX = N_TX,
+#                   sci_to_tx = sci_to_tx,
+#                   ghg = ghg,
+#                   sci_w = sci_w,
+#                   where_tx = where_tx,
+#                   n_sci_in_tx = n_sci_in_tx,
+#                   slice_where_tx = slice_where_tx,
+#                   priors = priors,
+#                   prior_vec_index = prior_vec_index)
 
 # NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {
@@ -191,8 +191,8 @@ stan_no_na <- 'data {
   vector<lower=0>[N] ghg; // data
   
   // PRIORS
-  vector[8] priors;
-  int prior_vec_index[8];
+  //vector[8] priors;
+  //int prior_vec_index[8];
   
   // indices for slicing vectors for calculating weighted means
   vector<lower=0>[N_SCI] sci_w; // sci-level production weights
@@ -209,7 +209,7 @@ parameters {
 }
 model {
   // PRIORS
-  tx_mu_ghg[prior_vec_index] ~ normal(priors, 1000);
+  //tx_mu_ghg[prior_vec_index] ~ normal(priors, 1000);
 
   // example priors for dirichlet model for feed proportions
   // sci_phi defined as sci_phi[n_to_sci][K]

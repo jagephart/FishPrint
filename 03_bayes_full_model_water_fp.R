@@ -97,6 +97,31 @@ lca_model_dat <- lca_full_dat %>%
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
 
+# Choose allocation method:
+# Loop through FEED IMPACT CONSTANTS by allocation_method (just recreate everything after lca_model_dat which was cleared from workspace)
+#for (i in c("Mass", "Gross energy content", "Economic")){
+#set_allocation <- i
+  
+  # OR.. Choose allocation method manually
+  set_allocation <- "Mass"
+  #set_allocation <- "Gross energy content"
+  #set_allocation <- "Economic"
+  
+  fp_dat <- read.csv(file.path(datadir, "weighted_feed_fp.csv")) %>%
+    filter(Allocation == set_allocation) %>%
+    mutate(ave_stressor_per_tonne = ave_stressor * 1000) # Multiply by 1000 to convert to kg CO2 per tonne
+  
+  # ORDER OF feed_weights data vector: soy, crops, fmfo, animal
+  # head(feed_weights) # created later
+  # ORDER of footprint data vector should match this:
+  set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
+  
+  fp_constant <- fp_dat %>%
+    filter(Impact.category == "Water consumption") %>% 
+    arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
+    select(ave_stressor_per_tonne) %>%
+    as.matrix() %>%
+    c()
 # Get priors on taxa-level FCR
 # Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
 source("Functions.R")
@@ -152,29 +177,6 @@ sci_to_tx <- lca_model_dat %>%
   unique() %>%
   pull(tx)
 
-# FEED IMPACT CONSTANTS: need to include both land and water constants in the model
-
-# Choose allocation method
-set_allocation <- "Mass"
-#set_allocation <- "Gross energy content"
-#set_allocation <- "Economic"
-
-fp_dat <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv")) %>%
-  filter(Allocation == set_allocation) %>%
-  mutate(ave_stressor_per_tonne = ave_stressor * 1000) # Multiply by 1000 to convert to kg CO2 per tonne
-
-# ORDER OF feed_weights data vector: soy, crops, fmfo, animal
-head(feed_weights)
-# ORDER of footprint data vector should match this:
-set_fp_order <- c("Soy", "Crop", "Fishery", "Livestock")
-
-fp_constant <- fp_dat %>%
-  filter(Impact.category == "Water consumption") %>% 
-  arrange(match(Input.type, set_fp_order)) %>% # Match index and arrange by custom order
-  select(ave_stressor_per_tonne) %>%
-  as.matrix() %>%
-  c()
-
 # WEIGHTS:
 # Get sci-level weightings for generating taxa-level quantities:
 # IMPORTANT arrange by clean_sci_name so that the order matches data
@@ -227,7 +229,7 @@ stan_data <- list(N = N,
 
 # WITH PRIORS
 # stan_data <- list(N = N,
-#                   N_SCI = N_SCI, 
+#                   N_SCI = N_SCI,
 #                   n_to_sci = n_to_sci,
 #                   N_TX = N_TX,
 #                   sci_to_tx = sci_to_tx,
@@ -434,7 +436,7 @@ save.image(file = file.path(outdir, paste(Sys.Date(), "_full-model-posterior_", 
 # SET THEME
 x <- seq(0, 1, length.out = 16)
 base_color <- "#3FC1C9"
-show_col(seq_gradient_pal(base_color, "white")(x)) # Get hexadecimals for other colors
+#show_col(seq_gradient_pal(base_color, "white")(x)) # Get hexadecimals for other colors
 interval_palette <- c("#B2E2E6", "#80D2D7", "#3FC1C9") # Order: light to dark
 full_taxa_name_order <- c("plants", "bivalves", "shrimp", "misc marine fishes", "milkfish", "salmon", "misc diadromous fishes", "trout", "tilapia", "catfish", "misc carps", "bighead/silverhead carp")
 
@@ -824,5 +826,9 @@ fit_no_na %>%
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "Total (on and off-farm) impact", color = "taxa group")
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
+
+rm(fit_no_na) # clear fit_no_na before restarting loop
+
+#} # End Loop by allocation method: for (i in c("Mass", "Gross energy content", "Economic")){
 
 # BEFORE CLEARING WORKSPACE, run 04_plot_fcr_and_feed at least once (outputs will be the same for all models)

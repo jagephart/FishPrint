@@ -311,7 +311,10 @@ clean_priors <- function(priors_dat){
     ungroup() %>%
     # Manually add other freshwater fishes to catfish
     filter(taxa != "not_grouped") %>%
-    arrange(taxa)
+    arrange(taxa) %>%
+    # Convert units for Yield
+    mutate(Mean.Annual.Yield.m2.per.tonne = 1/(Mean.Annual.Yield.t.ha * 1/10000))
+  
 }
 
 #_____________________________________________________________________________________________________#
