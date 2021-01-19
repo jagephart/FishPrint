@@ -75,18 +75,18 @@ ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index)) +
   theme_clean() +
   facet_wrap(~gear, nrow = length(unique(mm_riskindex_aveghg$gear)))
 
-base_size <- 10
+base_size <- 6
 base_family <- "sans"
 
 cols <- c("#57D182", "#FFD947", "#FFA647", "#70468C")
 
-png("box_1.png", width = 6, height = 5, units = "in", res = 300)
+png("Fig3.png", width = 89, height = 89, units = "mm", res = 300)
 ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index, colour = factor(gear))) +
   geom_point() +
   geom_errorbar(aes(xmin=ghg.ave-(1.96*ghg.se), xmax=ghg.ave+(1.96*ghg.se)), width=.1) +
   scale_color_manual(values = cols) +
   geom_text(aes(x = ghg.ave, y = risk.index, label = mm_species), hjust = 0.2, vjust = -0.7, 
-            size = 3.5, colour = "black") +
+            size = 2, colour = "black") +
   labs(y = "Risk index", x = "kg CO2-eq per tonne", size = "N. Species", colour = "Risk") +
   guides(colour=guide_legend(nrow=2,byrow=TRUE)) + 
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
@@ -103,6 +103,6 @@ ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index, colour = factor(gea
         legend.title = element_blank(), 
         legend.key = element_rect(fill = "white", colour = NA), 
         legend.position="bottom",
-        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
-        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+        plot.title = element_text(size = ceiling(base_size*1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1)))
 dev.off()
