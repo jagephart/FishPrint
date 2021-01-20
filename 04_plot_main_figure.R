@@ -14,12 +14,12 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # Set filenames:
 # Mass allocation
-# c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
-# n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-# p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-# land_results <- "PRIORS/Land/2021-01-16_full-model-posterior_Land Use_Mass-allocation.RData"
-# water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Mass-allocation.RData"
-# wild_results <- "PRIORS/Wild/2021-01-16_full-model-posterior_Wild-Capture-ghg.RData"
+c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
+n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+land_results <- "PRIORS/Land/2021-01-16_full-model-posterior_Land Use_Mass-allocation.RData"
+water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Mass-allocation.RData"
+wild_results <- "PRIORS/Wild/2021-01-16_full-model-posterior_Wild-Capture-ghg.RData"
 
 # Gross energy allocation (no wild capture results)
 # c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Gross energy content-allocation.RData"
@@ -36,15 +36,22 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Economic-allocation.RData"
 
 # Mass allocation NO PRIORS
-c_results <- "NO PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
-n_results <- "NO PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-p_results <- "NO PRIORS/Phosphorus/2021-01-15_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-land_results <- "NO PRIORS/Land/2021-01-17_full-model-posterior_Land Use_Mass-allocation.RData"
-water_results <- "NO PRIORS/Water/2021-01-16_full-model-posterior_Water Consumption_Mass-allocation.RData"
-wild_results <- "NO PRIORS/Wild/2021-01-16_full-model-posterior_Wild-capture-ghg.RData"
+# c_results <- "NO PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
+# n_results <- "NO PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+# p_results <- "NO PRIORS/Phosphorus/2021-01-15_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+# land_results <- "NO PRIORS/Land/2021-01-17_full-model-posterior_Land Use_Mass-allocation.RData"
+# water_results <- "NO PRIORS/Water/2021-01-16_full-model-posterior_Water Consumption_Mass-allocation.RData"
+# wild_results <- "NO PRIORS/Wild/2021-01-16_full-model-posterior_Wild-capture-ghg.RData"
 
 ######################################################################################################
 # Carbon
+
+# Get color for chicken:
+# x <- seq(0, 1, length.out = 16)
+# base_color <- "#A69569"
+# library(scales)
+# show_col(seq_gradient_pal(base_color, "white")(x)) # Get hexadecimals for other colors
+
 load(file.path(outdir, c_results))
 #units_for_plot = "kg CO2-eq per tonne"
 units_for_plot = bquote('kg'~CO[2]*'-eq per tonne')
@@ -116,6 +123,8 @@ p_carbon <- fit_no_na %>%
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_total_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w, xmin = .lower, xmax = .upper)) +
+  # ADD CHICKEN RESULTS:
+  geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 3126, xmax = 3627), fill = "#D6CCB7") +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   geom_hline(yintercept = 1:12, linetype = "dotted") +
@@ -158,6 +167,8 @@ p_land <- fit_no_na %>%
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(., aes(y = full_taxa_name, x = tx_land_total_w, xmin = .lower, xmax = .upper)) +
+  # ADD CHICKEN RESULTS:
+  geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 5794, xmax = 6047), fill = "#D6CCB7") +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_land_total_w)) +
   geom_point(x = 0, y = "bivalves") +
@@ -177,6 +188,7 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 
 ######################################################################################################
 # NITROGEN 
+
 load(file.path(outdir, n_results))
 units_for_plot = "kg N-eq per tonne"
 # PRIMARY COLOR (Azote guidelines)
@@ -194,6 +206,8 @@ p_nitrogen <- fit_no_na %>%
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
+  # ADD CHICKEN RESULTS:
+  geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 77, xmax = 92), fill = "#D6CCB7") +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   geom_hline(yintercept = 1:12, linetype = "dotted") +
@@ -216,6 +230,7 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 
 ######################################################################################################
 # PHOSPHORUS
+
 load(file.path(outdir, p_results))
 units_for_plot = "kg P-eq per tonne"
 interval_palette <- c("#FFB4C4", "#FF86A4", "#FC5185") # Order: light to dark
@@ -230,6 +245,8 @@ p_phosphorus <- fit_no_na %>%
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
+  # ADD CHICKEN RESULTS:
+  geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 11, xmax = 16), fill = "#D6CCB7") +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   geom_hline(yintercept = 1:12, linetype = "dotted") +
@@ -253,6 +270,7 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 
 ######################################################################################################
 # WATER
+
 load(file.path(outdir, water_results))
 units_for_plot <- bquote('m'^3*'per tonne')
 interval_palette <- c("#B2E2E6", "#80D2D7", "#3FC1C9") # Order: light to dark
@@ -270,6 +288,8 @@ p_water <- fit_no_na %>%
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
+  # ADD CHICKEN RESULTS:
+  geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 168, xmax = 202), fill = "#D6CCB7") +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(x = 0, y = "bivalves") +
   geom_point(x = 0, y = "plants") +
@@ -341,6 +361,8 @@ p_wild <- fit_no_na %>%
   mutate(plot_taxa = as.factor(plot_taxa)) %>%
   mutate(plot_taxa = fct_reorder(plot_taxa, tx_ghg_w)) %>%
   ggplot(aes(y = plot_taxa, x = tx_ghg_w)) +
+  # ADD CHICKEN RESULTS:
+  geom_rect(aes(ymin = -Inf, ymax = nlevels(plot_taxa), xmin = 3126, xmax = 3627), fill = "#D6CCB7") +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 3) +
   geom_point(aes(y = plot_taxa, x = tx_ghg_w)) +
   geom_hline(yintercept = 1:11, linetype = "dotted") +

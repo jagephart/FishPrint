@@ -8,8 +8,63 @@ source("Functions.R") # for rebuild_fish
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
+#################################################################
+# FORMAT DATA for journal SI:
 
-# FIX IT - move all of this to 01_process data for analysis since it uses the same datasets (fishstat_dat, lca_dat_clean_groups, etc)
+# Load Imputed Data
+lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
+
+# Load Cleaned Data (before imputation) just to get "Source" and "study_id" columns:
+lca_dat <- read.csv(file.path(datadir, "lca_clean_with_groups.csv"), fileEncoding="UTF-8-BOM") %>% #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+  select(study_id, Source) %>%
+  mutate(Source = str_trim(Source))
+
+# Join back together to get "Source" column back
+lca_dat_for_si <- lca_full_dat %>%
+  #left_join(lca_dat, by = intersect(names(.), names(lca_dat))) %>%
+  left_join(lca_dat, by = "study_id") %>%
+  select(c( "Source", !!names(lca_full_dat))) %>%
+  # remove data replication:
+  select(-study_id) %>%
+  unique() 
+  
+# data that should be aggregated prior to publishing:
+# Patrick's Indonesia 
+henriksson_indo <- lca_dat_for_si %>%
+  filter(Source == "Henriksson et al. 2019" & Country == "Indonesia") %>%
+  group_by(Source, clean_sci_name, taxa, intensity, system, Country, iso3c) %>%
+  summarise(across(is.numeric, mean, na.rm = TRUE)) %>%
+  ungroup()
+
+# Chinese carp data:
+chn_carp_dat <- lca_dat_for_si %>%
+  filter(Source == "Zhang & Newton (unpubl. Data)") %>%
+  group_by(Source, clean_sci_name, taxa, intensity, system, Country, iso3c) %>%
+  summarise(across(is.numeric, mean, na.rm = TRUE)) %>%
+  ungroup()
+
+aggregated_source <- c("Henriksson et al. 2019", "Zhang & Newton \\(unpubl. Data\\)")
+
+lca_dat_for_si_clean <- lca_dat_for_si %>%
+  # Filter out the raw data that needs to be aggregated
+  filter((Source == "Henriksson et al. 2019" & Country == "Indonesia")==FALSE) %>%
+  filter(Source != "Zhang & Newton (unpubl. Data)") %>%
+  # Add aggregated data back in
+  bind_rows(henriksson_indo) %>%
+  bind_rows(chn_carp_dat) %>%
+  mutate(feed_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = feed_data_type),
+         fcr_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = fcr_data_type),
+         electric_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = electric_data_type),
+         diesel_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = diesel_data_type),
+         petrol_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = petrol_data_type),
+         natgas_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = natgas_data_type),
+         yield_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = yield_data_type))
+
+write.csv(lca_dat_for_si_clean, file = file.path(outdir, "lca_data_for_si_clean.csv"), row.names = FALSE)
+
+#################################################################
+# PRODUCTION CALCULATIONS:
+# FIX IT - move all of the production calculations to 01_process data for analysis since it uses the same datasets (fishstat_dat, lca_dat_clean_groups, etc)
 
 # Rebuild FAO fish production from zip file
 fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")

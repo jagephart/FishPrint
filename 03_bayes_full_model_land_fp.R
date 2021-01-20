@@ -328,7 +328,7 @@ model {
   // weak priors on sigma
   tx_sigma_fcr ~ cauchy(0, 1);
   sci_sigma_fcr ~ cauchy(0, 1);
-  tx_sigma_land ~ cauchy(0, 10000); // helps with convergence when there are NO FCR priors
+  tx_sigma_land ~ cauchy(0, 10000); // only need priors on sigma_land when NOT using priors on mu_fcr
   sci_sigma_land ~ cauchy(0, 10000);
 
   // likelihood
