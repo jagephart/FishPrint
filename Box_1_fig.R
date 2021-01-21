@@ -80,15 +80,16 @@ base_family <- "sans"
 
 cols <- c("#57D182", "#FFD947", "#FFA647", "#70468C")
 
+
 png("Fig3.png", width = 89, height = 89, units = "mm", res = 300)
 ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index, colour = factor(gear))) +
   geom_point() +
   geom_errorbar(aes(xmin=ghg.ave-(1.96*ghg.se), xmax=ghg.ave+(1.96*ghg.se)), width=.1) +
-  scale_color_manual(values = cols) +
+  scale_color_manual(values = cols, labels = function(x) str_wrap(x, width = 12)) +
   geom_text(aes(x = ghg.ave, y = risk.index, label = mm_species), hjust = 0.2, vjust = -0.7, 
             size = 2, colour = "black") +
   labs(y = "Risk index", x = "kg CO2-eq per tonne", size = "N. Species", colour = "Risk") +
-  guides(colour=guide_legend(nrow=2,byrow=TRUE)) + 
+  guides(colour=guide_legend(nrow=1, byrow=TRUE)) + 
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_text(size = ceiling(base_size), colour = "black"),
@@ -99,10 +100,11 @@ ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index, colour = factor(gea
         panel.background = element_blank(), panel.border = element_blank(), 
         strip.background = element_rect(linetype = 0), strip.text = element_text(), 
         strip.text.x = element_text(vjust = 0.5), strip.text.y = element_text(angle = -90), 
-        legend.text = element_text(size = ceiling(base_size), family = "sans"), 
+        legend.text = element_text(size = ceiling(0.9*base_size), family = "sans"), 
         legend.title = element_blank(), 
         legend.key = element_rect(fill = "white", colour = NA), 
         legend.position="bottom",
+        legend.margin=margin(c(1,1,1,1)),
         plot.title = element_text(size = ceiling(base_size*1), face = "bold"), 
         plot.subtitle = element_text(size = ceiling(base_size*1)))
 dev.off()

@@ -278,7 +278,7 @@ stressor_s2a <- stressor_s2a %>%
   select(taxa, contains("total")) %>%
   pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
   select(-contains("drop"))
-stressor_s2a$scenario <- "Replace FMFO w/ soy"
+stressor_s2a$scenario <- "Replace FMFO with soy"
 
 # Scenario 2b: Replace FMFO with land change-free soy (currently only replacement soy is land change-free)
 ## Land use change free soy
@@ -292,7 +292,7 @@ stressor_s2b <- stressor_s2b %>%
   select(taxa, contains("total")) %>%
   pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
   select(-contains("drop"))
-stressor_s2b$scenario <- "Replace FMFO w/ deforestation-free soy"
+stressor_s2b$scenario <- "Replace FMFO with deforestation-free soy"
 
 # Scenario 2c: Replace FMFO with fishery by-products
 feed_fp_s2c <- read.csv(file.path(datadir, "feed_fp_scenario_2c_mass.csv"))
@@ -305,7 +305,7 @@ stressor_s2c <- stressor_s2c %>%
   select(taxa, contains("total")) %>%
   pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
   select(-contains("drop"))
-stressor_s2c$scenario <- "Replace FMFO w/ fish bp"
+stressor_s2c$scenario <- "Replace FMFO with fish by-products"
 
 # Scenario 2d: Replace FMFO with low impact fishery by-products
 feed_fp_s2d <- read.csv(file.path(datadir, "feed_fp_scenario_2d_mass.csv"))
@@ -319,7 +319,7 @@ stressor_s2d <- stressor_s2d %>%
   select(taxa, contains("total")) %>%
   pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
   select(-contains("drop"))
-stressor_s2d$scenario <- "Replace FMFO w/ low impact fishery by-products"
+stressor_s2d$scenario <- "Replace FMFO with low impact fishery by-products"
 
 # Scenario 3: Look at yield-FCR relationship and simultaneously change both in model; Take highest 20% yield and calculate FCR
 yield_20 <- df %>%
@@ -352,11 +352,11 @@ stressor_s3$scenario <- "Yield upper 20th"
 # Scenario 4: Capture fisheries - catch 1.2 x as much fish with 60% less effort
 df_capture <- read.csv(file.path(datadir, "20210107_capture_stressors_nonbayes.csv"))
 
-delta_ghg <- 0.6/1.2 # Confirm with Rob
+delta_ghg <- 0.56/1.13 # Confirm with Rob
 
 stressor_s4 <- df_capture %>%
   mutate(ghg_kg_t = delta_ghg*ghg_kg_t)
-stressor_s4$scenario <- "1.2 fish with 60% effort"
+stressor_s4$scenario <- "13% more catch with 56% of the effort"
 
 df_capture$scenario <- "capture_baseline"
 
@@ -472,7 +472,7 @@ scenarios_diff <- scenarios %>%
 
 
 fig_4b <- ggplot(scenarios_diff %>% 
-                   filter(scenario %in% c("FCR lower 20th", "Replace FMFO w/ fish bp", 
+                   filter(scenario %in% c("FCR lower 20th", "Replace FMFO with fish by-products", 
                                 "Yield upper 20th", "Deforestation-free soy & crops")) %>%
                    mutate(plot_shape = ifelse(value_percent_change < -100, "over", "under")) %>%
                    mutate(value_percent_change = ifelse(value_percent_change < -100, -100, value_percent_change)), 
@@ -506,7 +506,7 @@ fig_4b <- ggplot(scenarios_diff %>%
         plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
         plot.subtitle = element_text(size = ceiling(base_size*1.05)))
 
-png("fig_4.png", width = 4.5, height = 8, units = "in", res = 300)
+png("fig_4.png", width = 89, height = 189, units = "mm", res = 300)
 ggarrange(fig_4a, fig_4b, nrow = 2, heights = c(1, 2.25), labels = c("a", "b"))
 dev.off()
 
@@ -514,8 +514,8 @@ dev.off()
 
 # SI Fig for the other scenarios
 SI_fig_4b_other_scenarios <- ggplot(scenarios_diff %>% 
-                   filter(scenario %in% c("Replace FMFO w/ soy & crops", "Replace FMFO w/ deforestation-free soy", 
-                                          "Replace FMFO w/ low impact fishery by-products", 
+                   filter(scenario %in% c("Replace FMFO with soy & crops", "Replace FMFO with deforestation-free soy", 
+                                          "Replace FMFO with low impact fishery by-products", 
                                           #"All by-products sourced from low impact fisheries",
                                           "Zero emission electricity" )), 
                  aes(x = value_percent_change, y = taxa)) +
@@ -558,7 +558,7 @@ capture_scenarios_diff <- capture_scenarios %>%
             by = c("species_group")) %>%
   mutate(value_change = value - baseline_value, value_percent_change = 100*(value - baseline_value)/baseline_value)
 
-# SI Fig for the other scenarios
+# SI Fig for the capture scenarios
 SI_fig_4b_capture_scenarios <- ggplot(capture_scenarios_diff, 
                                     aes(x = value_percent_change, y = species_group)) +
   geom_point() + 

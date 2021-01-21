@@ -58,7 +58,7 @@ df <- df %>%
   left_join(evap, by = "iso3c")
 
 # Load feed data
-feed_fp <- read.csv(file.path(datadir, "20201217_weighted_feed_fp.csv"))
+feed_fp <- read.csv(file.path(datadir, "weighted_feed_fp.csv"))
 # Change names to match df
 feed_fp <- feed_fp %>%
   mutate(feed_type = case_when(
@@ -306,6 +306,8 @@ stressor_summary_plot <- stressor_summary %>%
 
 base_size <- 10
 base_family <- "sans"
+
+png("poultry_stressors.png", width = 89, height = 130, units = "mm", res = 300)
 ggplot(stressor_summary_plot, aes(x = value, y = taxa, fill = source)) + 
   geom_bar(position="stack", stat="identity") +
   labs(x = "", y = "", title = "Chicken") +
@@ -327,6 +329,7 @@ ggplot(stressor_summary_plot, aes(x = value, y = taxa, fill = source)) +
         legend.position="bottom",
         plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
         plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+dev.off()
 
 # Stats for comparison
 stressor_summary_table <- stressor_summary %>%
