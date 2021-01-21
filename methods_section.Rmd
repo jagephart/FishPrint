@@ -20,7 +20,7 @@ $$FCR_i \sim normal(\mu_{FCR_{j[i]}}, \sigma_{FCR_{j[i]}})$$
 $$\mu_{FCR_{j[i]}} \sim normal(\mu_{FCR_{k[j]}}, \sigma_{FCR_{k[j]}})$$
 $$\sigma_{FCR_{j[i]}}, \sigma_{FCR_{k[j]}}\sim halfCauchy(0,1)$$
 
-such that $\mu_{FCRj[i]}$ and $\mu_{FCRk[j]}$ are the mean FCR for scientific name $j$ and and taxa group $k$, respectively, and $\sigma_{FCRj[i]}$ and $\sigma_{FCRk[j]}$ are their respective standard deviations. To help with convergence we apply weakly-informative half-Cauchy priors on the scientific name and taxa group level $\sigma$’s. 
+such that $\mu_{FCR_{j[i]}}$ and $\mu_{FCR_{k[j]}}$ are the mean FCR for scientific name $j$ and and taxa group $k$, respectively, and $\sigma_{FCR_{j[i]}}$ and $\sigma_{FCR_{k[j]}}$ are their respective standard deviations. To help with convergence we apply weakly-informative half-Cauchy priors on the scientific name and taxa group level $\sigma$’s. 
 
   For off-farm stressors, we also modelled the proportions of feed originating from soy, crops, livestock, and fisheries. For each study i, Xi is a vector of feed proportions that sums to 1. We modelled this vector as:
 
@@ -43,15 +43,15 @@ $$S_{nonfeed[nitrogen]}=FCR\sum_{f=1}^{4}N_fp_f−N_{fish}$$
 $$S_{nonfeed[nitrogen]}=FCR\sum_{f=1}^{4}P_fp_f−N_{fish}$$
 where $N_f$ and $P_f$ represent the nitrogen and phosphorus content of feed component $f$ and $N_{fish}$ and $P_{fish}$ represent the species-specific nitrogen and phosphorus content of a unit of fish or shellfish. 
   While on-farm stress, $S_{nonfeed}$, for N and P are both derived from the Bayesian means of FCR and the feed proportions, the other stressors, land, GHG, and water, are derived from nested means of the calculated stressor as described below. The non-feed associated land use refers to the land area allocated to the growth of a unit of output which applies to aquaculture systems that are ponds, recirculating systems and tanks. We calculated land stress ($S_{nonfeed[land]}$; m^2^a / tonne) as the reciprocal of annual yield  (Y; tonnes / m^2^):
-$$S_{nonfeed[land]}=1 / Y$$
+$$S_{nonfeed[land]}=\frac{1}{Y}$$
   The on-farm greenhouse gas emissions ($S_{nonfeed[GHG]}$) are calculated as the electricity use times the country-specific GHG emissions, plus the diesel, petrol, and natural gas use times each of their GHG stressor factors:
 $$S_{nonfeed[GHG]}=\sum_{q=1}^{4}G_qE_q$$
 Here, $q$ indexes the four energy sources (electricity, diesel, petrol, and natural gas), $G_q$ represents the GHG emissions of energy source $q$, and $E_q$ represents the energy use of source $q$. While energy use does contribute to the other stressors, we only include it in the GHG stressor since the contribution to the other stressors is small. 
   To calculate the on-farm water use, we estimated the evaporative losses over the surface area allocated to the unit of production as:
 $$S_{nonfeed[water]}=VTS_{nonfeed[land]}$$
-where $V$ represents the country-specific average surface evaporation rate and $t$ represents the grow-out period. 
+where $V$ represents the country-specific average surface evaporation rate and $T$ represents the grow-out period. 
   We then model the Bayesian means for on-farm land, GHG, and water stressors with study $i$ nested in scientific name $j$, nested in taxa group $k$ as shown below:
-$$S_{nonfeed[stressor]}\sim normal(\mu_{Stressorj[i]}, \sigma_{Stressor j[i]})$$
+$$S_{nonfeed[stressor]}\sim normal(\mu_{Stressor_{j[i]}}, \sigma_{Stressor_{j[i]}})$$
 $$\mu_{Stressor_{j[i]}}\sim normal(\mu_{Stressor_{k[j]}}, \sigma_{Stressor_{k[j]}})$$
   To help with convergence, we apply the following hyperpriors on all ’s at the scientific name and taxa group level. Specifically, 
 $$\sigma_{GHG_{j[i]}}, \sigma_{GHG_{k[j]}} \sim halfCauchy(0, 1000)$$
@@ -61,4 +61,12 @@ $$\sigma_{Water_{k[j]}}, \sigma_{Water_{k[j]}} \sim halfCauchy(0, 100)$$
 $$\mu_{FCR_{k[j]}} \sim normal(prior, 1)$$
 We focus on FCR because it is a parameter found in all of our stressor models for which there is considerable information. Priors were derived from… Re-running the models with vs without these priors caused slight shifts in the posterior, but the major results (i.e., ordering of taxa results from highest to lowest stress) did not change.
 
+# Missing Data Imputation
 
+  Missing data for FCR, feed proportions, yield, and all energy inputs (electricity, petrol, diesel, and natural gas) were imputed using taxa group as a categorical predictor and intensity and system type as ordinal predictors. In other words, the predicted value for missing data is pulled to the mean of other LCA studies of the same taxa group, intensity, and system type. For the feed proportions we used a Bayesian Dirichlet regression and for all other variables we used a Bayesian gamma regression with log link to estimate the effects of all predictors on each variable. For each missing data point, we used the median of their predicted posterior distribution as the imputed value for all subsequent analyses. All predictor variables are centered and scaled by two standard deviations. All models were fitted using Stan and implemented with brms in R. All models converged (i.e., diagnostics for all parameters showed 0.99 <  $\widehat{R}$ < 1.01, $n_{eff}/N$ > 0.1, and no divergent transitions) after 5000 iterations run on 4 chains. For the gamma regressions, the following hyperpriors were implemented on the coefficients ($m_i$), intercept ($b$), and shape ($\alpha$) parameter for the gamma:
+
+$$m_i \sim normal(0, 2.5)$$
+
+$$b \sim normal(0, 5)$$
+
+ $$\alpha \sim exponential(1)$$
