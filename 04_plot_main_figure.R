@@ -4,6 +4,9 @@
 # Set plot margins for all plots to 0
 # Set axis label margins for panels C and F to 0
 
+
+#### FIX IT - need to comment out Chicken info (gemo_rect) for energy and economic allocation (the chicken calculations only apply to mass allocation)
+
 rm(list=ls())
 library(tidyverse)
 library(tidybayes)
@@ -14,12 +17,12 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # Set filenames:
 # Mass allocation
-c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
-n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-land_results <- "PRIORS/Land/2021-01-16_full-model-posterior_Land Use_Mass-allocation.RData"
-water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Mass-allocation.RData"
-wild_results <- "PRIORS/Wild/2021-01-16_full-model-posterior_Wild-Capture-ghg.RData"
+# c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
+# n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+# p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+# land_results <- "PRIORS/Land/2021-01-20_full-model-posterior_Land Use_Mass-allocation.RData"
+# water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Mass-allocation.RData"
+# wild_results <- "PRIORS/Wild/2021-01-16_full-model-posterior_Wild-Capture-ghg.RData"
 
 # Gross energy allocation (no wild capture results)
 # c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Gross energy content-allocation.RData"
@@ -29,17 +32,17 @@ wild_results <- "PRIORS/Wild/2021-01-16_full-model-posterior_Wild-Capture-ghg.RD
 # water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Gross energy content-allocation.RData"
 
 # Economic allocation (no wild capture results)
-# c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Economic-allocation.RData"
-# n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Economic-allocation.RData"
-# p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Economic-allocation.RData"
-# land_results <- "PRIORS/Land/2021-01-16_full-model-posterior_Land Use_Economic-allocation.RData"
-# water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Economic-allocation.RData"
+c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Economic-allocation.RData"
+n_results <- "PRIORS/Nitrogen/2021-01-20_full-model-posterior_Marine eutrophication_Economic-allocation.RData"
+p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Economic-allocation.RData"
+land_results <- "PRIORS/Land/2021-01-16_full-model-posterior_Land Use_Economic-allocation.RData"
+water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Economic-allocation.RData"
 
 # Mass allocation NO PRIORS
 # c_results <- "NO PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
 # n_results <- "NO PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
 # p_results <- "NO PRIORS/Phosphorus/2021-01-15_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-# land_results <- "NO PRIORS/Land/2021-01-17_full-model-posterior_Land Use_Mass-allocation.RData"
+# land_results <- "NO PRIORS/Land/2021-01-20_full-model-posterior_Land Use_Mass-allocation.RData"
 # water_results <- "NO PRIORS/Water/2021-01-16_full-model-posterior_Water Consumption_Mass-allocation.RData"
 # wild_results <- "NO PRIORS/Wild/2021-01-16_full-model-posterior_Wild-capture-ghg.RData"
 
@@ -124,7 +127,7 @@ p_carbon <- fit_no_na %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_total_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w, xmin = .lower, xmax = .upper)) +
   # ADD CHICKEN RESULTS:
-  geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 3126, xmax = 3627), fill = "#D6CCB7") +
+  #geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 3165, xmax = 3627), fill = "#D6CCB7") +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   geom_hline(yintercept = 1:12, linetype = "dotted") +
@@ -168,7 +171,7 @@ p_land <- fit_no_na %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(., aes(y = full_taxa_name, x = tx_land_total_w, xmin = .lower, xmax = .upper)) +
   # ADD CHICKEN RESULTS:
-  geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 5794, xmax = 6047), fill = "#D6CCB7") +
+  #geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 5794, xmax = 6047), fill = "#D6CCB7") +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_land_total_w)) +
   geom_point(x = 0, y = "bivalves") +
@@ -207,7 +210,7 @@ p_nitrogen <- fit_no_na %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   # ADD CHICKEN RESULTS:
-  geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 77, xmax = 92), fill = "#D6CCB7") +
+  #geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 77, xmax = 92), fill = "#D6CCB7") +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   geom_hline(yintercept = 1:12, linetype = "dotted") +
@@ -246,7 +249,7 @@ p_phosphorus <- fit_no_na %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   # ADD CHICKEN RESULTS:
-  geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 11, xmax = 16), fill = "#D6CCB7") +
+  #geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 11, xmax = 16), fill = "#D6CCB7") +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   geom_hline(yintercept = 1:12, linetype = "dotted") +
@@ -289,7 +292,7 @@ p_water <- fit_no_na %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   # ADD CHICKEN RESULTS:
-  geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 168, xmax = 202), fill = "#D6CCB7") +
+  #geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = 170, xmax = 202), fill = "#D6CCB7") +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(x = 0, y = "bivalves") +
   geom_point(x = 0, y = "plants") +
@@ -362,7 +365,7 @@ p_wild <- fit_no_na %>%
   mutate(plot_taxa = fct_reorder(plot_taxa, tx_ghg_w)) %>%
   ggplot(aes(y = plot_taxa, x = tx_ghg_w)) +
   # ADD CHICKEN RESULTS:
-  geom_rect(aes(ymin = -Inf, ymax = nlevels(plot_taxa), xmin = 3126, xmax = 3627), fill = "#D6CCB7") +
+  geom_rect(aes(ymin = -Inf, ymax = nlevels(plot_taxa), xmin = 3165, xmax = 3627), fill = "#D6CCB7") +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 3) +
   geom_point(aes(y = plot_taxa, x = tx_ghg_w)) +
   geom_hline(yintercept = 1:11, linetype = "dotted") +
@@ -385,37 +388,21 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 # USE: facet_grid(switch = "y") # "switch" moves y-axis label from right to left side
 
 # 6 panel plot:
-p_carbon_facet <- p_carbon + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
-p_wild_facet <- p_wild + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
-p_left <- plot_grid(p_carbon_facet, p_wild_facet, ncol = 1, nrow = 2, align = "hv", labels = c("a", "d"), axis = "l")
-p_water_facet <- p_water + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
-p_right <- plot_grid(p_nitrogen, p_phosphorus, p_water_facet, p_land, ncol = 2, nrow = 2, align = "h", axis = "b", labels = c("b", "c", "e", "f"), rel_widths = c(1.3, 1))
-plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
-ggsave(filename = file.path(outdir, "plot_Figure-X_facet-labels.png"), width = 183, height = 90, units = "mm")
-ggsave(filename = file.path(outdir, "plot_Figure-X_facet-labels.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
-
-# 5 panel plot:
 # p_carbon_facet <- p_carbon + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
+# p_wild_facet <- p_wild + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
+# p_left <- plot_grid(p_carbon_facet, p_wild_facet, ncol = 1, nrow = 2, align = "hv", labels = c("a", "d"), axis = "l")
 # p_water_facet <- p_water + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
-# p_left <- plot_grid(p_carbon_facet, p_water_facet, nrow = 2, ncol = 1, labels = c("a", "d"), align = "hv", axis = "l")
-# p_right <- plot_grid(p_nitrogen, p_phosphorus, p_land, ncol = 2, nrow = 2, align = "h", labels = c("b", "c", "e"))
-# plot_grid(p_left, p_right, ncol = 2, nrow = 1, align = "v", rel_widths = c(0.6, 1))
+# p_right <- plot_grid(p_nitrogen, p_phosphorus, p_water_facet, p_land, ncol = 2, nrow = 2, align = "h", axis = "b", labels = c("b", "c", "e", "f"), rel_widths = c(1.3, 1))
+# plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
 # ggsave(filename = file.path(outdir, "plot_Figure-X_facet-labels.png"), width = 183, height = 90, units = "mm")
 # ggsave(filename = file.path(outdir, "plot_Figure-X_facet-labels.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
 
-# NO FACET LABELS:
-# 6 panel plot:
-# p_left <- plot_grid(p_carbon, p_wild, ncol = 1, nrow = 2, align = "hv", labels = c("a", "d"))
-# p_right <- plot_grid(p_nitrogen, p_phosphorus, p_water, p_land, ncol = 2, nrow = 2, align = "h", labels = c("b", "c", "e", "f"), rel_widths = c(1.3, 1))
-# plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
-#ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm")
-#ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
-
+# Use NO FACET version below for 5-panel plot
 # 5 panel plot
-# p_left <- plot_grid(p_carbon, p_water, nrow = 2, ncol = 1, labels = c("a", "d"))
-# p_right <- plot_grid(p_nitrogen, p_phosphorus, p_land, ncol = 2, nrow = 2, align = "h", labels = c("b", "c", "e"))
-# plot_grid(p_left, p_right, ncol = 2, nrow = 1, align = "v", rel_widths = c(0.6, 1))
-# ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm")
-# ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
+p_left <- plot_grid(p_carbon, p_water, nrow = 2, ncol = 1, labels = c("a", "d"))
+p_right <- plot_grid(p_nitrogen, p_phosphorus, p_land, ncol = 2, nrow = 2, align = "h", labels = c("b", "c", "e"))
+plot_grid(p_left, p_right, ncol = 2, nrow = 1, align = "v", rel_widths = c(0.6, 1))
+ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm")
+ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
 
 

@@ -31,17 +31,17 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # STEP 1: LOAD AND FORMAT DATA
 
 # Phosphorus model:
-fish_element <- "P_t_liveweight_t"
-impact <- "Freshwater eutrophication"
-feed_element <- "P"
-interval_palette <- c("#FFB4C4", "#FF86A4", "#FC5185") # Order: light to dark
+# fish_element <- "P_t_liveweight_t"
+# impact <- "Freshwater eutrophication"
+# feed_element <- "P"
+# interval_palette <- c("#FFB4C4", "#FF86A4", "#FC5185") # Order: light to dark
 
 # Nitrogen model:
-# fish_element <- "N_t_liveweight_t"
-# impact <- "Marine eutrophication"
-# feed_element <- "N"
-# interval_palette <- c("#FFD5A9", "#FFBD79", "#FFA647") # COMPLEMENTARY COLOR - use orange instead of yellow
-## interval_palette <- c("#FFEDAD", "#FFE37D", "#FFD947") ## PRIMARY COLOR (Azote guideliens)# Order: light to dark
+fish_element <- "N_t_liveweight_t"
+impact <- "Marine eutrophication"
+feed_element <- "N"
+interval_palette <- c("#FFD5A9", "#FFBD79", "#FFA647") # COMPLEMENTARY COLOR - use orange instead of yellow
+# interval_palette <- c("#FFEDAD", "#FFE37D", "#FFD947") ## PRIMARY COLOR (Azote guideliens)# Order: light to dark
 
 # Load Data
 lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")

@@ -134,9 +134,9 @@ clean.lca <- function(LCA_data){
   
   # Option 1:
   # Replicate data by sqrt(n_farms):
-  LCA_data <- LCA_data %>%
-    mutate(Sample_replication = round(sqrt(Sample_size_n_farms)))
-  LCA_data <- as.data.frame(lapply(LCA_data, rep, LCA_data$Sample_replication))
+  # LCA_data <- LCA_data %>%
+  #   mutate(Sample_replication = round(sqrt(Sample_size_n_farms)))
+  # LCA_data <- as.data.frame(lapply(LCA_data, rep, LCA_data$Sample_replication))
   
   # Options 2: Replicate data by "n" farms
   # LCA_data <- as.data.frame(lapply(LCA_data, rep, LCA_data$Sample_size_n_farms))
