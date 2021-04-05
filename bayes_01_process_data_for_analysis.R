@@ -19,11 +19,15 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # datadir <- "K:/BFA Environment 2/Data"
 # outdir <- "K:BFA Environment 2/Outputs"
 
-lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201222.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
-source("Functions.R")
+# Full dataset (not aggregated)
+# lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201222.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+# source("Functions.R")
+# 
+# # Clean LCA data
+# lca_dat_clean <- clean.lca(LCA_data = lca_dat)
 
-# Clean LCA data
-lca_dat_clean <- clean.lca(LCA_data = lca_dat)
+# FOR PUBLICATION, begin with cleaned + aggregated dataset here:
+lca_dat_clean <- read.csv(file.path(datadir, "LCA_compiled_for_SI.csv"))
 
 # Rebuild FAO fish production from zip file
 fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")

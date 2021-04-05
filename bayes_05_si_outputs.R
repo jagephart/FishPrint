@@ -11,17 +11,68 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 #################################################################
 # FORMAT DATA for journal SI:
 
-# Just run raw data through clean.lca but without imputation and remove all unpublished data
-lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201222.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+# Create new version with cleaned references
+# lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201222.csv"), fileEncoding="UTF-8-BOM") %>% #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+#   # Clean up references (Source column)
+#   mutate(Source = str_replace_all(Source, pattern = "-", replacement = " "))
+# write.csv(lca_dat, file.path(datadir, "LCA_compiled_20210405.csv"), row.names = FALSE)
+# Then manually clean references (Remove "a" which all seem unnecessary except for Iribarren 2010)
+
+lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20210405.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
 source("Functions.R")
 
-# Clean LCA data
-lca_dat_clean <- clean.lca(LCA_data = lca_dat)
+# Create clean and aggregated (Patrick's and Wenbo's studies) LCA data for Zenodo data repository
+# lca_dat_for_si should be able to work with full code starting at bayes_01_process_data_for_analysis starting with the function (add_taxa_group)
+lca_dat_for_si <- clean.lca(LCA_data = lca_dat)
 
-lca_dat_clean_for_si <- lca_dat_clean %>%
-  filter(str_detect(Source, pattern = "unpubl")==FALSE) # Remove unpublished data
+# Aggregate data:
+# Patrick's Indonesia 
+henriksson_indo <- lca_dat_for_si %>%
+  filter(Source == "Henriksson et al. 2019" & Country == "Indonesia") 
 
-write.csv(lca_dat_clean_for_si, file.path(outdir, "data_for_si.csv"))
+henriksson_indo_agg <- lca_dat_for_si %>%
+  filter(Source == "Henriksson et al. 2019" & Country == "Indonesia") %>%
+  group_by(Source, Country, iso3c, clean_sci_name, Production_system_group, Intensity) %>% # NOT grouping by Common.Name, Scientific.Name, Product creates NA's when merging back with full dataset, but don't need these columns for analysis
+  summarise(across(c(Yield_m2_per_t, Grow_out_period_days, FCR, feed_soy_new, feed_crops_new, feed_fmfo_new, feed_animal_new, Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L), mean, na.rm = TRUE),
+            Sample_size_n_farms = sum(Sample_size_n_farms),
+            study_id = min(study_id)) %>% # just use the study_id for the first row
+  ungroup() %>%
+  arrange(study_id)
+
+# FIX IT - this doesn't really collapse much; does Patrick want studies collapsed by just the clean_sci_name? but then can't impute data because we won't have Intensity + System info?
+
+# Wenbo's Chinese carp  data:
+chn_carp <- lca_dat_for_si %>%
+  filter(Source == "Zhang & Newton (unpubl. Data)")
+
+chn_carp_agg <- lca_dat_for_si %>%
+  filter(Source == "Zhang & Newton (unpubl. Data)") %>%
+  group_by(Source, Country, iso3c, clean_sci_name, Production_system_group, Intensity) %>%
+  summarise(across(c(Yield_m2_per_t, Grow_out_period_days, FCR, feed_soy_new, feed_crops_new, feed_fmfo_new, feed_animal_new, Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L), mean, na.rm = TRUE),
+            Sample_size_n_farms = sum(Sample_size_n_farms),
+            study_id = min(study_id)) %>%
+  ungroup() %>%
+  arrange(study_id)
+
+aggregated_source <- c("Henriksson et al. 2019", "Zhang & Newton \\(unpubl. Data\\)")
+
+lca_dat_for_si_clean <- lca_dat_for_si %>%
+  # Filter out the raw data that needs to be aggregated
+  filter((Source == "Henriksson et al. 2019" & Country == "Indonesia")==FALSE) %>%
+  filter(Source != "Zhang & Newton (unpubl. Data)") %>%
+  # Add aggregated data back in
+  bind_rows(henriksson_indo_agg) %>%
+  bind_rows(chn_carp_agg) %>%
+  mutate(data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = "raw"))
+
+write.csv(lca_dat_for_si_clean, file = file.path(datadir, "LCA_compiled_for_SI.csv"), row.names = FALSE)
+
+
+# OLD CODE:
+# lca_dat_clean_for_si <- lca_dat_clean %>%
+#   filter(str_detect(Source, pattern = "unpubl")==FALSE) # Remove unpublished data
+# 
+# write.csv(lca_dat_clean_for_si, file.path(outdir, "data_for_si.csv"))
 
 # OLD CODE:
 # Load Imputed Data
