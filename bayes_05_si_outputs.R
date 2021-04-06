@@ -128,7 +128,6 @@ write.csv(lca_dat_for_si_clean, file = file.path(datadir, "LCA_compiled_for_SI.c
 
 #################################################################
 # PRODUCTION CALCULATIONS:
-# FIX IT - move all of the production calculations to 01_process data for analysis since it uses the same datasets (fishstat_dat, lca_dat_clean_groups, etc)
 
 # Rebuild FAO fish production from zip file
 fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
@@ -288,16 +287,19 @@ plot_dat <- prod_by_taxa %>%
   filter(taxa_group_name != "other_taxa")
          
 summary(lm(taxa_prod ~ n, data = plot_dat))
-        
-ggplot(data = plot_dat, aes(x = n, y = taxa_prod, shape = plot_name)) +
-  geom_point(size=5) + 
+      
+library(ggrepel)
+ggplot(data = plot_dat, aes(x = n, y = taxa_prod)) +
+  geom_point() + 
+  geom_text_repel(aes(label=plot_name), box.padding = unit(0.5, "lines"), size = 5) +
   scale_shape_manual(values = c(0:11)) +
-  geom_smooth(method = "lm", color = "red") +
+  #geom_smooth(method = "lm", color = "red") +
   theme_classic() +
-  labs(x = paste(unlist(str_split(n_type, "_")), collapse = " "), y = "Total Aquaculture Production \n2012-2017 (tonnes)", shape = "taxa group") +
-  theme(legend.position=c(0.8, 0.75)) +
+  scale_y_log10(labels = c(1, 10, 100), breaks = c(1e6, 1e7, 1e8)) +
+  labs(x = paste(unlist(str_split(n_type, "_")), collapse = " "), y = "Total Aquaculture Production \n2012-2017 (million tonnes)", shape = "taxa group") +
+  #theme(legend.position=c(0.8, 0.75)) +
   plot_theme 
-ggsave(filename = file.path(outdir, paste("plot_production_vs_", n_type, ".png", sep = "")), width = 8.5, height = 8.5)
+ggsave(filename = file.path(outdir, paste("plot_production_vs_", n_type, ".png", sep = "")), width = 11, height = 8.5)
 
 
 #########################################
