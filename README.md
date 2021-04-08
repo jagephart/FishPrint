@@ -6,7 +6,7 @@
 ## Code for non-Bayesian analyses:
 
 Figure 3. GHG emissions compared to marine mammal risk.  
-* placeholder for .R file
+* marine_mammal_risk.R
 ------
 Figure 4. Aquaculture stressor invtervention opportunities (using mass allocation)  
 Figure S12. Additional aquaculture scenario results  
@@ -34,6 +34,9 @@ Figure S14. Lever and scenario analysis from Fig 4 (using economic allocation)
 Figure S15. Additional aquaculture scenario results
 1. scenario_feed_fps_economic.R
 2. lever_analysis_economic.R
+
+## Code for generating data constants (used in both Bayesian and non-Bayesian analyses):
+* clean_fish_NP.R
 
 ## Data Documentation
 
