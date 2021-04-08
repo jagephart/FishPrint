@@ -1,7 +1,7 @@
 # Environmental performance of blue foods (Gephart et al. 2021)
 
 ## Code for Bayesian analysis:
-![alt text](https://github.com/jagephart/FishPrint/edit/master/BFA analysis diagram.png)
+![alt text](https://github.com/jagephart/FishPrint/blob/master/BFA-analysis-diagram.png)
 
 ## Code for non-Bayesian analyses:
 
