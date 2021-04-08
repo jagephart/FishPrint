@@ -8,9 +8,9 @@
 
 Figure 3. GHG emissions compared to marine mammal risk.
 
-Figure 4. Aquaculture stressor invtervention opportunities (using mass allocation)
-Figure S12. Additional aquaculture scenario results 
-Figure S13. Capture fishery scenario results
+Figure 4. Aquaculture stressor invtervention opportunities (using mass allocation)  
+Figure S12. Additional aquaculture scenario results  
+Figure S13. Capture fishery scenario results  
 1. scenario_feed_fps.R
 2. lever_analysis.R
 
