@@ -35,12 +35,13 @@ Figure S15. Additional aquaculture scenario results
 1. scenario_feed_fps_economic.R
 2. lever_analysis_economic.R
 
-## Code for generating data constants (used in both Bayesian and non-Bayesian analyses):
+## Code for generating model-specific constants (used in both Bayesian and non-Bayesian analyses):
 * clean_fish_NP.R
+* evap_download.R
+* evap_summarize.R
 
 ## Data Documentation
-
-All data is archived in: (link to Zenodo)  
+All data is archived in: (remember to add links to Zenodo)  
 Filename_1 DOI  
 Filename_2 DOI  
 
