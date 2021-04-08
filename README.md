@@ -6,7 +6,7 @@
 ## Code for non-Bayesian analyses:
 
 Figure 3. GHG emissions compared to marine mammal risk.  
-?? placeholder for .R file
+* placeholder for .R file
 ------
 
 Figure 4. Aquaculture stressor invtervention opportunities (using mass allocation)  
