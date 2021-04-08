@@ -49,3 +49,8 @@ Filename_2 DOI
 * Henriksson in Indonesia
 * Henriksson et al. unpublished
 * Zhang & Newton unpublished
+
+### Full citations of all compiled LCI data
+* XXXXX
+* XXXXX
+* XXXXX
