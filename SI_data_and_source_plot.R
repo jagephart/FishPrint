@@ -9,6 +9,7 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 #_______________________________________________________________________________________________________________________#
 library(tidyverse)
 library(ggplot2)
+library(ggpubr)
 
 #_______________________________________________________________________________________________________________________#
 # Load results files and merge
@@ -172,15 +173,25 @@ source_percent %>%
   arrange(desc(total))
 
 # Stacked bar of impact by source
-base_size <- 10
+#facet_labs <- c("GHG kg CO2-eq", "Land", "N", "P", "Water")
+#names(facet_labs) <- c("GHG", "Land", "N", "P", "Water")
+
+df$taxa <- factor(df$taxa, levels = rev(c("misc_diad", "misc_marine", "shrimp", "milkfish",
+                                      "tilapia", "catfish", "oth_carp", "trout", "salmon",
+                                      "hypoph_carp", "plants", "bivalves")))
+
+base_size <- 12
 base_family <- "sans"
 
-png("stressor_by_source.png", width = 8.5, height = 5, units = "in", res = 300)
-ggplot(df, aes(x = median, y = taxa, fill = source)) + 
+# GHG plot
+ghg_plot <- ggplot(df %>% filter(stressor == "GHG"), 
+                   aes(x = median, y = taxa, fill = source)) + 
   geom_bar(stat = "identity", position = "stack") + 
-  scale_fill_manual(values = c("#3FC1C9", "#57D182")) +
-  labs(y = "", x = "") +
-  facet_wrap(~stressor, nrow = 1, scales = "free") +
+  scale_fill_manual(values = c("#70468C", "#57D182")) +
+  scale_y_discrete(labels = rev(c("misc diad", "misc marine", "shrimp", "milkfish",
+                              "tilapia", "catfish", "misc carp", "trout", "salmon",
+                              "silver/bighead", "seaweeds", "bivalves"))) +
+  labs(title = "GHG", x = expression("kg CO"[2]~"t"^"-1"), y = "") +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
@@ -198,6 +209,107 @@ ggplot(df, aes(x = median, y = taxa, fill = source)) +
         legend.position="bottom",
         plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
         plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+# N plot
+N_plot <- ggplot(df %>% filter(stressor == "N"), 
+                   aes(x = median, y = taxa, fill = source)) + 
+  geom_bar(stat = "identity", position = "stack") + 
+  scale_fill_manual(values = c("#70468C", "#57D182")) +
+  labs(title = "Nitrogen", x = expression("kg N-eq t"^"-1"), y = "") +
+  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.text = element_blank(),
+        axis.title = element_text(size = ceiling(base_size*0.8)), 
+        axis.text.x = element_text(angle = 90),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(), panel.border = element_blank(),
+        strip.background = element_rect(linetype = 1, fill = "white"), 
+        strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), 
+        strip.text.y = element_text(angle = -90), 
+        strip.placement.y = "outside",
+        legend.position="bottom",
+        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+# P plot
+P_plot <- ggplot(df %>% filter(stressor == "P"), 
+                 aes(x = median, y = taxa, fill = source)) + 
+  geom_bar(stat = "identity", position = "stack") + 
+  scale_fill_manual(values = c("#70468C", "#57D182")) +
+  labs(title = "Phosphorus", x = expression("kg P-eq t"^"-1"), y = "") +
+  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.text = element_blank(),
+        axis.title = element_text(size = ceiling(base_size*0.8)), 
+        axis.text.x = element_text(angle = 90),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(), panel.border = element_blank(),
+        strip.background = element_rect(linetype = 1, fill = "white"), 
+        strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), 
+        strip.text.y = element_text(angle = -90), 
+        strip.placement.y = "outside",
+        legend.position="bottom",
+        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+# Land plot
+land_plot <- ggplot(df %>% filter(stressor == "Land"), 
+                 aes(x = median, y = taxa, fill = source)) + 
+  geom_bar(stat = "identity", position = "stack") + 
+  scale_fill_manual(values = c("#70468C", "#57D182")) +
+  labs(title = "Land", x = expression("m"^2~"t"^"-1"), y = "") +
+  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.text = element_blank(),
+        axis.title = element_text(size = ceiling(base_size*0.8)), 
+        axis.text.x = element_text(angle = 90),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(), panel.border = element_blank(),
+        strip.background = element_rect(linetype = 1, fill = "white"), 
+        strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), 
+        strip.text.y = element_text(angle = -90), 
+        strip.placement.y = "outside",
+        legend.position="bottom",
+        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+# Water plot
+water_plot <- ggplot(df %>% filter(stressor == "Water"), 
+                    aes(x = median, y = taxa, fill = source)) + 
+  geom_bar(stat = "identity", position = "stack") + 
+  scale_fill_manual(values = c("#70468C", "#57D182")) +
+  labs(title = "Water", x = expression("m"^"3"~"t"^"-1"), y = "") +
+  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.text = element_blank(),
+        axis.title = element_text(size = ceiling(base_size*0.8)), 
+        axis.text.x = element_text(angle = 90),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(), panel.border = element_blank(),
+        strip.background = element_rect(linetype = 1, fill = "white"), 
+        strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), 
+        strip.text.y = element_text(angle = -90), 
+        strip.placement.y = "outside",
+        legend.position="bottom",
+        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+
+png("stressor_by_source.png", width = 8.5, height = 5, units = "in", res = 300)
+ggarrange(ghg_plot, N_plot, P_plot, land_plot, water_plot, nrow = 1,
+          common.legend = TRUE, legend = "bottom")
 dev.off()
 
 
