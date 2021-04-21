@@ -2,6 +2,9 @@
 title: "Methods Section"
 output:
   word_document: default
+  pdf_document: default
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -10,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Model
 
-  We used a hierarchical framework to estimate Bayesian means of total emissions and resource use across five stressors (greenhouse gas [kg CO~2~-eq], nitrogen [kg N-eq], phosphorus [kg P-eq], land [m^2^a] and water [m^3^]). We do this for all unique scientific names (e.g., Cyprinidae, *Cyprinus carpio*) found in our compiled LCA data as well as for aggregated groups of taxa (e.g., miscellaneous carps). Specifically, our model structure has study $i$, nested in scientific name $j$, nested in taxa group $k$. All Bayesian models were run using Markov Chain Monte Carlo (MCMC) algorithms in Stan (Stan Development Team, 2020) and called from R (R Core Team, 2020) using the R package, $rstan$ (Stan Development Team, 2019). All models converged (i.e., diagnostics for all parameters showed 0.99 < $\widehat{R}$ < 1.01, $n_{eff}/N$ > 0.1, and no divergent transitions) after 2500 iterations run on 4 chains. For each stressor, we calculate total emissions and resource use as the sum of their off-farm (feed-associated) and on-farm components as described below. 
+  We used a hierarchical framework to estimate Bayesian means of total emissions and resource use across five stressors (greenhouse gas [kg CO~2~-eq], nitrogen [kg N-eq], phosphorus [kg P-eq], land [m^2^a] and water [m^3^]). We do this for all unique scientific names (e.g., Cyprinidae, *Cyprinus carpio*) found in our compiled LCA data as well as for aggregated groups of taxa (e.g., miscellaneous carps).  Specifically, our model structure has study $i$, nested in scientific name $j$, nested in taxa group $k$. All Bayesian models were run using Markov Chain Monte Carlo (MCMC) algorithms in Stan (Stan Development Team, 2020) and called from R (R Core Team, 2020) using the R package, rstan (Stan Development Team, 2019). All models converged (i.e., diagnostics for all parameters showed 0.99 < $\widehat{R}$ < 1.01, $n_{eff}/N$ > 0.1, and no divergent transitions) after 2500 iterations run on 4 chains. For each stressor, we calculate total emissions and resource use as the sum of their off-farm (feed-associated) and on-farm components as described below. 
 
 # Off-farm (feed-associated) stressors
 
