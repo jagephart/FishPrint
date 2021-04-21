@@ -16,16 +16,16 @@ Figure S13. Capture fishery scenario results
 ------
 Figure S2. Representativeness of observation by taxa group  
 Figure S3. Geographic representativeness of data  
-* characterize_data_for_si.R
+* SI_data_representativeness.R
 ------
 Figure SX. Radar plots for aquaculture taxa
-* plot_bayes_as_spider.R
+* bayes_04_plot_spider.R
 ------
 Figure S4. Stressor estimates by feed-associated versus on-farm component  
 Figure S5. Stressor estimate distributions by taxa  
 Figure S6. Stressor estimate distributions by production system  
 Figure S7. Stressor estiamte distributions by intensity  
-* stressor_summaries.R
+* SI_ridge_plots.R
 ------
 Figure S11. On- and off-farm poultry stressor estimates
 * poultry_stressors.R
