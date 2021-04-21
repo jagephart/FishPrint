@@ -18,9 +18,6 @@ Figure S2. Representativeness of observation by taxa group
 Figure S3. Geographic representativeness of data  
 * SI_data_representativeness.R
 ------
-Figure SX. Radar plots for aquaculture taxa
-* bayes_04_plot_spider.R
-------
 Figure S4. Stressor estimates by feed-associated versus on-farm component  
 Figure S5. Stressor estimate distributions by taxa  
 Figure S6. Stressor estimate distributions by production system  
