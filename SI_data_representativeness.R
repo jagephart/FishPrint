@@ -162,7 +162,8 @@ prod_clean <- fishstat_dat %>%
                                plot_name == "silver and bighead carp" ~ "silver/bighead",
                                plot_name == "tilapias and other cichlids" ~ "tilapia",
                                TRUE ~ plot_name)) %>%
-  mutate(plot_name = as.factor(plot_name))
+  mutate(plot_name = as.factor(plot_name)) %>%
+  mutate(plot_name_2 = paste(plot_name, " (", country_iso3_code, ")", sep = ""))
   
 prod_by_taxa <- prod_clean %>%
   group_by(plot_name, taxa_group_name) %>%
@@ -276,49 +277,55 @@ plot_theme <- theme(axis.title.x = element_text(size = 20),
                     legend.text = element_text(size = 14),
                     plot.margin = unit(c(1,1,1,1), "cm"))
 
-n_type <- "n_farms"
+#n_type <- "n_farms"
 taxa_dat <- read.csv(file.path(outdir, "taxa_group_n_and_composition.csv")) %>%
   group_by(taxa_group_name) %>%
-  summarise(n = sum(!!sym(n_type))) %>%
+  #summarise(n = sum(!!sym(n_type))) %>%
+  summarise(n_farms = sum(n_farms),
+            n_studies = sum(n_studies)) %>%
   ungroup()
 
 plot_dat <- prod_by_taxa %>% 
   left_join(taxa_dat, by = "taxa_group_name") %>% 
   filter(taxa_group_name != "other_taxa")
          
-summary(lm(taxa_prod ~ n, data = plot_dat))
+#summary(lm(taxa_prod ~ n, data = plot_dat))
       
 library(ggrepel)
-ggplot(data = plot_dat, aes(x = n, y = taxa_prod)) +
+ggplot(data = plot_dat, aes(x = n_farms, y = taxa_prod, size = n_studies)) +
   geom_point() + 
-  geom_text_repel(aes(label=plot_name), box.padding = unit(0.5, "lines"), size = 5) +
-  scale_shape_manual(values = c(0:11)) +
+  geom_text_repel(aes(label=plot_name), box.padding = unit(0.5, "lines"), size = 4) +
+  #scale_size_discrete(name = "Number of Studies") +
+  #scale_shape_manual(values = c(0:11)) +
   #geom_smooth(method = "lm", color = "red") +
   theme_classic() +
   scale_y_log10(labels = c(1, 10, 100), breaks = c(1e6, 1e7, 1e8)) +
-  labs(x = paste(unlist(str_split(n_type, "_")), collapse = " "), y = "Total Aquaculture Production \n2012-2017 (million tonnes)", shape = "taxa group") +
-  #theme(legend.position=c(0.8, 0.75)) +
+  labs(x = "No. of Farms", y = "Total Aquaculture Production \n2012-2017 (million tonnes)", size = "No. of Studies") +
+  theme(legend.position=c(0.8, 0.25),
+        legend.background = element_rect(linetype = 1, size = 0.5, colour = 1)) +
   plot_theme 
-ggsave(filename = file.path(outdir, paste("plot_production_vs_", n_type, ".png", sep = "")), width = 11, height = 8.5)
+ggsave(filename = file.path(outdir, paste("plot_production_vs_n_farms.png", sep = "")), width = 11, height = 8.5)
+ggsave(filename = file.path(outdir, paste("plot_production_vs_n_farms.tiff", sep = "")), width = 11, height = 8.5)
 
 
 #########################################
 # Plot n farms (and n studies) per country vs national production per taxa group (shape = country)
 # CHOOSE n_type: sum of "n_farms" or "n_studies"
-n_type <- "n_studies"
+#n_type <- "n_studies"
 
 
 # Clean LCA data
 country_dat <- read.csv(file.path(outdir, "taxa_group_n_and_composition.csv")) %>%
   group_by(taxa_group_name, iso3c) %>%
-  summarise(n = sum(!!sym(n_type))) %>%
+  #summarise(n = sum(!!sym(n_type))) %>%
+  summarise(n_farms = sum(n_farms),
+            n_studies = sum(n_studies)) %>%
   ungroup() %>%
   filter(is.na(iso3c)==FALSE) %>%
-  mutate(region = countrycode(iso3c, origin = "iso3c", destination = "region")) %>%
-  arrange(desc(n))
+  mutate(region = countrycode(iso3c, origin = "iso3c", destination = "region")) 
 
 prod_by_taxa_iso <- prod_clean %>%
-  group_by(taxa_group_name, country_iso3_code) %>%
+  group_by(taxa_group_name, plot_name_2, country_iso3_code) %>%
   summarise(taxa_iso_prod = sum(quantity)) %>%
   ungroup()
 
@@ -326,18 +333,58 @@ plot_country_dat <- country_dat %>%
   left_join(prod_by_taxa_iso, by = c("taxa_group_name", "iso3c" = "country_iso3_code")) %>%
   drop_na()
 
-summary(lm(taxa_iso_prod ~ n, data = plot_country_dat))
+# Identify which points to label
+# Get top 10 by number of farms
+top_n_farms <- plot_country_dat %>%
+  arrange(desc(n_farms)) %>%
+  slice_head(n=3) %>%
+  pull(plot_name_2)
 
-ggplot(data = plot_country_dat, aes(x = n, y = taxa_iso_prod)) +
-  geom_point() + 
-  scale_shape_manual(values = c(0:11)) +
-  geom_smooth(method = "lm", color = "red") +
+# Get cases where n_studies & n_farms is low
+# low_n <- plot_country_dat %>%
+#   filter(n_studies == 1 & n_farms == 1) %>%
+#   pull(plot_name_2)
+
+# Get cases where no. of farms AND no. of studies is low but produciton is high
+low_n_farms <- plot_country_dat %>%
+  filter(n_studies == 1 & n_farms == 1) %>%
+  arrange(desc(taxa_iso_prod)) %>%
+  slice_head(n = 5) %>%
+  pull(plot_name_2)
+
+# Get cases were production is low but no. of farms is high
+over_represented <- plot_country_dat %>%
+  arrange(taxa_iso_prod) %>%
+  filter(n_farms > 1) %>%
+  slice_head(n = 3) %>%
+  pull(plot_name_2)
+
+interesting_points <- unique(c(top_n_farms, low_n_farms, over_represented))
+  
+
+
+
+#summary(lm(taxa_iso_prod ~ n, data = plot_country_dat))
+
+ggplot(data = plot_country_dat, aes(x = n_farms, y = taxa_iso_prod, size = n_studies)) +
+  geom_point() +
+  #geom_jitter() + 
+  geom_text_repel(data = . %>% mutate(label = if_else(plot_name_2 %in% interesting_points, true = plot_name_2, false = "")), 
+                  aes(label=label), box.padding = unit(0.5, "lines"), size = 4) +
+  #scale_shape_manual(values = c(0:11)) +
+  #geom_smooth(method = "lm", color = "red") +
   theme_classic() +
-  labs(x = paste(unlist(str_split(n_type, "_")), collapse = " "), y = "Total Aquaculture Production \n2012-2017 (tonnes)") +
+  scale_y_log10(labels = c(1, 100, 10000), breaks = c(1e3, 1e5, 1e7)) +
+  scale_x_log10() +
+  #coord_cartesian(xlim = c(-100, 300)) +
+  labs(x = "No. of Farms", y = "Total Aquaculture Production \n2012-2017 (thousand tonnes)", size = "No. of Studies") +
+  theme(legend.position=c(0.8, 0.25),
+        legend.background = element_rect(linetype = 1, size = 0.5, colour = 1)) +
   plot_theme 
-ggsave(filename = file.path(outdir, paste("plot_national_production_vs_", n_type, ".png", sep = "")), width = 8.5, height = 8.5)
+# PRO TIP: adjust image in Plot Window until happy with geom_text_repel, then save manually with "Export"
+#ggsave(filename = file.path(outdir, paste("plot_national_production_vs_n_farms.png", sep = "")), width = 11, height = 8.5)
 
-# Which are the three outlier studies
+ # Which are the three outlier studies
 plot_country_dat %>%
   arrange(desc(taxa_iso_prod)) %>%
   select(taxa_group_name, iso3c)

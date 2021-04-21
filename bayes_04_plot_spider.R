@@ -187,9 +187,9 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 # NORMALIZE:
 # Note for nitrogen and phosphorus, since there are negative values, do a "min-max" normalization
 normalize_carbon <- p_carbon %>% 
-  mutate(carbon = carbon/max(carbon))
+  mutate(carbon = carbon/max(carbon)) 
 normalize_land <- p_land %>% 
-  mutate(land = land/max(land))
+  mutate(land = land/max(land)) 
 normalize_nitrogen <- p_nitrogen %>% 
   mutate(nitrogen = (nitrogen - min(nitrogen)) / (max(nitrogen) - min(nitrogen)))
 normalize_phosphorus <- p_phosphorus %>% 
@@ -201,13 +201,16 @@ normalize_impacts <- normalize_carbon %>%
   left_join(normalize_land) %>%
   left_join(normalize_nitrogen) %>%
   left_join(normalize_phosphorus) %>%
-  left_join(normalize_water) 
+  left_join(normalize_water) %>%
+  # RENAME columns to final axis labels
+  rename_with(~str_to_sentence(.), everything()) %>%
+  rename(GHG = Carbon)
 
 # To use the fmsb package, I have to add 2 lines to the dataframe: the max and min of each variable to show on the plot!
 normalize_impacts_ordered <- rbind(rep(1,5), rep(0, 5), (normalize_impacts %>%
                                                            mutate(total = rowSums(normalize_impacts[,-1])) %>% # arrange in descending total impacts to maximize visibility of all polygons
                                                            arrange(desc(total)) %>%
-                                                           column_to_rownames(var = "full_taxa_name") %>%
+                                                           column_to_rownames(names(.)[1]) %>% # Get the first column and move to rownames
                                                            select(-total)))
 
 radarchart(normalize_impacts_ordered)
@@ -229,13 +232,16 @@ scale_impacts <- scale_carbon %>%
   left_join(scale_land) %>%
   left_join(scale_nitrogen) %>%
   left_join(scale_phosphorus) %>%
-  left_join(scale_water)
+  left_join(scale_water) %>%
+  # RENAME columns to final axis labels
+  rename_with(~str_to_sentence(.), everything()) %>%
+  rename(GHG = Carbon)
 
 # To use the fmsb package, I have to add 2 lines to the dataframe: the max and min of each variable to show on the plot!
 scale_impacts_ordered <- rbind(rep(1,5), rep(-1, 5), (scale_impacts %>%
                                                         mutate(total = rowSums(scale_impacts[,-1])) %>% # arrange in descending total impacts to maximize visibility of all polygons
                                                         arrange(desc(total)) %>%
-                                                        column_to_rownames(var = "full_taxa_name") %>%
+                                                        column_to_rownames(names(.)[1]) %>% # Get the first column and move to rownames
                                                         select(-total)))
 
 radarchart(scale_impacts_ordered)
@@ -306,7 +312,7 @@ radarchart(scale_impacts_ordered,
            # customize labels
            vlcex=0.8)
 # Add legend
-legend(x=0.7, y=1.4, legend = rownames(scale_impacts_ordered[-c(1,2),]), bty = "n", pch=20 , col=color_border , text.col = "black", cex=0.8, pt.cex=3)
+legend(x=0.7, y=1.3, legend = rownames(scale_impacts_ordered[-c(1,2),]), bty = "n", pch=20 , col=color_border , text.col = "black", cex=0.7, pt.cex=3)
 #dev.off()
 # FIX IT - ggsave not working (save from Plot console)
 #ggsave(filename = file.path(outdir, "plot_radar_scaled.png"), width = 11, height = 8.5)
