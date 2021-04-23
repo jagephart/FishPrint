@@ -17,6 +17,7 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 #   mutate(Source = str_replace_all(Source, pattern = "-", replacement = " "))
 # write.csv(lca_dat, file.path(datadir, "LCA_compiled_20210405.csv"), row.names = FALSE)
 # Then manually clean references (Remove "a" which all seem unnecessary except for Iribarren 2010)
+# New version with date: 20210405
 
 lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20210405.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
 source("Functions.R")
@@ -26,20 +27,32 @@ source("Functions.R")
 lca_dat_for_si <- clean.lca(LCA_data = lca_dat)
 
 # Aggregate data:
-# Patrick's Indonesia 
-henriksson_indo <- lca_dat_for_si %>%
-  filter(Source == "Henriksson et al. 2019" & Country == "Indonesia") 
+# Patrick's Indonesia: Turns out this is OK to publish
+# henriksson_indo <- lca_dat_for_si %>%
+#   filter(Source == "Henriksson et al. 2019" & Country == "Indonesia") 
+# 
+# henriksson_indo_agg <- lca_dat_for_si %>%
+#   filter(Source == "Henriksson et al. 2019" & Country == "Indonesia") %>%
+#   group_by(Source, Country, iso3c, clean_sci_name, Production_system_group, Intensity) %>% # NOT grouping by Common.Name, Scientific.Name, Product creates NA's when merging back with full dataset, but don't need these columns for analysis
+#   summarise(across(c(Yield_m2_per_t, Grow_out_period_days, FCR, feed_soy_new, feed_crops_new, feed_fmfo_new, feed_animal_new, Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L), mean, na.rm = TRUE),
+#             Sample_size_n_farms = sum(Sample_size_n_farms),
+#             study_id = min(study_id)) %>% # just use the study_id for the first row
+#   ungroup() %>%
+#   arrange(study_id)
 
-henriksson_indo_agg <- lca_dat_for_si %>%
-  filter(Source == "Henriksson et al. 2019" & Country == "Indonesia") %>%
+# Patrick's unpublished India data:
+henriksson_unpub <- lca_dat_for_si %>%
+  filter(Source == "Henriksson et al. (unpubl. Data)")
+
+henriksson_unpub_agg <- lca_dat_for_si %>%
+  filter(Source == "Henriksson et al. (unpubl. Data)") %>%
   group_by(Source, Country, iso3c, clean_sci_name, Production_system_group, Intensity) %>% # NOT grouping by Common.Name, Scientific.Name, Product creates NA's when merging back with full dataset, but don't need these columns for analysis
   summarise(across(c(Yield_m2_per_t, Grow_out_period_days, FCR, feed_soy_new, feed_crops_new, feed_fmfo_new, feed_animal_new, Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L), mean, na.rm = TRUE),
             Sample_size_n_farms = sum(Sample_size_n_farms),
-            study_id = min(study_id)) %>% # just use the study_id for the first row
+            study_id = min(study_id),
+            n_study = n()) %>% # just use the study_id for the first row
   ungroup() %>%
   arrange(study_id)
-
-# FIX IT - this doesn't really collapse much; does Patrick want studies collapsed by just the clean_sci_name? but then can't impute data because we won't have Intensity + System info?
 
 # Wenbo's Chinese carp  data:
 chn_carp <- lca_dat_for_si %>%
@@ -54,14 +67,14 @@ chn_carp_agg <- lca_dat_for_si %>%
   ungroup() %>%
   arrange(study_id)
 
-aggregated_source <- c("Henriksson et al. 2019", "Zhang & Newton \\(unpubl. Data\\)")
+aggregated_source <- c("Henriksson et al. (unpubl. Data)", "Zhang & Newton (unpubl. Data)")
 
 lca_dat_for_si_clean <- lca_dat_for_si %>%
-  # Filter out the raw data that needs to be aggregated
-  filter((Source == "Henriksson et al. 2019" & Country == "Indonesia")==FALSE) %>%
+  # Filter out the raw data that was aggregated
+  filter(Source != "Henriksson et al. (unpubl. Data)") %>%
   filter(Source != "Zhang & Newton (unpubl. Data)") %>%
   # Add aggregated data back in
-  bind_rows(henriksson_indo_agg) %>%
+  bind_rows(henriksson_unpub_agg) %>%
   bind_rows(chn_carp_agg) %>%
   mutate(data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = "raw"))
 
@@ -130,12 +143,14 @@ write.csv(lca_dat_for_si_clean, file = file.path(datadir, "LCA_compiled_for_SI.c
 # PRODUCTION CALCULATIONS:
 
 # Rebuild FAO fish production from zip file
-fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
+#fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
+fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2020.1.0.zip")
 
 # Match taxa group to ISSCAAP group(s)
-# 2012 - 2019
+# 2014 - 2018
 prod_clean <- fishstat_dat %>% 
-  filter(year > 2012) %>%
+  #filter(year > 2012) %>%
+  filter(year > 2013) %>%
   filter(unit == "t") %>%
   filter(source_name_en %in% c("Aquaculture production (marine)", "Aquaculture production (brackishwater)", "Aquaculture production (freshwater)")) %>%
   filter(is.na(quantity)==FALSE) %>%
@@ -166,8 +181,11 @@ prod_clean <- fishstat_dat %>%
   mutate(plot_name_2 = paste(plot_name, " (", country_iso3_code, ")", sep = ""))
   
 prod_by_taxa <- prod_clean %>%
-  group_by(plot_name, taxa_group_name) %>%
+  group_by(plot_name, taxa_group_name, year) %>%
   summarise(taxa_prod = sum(quantity, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(plot_name, taxa_group_name) %>%
+  summarise(taxa_prod = mean(taxa_prod, na.rm = TRUE)) %>% # For MEAN production
   ungroup() %>%
   # Adjust taxa production for algae (only 6.8% used for human consumption according to 2018 FAO food balance sheet)
   mutate(taxa_prod = if_else(plot_name == "plants", true = taxa_prod * 0.068, false = taxa_prod))
@@ -188,14 +206,14 @@ prod_by_taxa %>%
 non_human_isscaap <- c("Pearls, mother-of-pearl, shells", "Corals", "Sponges", "Brown seaweeds", "Red seaweeds", "Green seaweeds", "Miscellaneous aquatic plants") 
 
 # Match taxa group to ISSCAAP group(s)
-# 2012 - 2019
+# 2014 - 2018
 # Aligning Rob's groupings with ISSCAAP: according to http://www.fao.org/3/Y5852E10.htm
 # Jacks, mullets, sauries are Misc demersal fishes
 # Redfishes, basses, and congers are Misc coastal fishes
 # Large pelagic fishes are Tunas, bonitos, billfishes + Misc pelagic fishes
 # Small pelagic fishes are Herrings, sardines, anchovies <- all Clupeidae found here, find number to adjust this
 wild_prod_clean <- fishstat_dat %>% 
-  filter(year > 2012) %>%
+  filter(year > 2013) %>%
   filter(unit == "t") %>%
   filter(source_name_en == "Capture production") %>%
   filter(isscaap_group %in% non_human_isscaap == FALSE) %>%
@@ -299,9 +317,12 @@ ggplot(data = plot_dat, aes(x = n_farms, y = taxa_prod, size = n_studies)) +
   #scale_shape_manual(values = c(0:11)) +
   #geom_smooth(method = "lm", color = "red") +
   theme_classic() +
-  scale_y_log10(labels = c(1, 10, 100), breaks = c(1e6, 1e7, 1e8)) +
-  labs(x = "No. of Farms", y = "Total Aquaculture Production \n2012-2017 (million tonnes)", size = "No. of Studies") +
-  theme(legend.position=c(0.8, 0.25),
+  #scale_y_log10() +
+  scale_y_log10(labels = c(1, 10, 100), breaks = c(1e5, 1e6, 1e7)) + 
+  #labs(x = "No. of Farms", y = paste("Mean Aquaculture Production \n2014-2018 ", bquote('(10'^5*' tonnes)'), sep = ""), size = "No. of Studies") +
+  #labs(x = "No. of Farms", y = expression(Mean~Aquaculture~Production~2014-2018~(10^5~tonnes)), size = "No. of Studies") +
+  labs(x = "No. of Farms", y = expression(atop("Mean Aquaculture Production", paste((2014-2018~"in"~10^5~tonnes)))), size = "No. of Studies") +
+  theme(legend.position=c(0.90, 0.25),
         legend.background = element_rect(linetype = 1, size = 0.5, colour = 1)) +
   plot_theme 
 ggsave(filename = file.path(outdir, paste("plot_production_vs_n_farms.png", sep = "")), width = 11, height = 8.5)
@@ -325,19 +346,63 @@ country_dat <- read.csv(file.path(outdir, "taxa_group_n_and_composition.csv")) %
   mutate(region = countrycode(iso3c, origin = "iso3c", destination = "region")) 
 
 prod_by_taxa_iso <- prod_clean %>%
+  group_by(taxa_group_name, plot_name_2, country_iso3_code, year) %>%
+  summarise(taxa_iso_prod = sum(quantity, na.rm = TRUE)) %>% # total per year
+  ungroup() %>%
   group_by(taxa_group_name, plot_name_2, country_iso3_code) %>%
-  summarise(taxa_iso_prod = sum(quantity)) %>%
+  summarise(taxa_iso_prod = mean(taxa_iso_prod, na.rm = TRUE)) %>% # mean across years
   ungroup()
 
 plot_country_dat <- country_dat %>%
   left_join(prod_by_taxa_iso, by = c("taxa_group_name", "iso3c" = "country_iso3_code")) %>%
   drop_na()
 
+# If interested in non-represented production
+plot_country_dat_all <- country_dat %>%
+  full_join(prod_by_taxa_iso, by = c("taxa_group_name", "iso3c" = "country_iso3_code")) %>%
+  filter(taxa_group_name != "other_taxa") %>%
+  filter(is.na(n_studies)) %>%
+  arrange(desc(taxa_iso_prod))
+
+ggplot(plot_country_dat_all %>% filter(taxa_group_name != "Aquatic plants") %>% filter(taxa_iso_prod > 50000)) +
+  #geom_tile(aes(x = iso3c, y = taxa_group_name, fill = log10(taxa_iso_prod))) +
+  geom_tile(aes(x = iso3c, y = taxa_group_name, fill = taxa_iso_prod)) +
+  #scale_fill_gradient(name = "mean production", trans = "log") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(x = "", y = "", fill = "mean production") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, color = "black", vjust = 0.5),
+        axis.text.y = element_text(color = "black"))
+ggsave(filename = file.path(outdir, paste("plot_prod_iso_missing_LCA_data.png", sep = "")), width = 11, height = 3.5)
+ggsave(filename = file.path(outdir, paste("plot_prod_iso_missing_LCA_data.tiff", sep = "")), width = 11, height = 3.5)
+
+
+# LOG-transformed
+ggplot(plot_country_dat_all %>% filter(taxa_group_name != "Aquatic plants") %>% filter(taxa_iso_prod > 50000)) +
+  geom_tile(aes(x = iso3c, y = taxa_group_name, fill = log10(taxa_iso_prod))) +
+  #geom_tile(aes(x = iso3c, y = taxa_group_name, fill = taxa_iso_prod)) +
+  #scale_fill_gradient(name = "mean production", trans = "log") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(x = "", y = "", fill = "log(mean production)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, color = "black", vjust = 0.5),
+        axis.text.y = element_text(color = "black"))
+ggsave(filename = file.path(outdir, paste("plot_prod_iso_missing_LCA_data-log.png", sep = "")), width = 11, height = 3.5)
+ggsave(filename = file.path(outdir, paste("plot_prod_iso_missing_LCA_data-log.tiff", sep = "")), width = 11, height = 3.5)
+
+
+
 # Identify which points to label
 # Get top 10 by number of farms
 top_n_farms <- plot_country_dat %>%
   arrange(desc(n_farms)) %>%
-  slice_head(n=3) %>%
+  slice_head(n=7) %>%
+  pull(plot_name_2)
+
+# Get top production examples
+top_prod <- plot_country_dat %>%
+  arrange(desc(taxa_iso_prod)) %>%
+  slice_head(n=10) %>%
   pull(plot_name_2)
 
 # Get cases where n_studies & n_farms is low
@@ -359,7 +424,7 @@ over_represented <- plot_country_dat %>%
   slice_head(n = 3) %>%
   pull(plot_name_2)
 
-interesting_points <- unique(c(top_n_farms, low_n_farms, over_represented))
+interesting_points <- unique(c(top_n_farms, top_prod, low_n_farms, over_represented))
   
 
 
@@ -374,15 +439,18 @@ ggplot(data = plot_country_dat, aes(x = n_farms, y = taxa_iso_prod, size = n_stu
   #scale_shape_manual(values = c(0:11)) +
   #geom_smooth(method = "lm", color = "red") +
   theme_classic() +
-  scale_y_log10(labels = c(1, 100, 10000), breaks = c(1e3, 1e5, 1e7)) +
+  #scale_y_log10() +
+  scale_y_log10(labels = c(1, 100, 10000), breaks = c(1e3, 1e5, 1e7)) + 
   scale_x_log10() +
   #coord_cartesian(xlim = c(-100, 300)) +
-  labs(x = "No. of Farms", y = "Total Aquaculture Production \n2012-2017 (thousand tonnes)", size = "No. of Studies") +
-  theme(legend.position=c(0.8, 0.25),
+  labs(x = "No. of Farms", y = expression(atop("Mean Aquaculture Production", paste((2014-2018~"in"~10^3~tonnes)))), size = "No. of Studies") +
+  theme(legend.position=c(0.90, 0.25),
         legend.background = element_rect(linetype = 1, size = 0.5, colour = 1)) +
   plot_theme 
 # PRO TIP: adjust image in Plot Window until happy with geom_text_repel, then save manually with "Export"
-#ggsave(filename = file.path(outdir, paste("plot_national_production_vs_n_farms.png", sep = "")), width = 11, height = 8.5)
+ggsave(filename = file.path(outdir, paste("plot_national_production_vs_n_farms.png", sep = "")), width = 11, height = 8.5)
+ggsave(filename = file.path(outdir, paste("plot_national_production_vs_n_farms.tiff", sep = "")), width = 11, height = 8.5)
+
 
  # Which are the three outlier studies
 plot_country_dat %>%
