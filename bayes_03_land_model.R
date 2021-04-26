@@ -225,6 +225,7 @@ stan_data <- list(N = N,
 #                   priors = priors,
 #                   prior_vec_index = prior_vec_index)
 
+# FIX IT - revisit whether or not LAND PRIORS SHOULD BE USED (do they help the model converge at all?)
 # WITH PRIORS (FCR AND LAND)
 # stan_data <- list(N = N,
 #                   N_SCI = N_SCI,

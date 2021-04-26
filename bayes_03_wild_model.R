@@ -12,7 +12,6 @@ library(tidybayes)
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
-# FIX IT - figure out weightings - easiest would be to pass a single weighting to each species' ghg
 wild_dat <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>% as_tibble()
 
 wild_dat_new_weights <- wild_dat %>%

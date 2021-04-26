@@ -1,17 +1,21 @@
 # Box 1 figure
-
+rm(list=ls())
 library(tidyverse)
 library(ggplot2)
 library(ggthemes)
 library(plotrix)
 
 
+# Mac
+datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+
 # Load data
-mm_risk <- read.csv("Data/marine_mammal_risk.csv")
-fui <- read.csv("Data/marine_mammal_risk_fui.csv")
+mm_risk_raw <- read.csv(file.path(datadir,"marine_mammal_risk.csv"))
+fui <- read.csv(file.path(datadir, "marine_mammal_risk_fui.csv"))
 
 # Tidy data and join FUI data
-mm_risk <- mm_risk %>%
+mm_risk <- mm_risk_raw %>%
   filter(str_detect(Reference, pattern = "Brown")| str_detect(Reference, pattern = "Micheli")) %>%
   pivot_longer(high:low, names_to = "risk", values_to = "n.species") %>%
   filter(!(is.na(n.species))) %>%
@@ -81,7 +85,7 @@ base_family <- "sans"
 cols <- c("#57D182", "#FFD947", "#FFA647", "#70468C")
 
 
-png("Fig3.png", width = 89, height = 89, units = "mm", res = 300)
+#png("Fig3.png", width = 89, height = 89, units = "mm", res = 300)
 ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index, colour = factor(gear))) +
   geom_point() +
   geom_errorbar(aes(xmin=ghg.ave-(1.96*ghg.se), xmax=ghg.ave+(1.96*ghg.se)), width=.1) +
@@ -107,4 +111,4 @@ ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index, colour = factor(gea
         legend.margin=margin(c(1,1,1,1)),
         plot.title = element_text(size = ceiling(base_size*1), face = "bold"), 
         plot.subtitle = element_text(size = ceiling(base_size*1)))
-dev.off()
+#dev.off()
