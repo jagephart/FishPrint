@@ -186,7 +186,7 @@ ggplot(mm_risk_ghg_colors) +
   geom_point(aes(x = grp_mu, y = risk.index)) +
   #geom_text(aes(x = grp_mu, y = risk.index, label = mm_species), hjust = 0.3, vjust = -1, size = 2) +
   geom_text_repel(data = . %>% mutate(label = if_else(.width == 0.95, true = mm_species, false = "")), 
-                   aes(x = grp_mu, y = risk.index, label = label), hjust = 0.3, vjust = -1, size = 3, segment.color = "transparent") +
+                   aes(x = grp_mu, y = risk.index, label = label), hjust = 0.3, vjust = -1.5, size = 2, segment.color = "transparent") +
   theme_classic() +
   mm_plot_theme +
   labs(x = units_for_plot, y = "Risk index", title = "", color = "Gear") +
