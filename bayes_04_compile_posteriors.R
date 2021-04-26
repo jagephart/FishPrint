@@ -56,7 +56,8 @@ wild_results <- "PRIORS/Wild/2021-01-16_full-model-posterior_Wild-Capture-ghg.RD
 
 load(file.path(outdir, c_results))
 #units_for_plot = "kg CO2-eq per tonne"
-units_for_plot = bquote('kg'~CO[2]*'-eq per tonne')
+#units_for_plot = bquote('kg'~CO[2]*'-eq per tonne')
+units_for_plot = bquote('kg'~CO[2]*' t'^-1)
 interval_palette <- c("#9EA8B7", "#6A7A90", "#364F6B") # Order: light to dark
 
 # Theme
@@ -147,7 +148,8 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 
 # Load model outputs individually, save to plot_grid, and create multi-panel plot
 load(file.path(outdir, land_results))
-units_for_plot = bquote('m'^2*'a per tonne')
+#units_for_plot = bquote('m'^2*'a per tonne')
+units_for_plot = bquote('m'^2*' t'^-1)
 
 # x <- seq(0, 1, length.out = 16)
 # base_color <- "#57D182"
@@ -199,7 +201,8 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 # NITROGEN 
 
 load(file.path(outdir, n_results))
-units_for_plot = "kg N-eq per tonne"
+#units_for_plot = "kg N-eq per tonne"
+units_for_plot = bquote('kg N-eq t'^-1)
 
 # x <- seq(0, 1, length.out = 16)
 # base_color <- "#FFA647"
@@ -254,7 +257,9 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 # show_col(seq_gradient_pal(base_color, "black")(x)) # Get hexadecimals for other colors
 
 load(file.path(outdir, p_results))
-units_for_plot = "kg P-eq per tonne"
+#units_for_plot = "kg P-eq per tonne"
+units_for_plot = bquote('kg P-eq t'^-1)
+
 # Order: light to dark
 #interval_palette <- c("#FC5185", "#B33E60", "#6F2B3D") # sample palette base to "black"
 interval_palette <- c("#FFB4C4", "#FF86A4", "#FC5185") # sample palette base to "white"
@@ -296,7 +301,8 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 # WATER
 
 load(file.path(outdir, water_results))
-units_for_plot <- bquote('m'^3*'per tonne')
+#units_for_plot <- bquote('m'^3*'per tonne')
+units_for_plot <- bquote('m'^3*' t'^-1)
 
 # x <- seq(0, 1, length.out = 16)
 # base_color <- "#3FC1C9"
@@ -345,7 +351,9 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 
 # Load model outputs individually, save to plot_grid, and create multi-panel plot
 load(file.path(outdir, wild_results))
-units_for_plot = bquote('kg'~CO[2]*'-eq per tonne')
+#units_for_plot = bquote('kg'~CO[2]*'-eq per tonne')
+units_for_plot = bquote('kg'~CO[2]*' t'^-1)
+
 interval_palette <- c("#9EA8B7", "#6A7A90", "#364F6B") # Order: light to dark
 
 wild_index_key <- wild_dat_new_weights %>%
@@ -423,8 +431,8 @@ p_left <- plot_grid(p_carbon_facet, p_wild_facet, ncol = 1, nrow = 2, align = "h
 p_water_facet <- p_water + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
 p_right <- plot_grid(p_nitrogen, p_phosphorus, p_water_facet, p_land, ncol = 2, nrow = 2, align = "h", axis = "b", labels = c("b", "c", "e", "f"), rel_widths = c(1.3, 1))
 plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
-ggsave(filename = file.path(outdir, "plot_Figure-X_facet-labels.png"), width = 183, height = 90, units = "mm")
-ggsave(filename = file.path(outdir, "plot_Figure-X_facet-labels.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
+ggsave(filename = file.path(outdir, "plot_Figure-1_facet-labels.png"), width = 183, height = 90, units = "mm")
+ggsave(filename = file.path(outdir, "plot_Figure-1_facet-labels.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
 
 # Use NO FACET version below for 5-panel plot
 # 5 panel plot
