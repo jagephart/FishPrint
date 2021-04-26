@@ -156,7 +156,9 @@ mm_risk_ghg_colors <- mm_risk_ghg %>%
                                     .width == 0.80 ~ interval_palette[2],
                                     .width == 0.50 ~ interval_palette[3],
                                     TRUE ~ "no color")) %>%
-  mutate(interval_color = factor(interval_color, levels = c(midwater_trawl_palette, gillnets_palette, bottom_trawl_palette, traps_palette)))
+  mutate(interval_color = factor(interval_color, levels = c(midwater_trawl_palette, gillnets_palette, bottom_trawl_palette, traps_palette))) %>%
+  select(-c(n.species, fui, ghg, risk)) %>%
+  unique()
 
 # Version with all color hues in legend
 # FIX IT - Format legend labels with new lines and capitalization
@@ -174,13 +176,17 @@ mm_risk_ghg_colors <- mm_risk_ghg %>%
 #                                 "", "Traps and lift nets", "")) +
 #   guides(color = guide_legend(keywidth = 0.1, keyheight = 0.1, default.unit = "inch"))
 
+# geom_text_repel(data = . %>% mutate(label = if_else(plot_name_2 %in% interesting_points, true = plot_name_2, false = "")), 
+#                 aes(label=label), box.padding = unit(0.5, "lines"), size = 4) +
+
 # Version with simplified legend
-png(file.path(outdir, "plot_Figure-3_bayes.png"), width = 89, height = 60, units = "mm", res = 300)
+png(file.path(outdir, "plot_Figure-3_bayes.png"), width = 89, height = 60, units = "mm", res = 300) # as per Nature formatting guidelines: 89 mm for single column; 183 mm for double column
 ggplot(mm_risk_ghg_colors) +
   geom_interval(aes(x = grp_mu, y = risk.index, xmin = .lower, xmax = .upper, color = interval_color), show.legend = TRUE) +
   geom_point(aes(x = grp_mu, y = risk.index)) +
   #geom_text(aes(x = grp_mu, y = risk.index, label = mm_species), hjust = 0.3, vjust = -1, size = 2) +
-  geom_label_repel(aes(x = grp_mu, y = risk.index, label = mm_species), hjust = 0.3, vjust = -1, size = 2) +
+  geom_text_repel(data = . %>% mutate(label = if_else(.width == 0.95, true = mm_species, false = "")), 
+                   aes(x = grp_mu, y = risk.index, label = label), hjust = 0.3, vjust = -1, size = 3, segment.color = "transparent") +
   theme_classic() +
   mm_plot_theme +
   labs(x = units_for_plot, y = "Risk index", title = "", color = "Gear") +
