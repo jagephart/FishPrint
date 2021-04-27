@@ -30,7 +30,8 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # STEP 1: LOAD AND FORMAT DATA
 
 # Load Data
-lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
+#lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "2021-04-27_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
 
 # Get farm-associated carbon footprints data
 # Add iso3c
@@ -98,17 +99,23 @@ lca_model_dat <- lca_full_dat %>%
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
 
+# OPTION: Apply EDIBLE PORTIONS adjustment
+# REMINDER: for plants change edible_mean from NA to 100
+farmed_edible <- read.csv(file.path(datadir, "aquaculture_edible_CFs.csv"))
+lca_model_dat <- lca_model_dat %>%
+  left_join(farmed_edible, by = c("taxa" = "fishprint_taxa")) %>%
+  mutate(total_ghg = total_ghg * 1/(edible_mean/100)) %>%
+  mutate(fcr = fcr * 1/(edible_mean/100))
 
+##########################################################################################
+# BEGIN LOOP 
+# Loop through entire code by allocation_method (get new feed impact constants and recreate everything after lca_model_dat)
+for (i in c("Mass", "Gross energy content", "Economic")){
+set_allocation <- i
 
 # FEED IMPACT CONSTANTS:
-# Loop through entire code by allocation_method (get new feed impact constants and recreate everything after lca_model_dat)
-#for (i in c("Mass", "Gross energy content", "Economic")){
-# FIX IT: Delete next line, use complete list for loop
-#for (i in c("Gross energy content", "Economic")){
-#set_allocation <- i
-
 # Or Choose allocation method manually
-set_allocation <- "Mass"
+#set_allocation <- "Mass"
 #set_allocation <- "Gross energy content"
 #set_allocation <- "Economic"
 
@@ -217,25 +224,8 @@ slice_where_tx <- c(0, slice_where_tx)
 # STEP 2: RUN STAN MODEL
 
 # Set data for stan:
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
 # NO PRIORS
-stan_data <- list(N = N,
-                  N_SCI = N_SCI,
-                  n_to_sci = n_to_sci,
-                  N_TX = N_TX,
-                  sci_to_tx = sci_to_tx,
-                  fcr = fcr,
-                  K = K,
-                  feed_weights = feed_weights,
-                  farm = farm,
-                  sci_kappa = sci_kappa,
-                  tx_kappa = tx_kappa,
-                  fp_constant = fp_constant,
-                  sci_w = sci_w,
-                  where_tx = where_tx,
-                  n_sci_in_tx = n_sci_in_tx,
-                  slice_where_tx = slice_where_tx)
-
-# WITH PRIORS
 # stan_data <- list(N = N,
 #                   N_SCI = N_SCI,
 #                   n_to_sci = n_to_sci,
@@ -251,9 +241,28 @@ stan_data <- list(N = N,
 #                   sci_w = sci_w,
 #                   where_tx = where_tx,
 #                   n_sci_in_tx = n_sci_in_tx,
-#                   slice_where_tx = slice_where_tx,
-#                   priors = priors,
-#                   prior_vec_index = prior_vec_index)
+#                   slice_where_tx = slice_where_tx)
+
+# WITH PRIORS
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
+stan_data <- list(N = N,
+                  N_SCI = N_SCI,
+                  n_to_sci = n_to_sci,
+                  N_TX = N_TX,
+                  sci_to_tx = sci_to_tx,
+                  fcr = fcr,
+                  K = K,
+                  feed_weights = feed_weights,
+                  farm = farm,
+                  sci_kappa = sci_kappa,
+                  tx_kappa = tx_kappa,
+                  fp_constant = fp_constant,
+                  sci_w = sci_w,
+                  where_tx = where_tx,
+                  n_sci_in_tx = n_sci_in_tx,
+                  slice_where_tx = slice_where_tx,
+                  priors = priors,
+                  prior_vec_index = prior_vec_index)
 
 
 # NORMAL DISTRIBUTION model - fed and non-fed
@@ -273,8 +282,8 @@ stan_no_na <- 'data {
   int tx_kappa[N_TX]; // number of observations per taxa group
   
   // PRIORS
-  //vector[11] priors;
-  //int prior_vec_index[11];
+  vector[11] priors;
+  int prior_vec_index[11];
   
   // data for on-farm footrpint
   vector<lower=0>[N] farm; // data
@@ -323,7 +332,7 @@ transformed parameters {
 }
 model {
   // PRIORS
-  //tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
+  tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
   
   // example priors for dirichlet model for feed proportions
   // sci_phi defined as sci_phi[n_to_sci][K]
@@ -792,7 +801,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 
 rm(fit_no_na) # Clear fit-no-na before restarting loop
 
-#} # End loop by allocation method: for (i in c("Mass", "Gross energy content", "Economic")){
+} # End loop by allocation method: for (i in c("Mass", "Gross energy content", "Economic")){
 
 # BEFORE CLEARING WORKSPACE, run 04_plot_fcr_and_feed at least once (outputs will be the same for all models)
 

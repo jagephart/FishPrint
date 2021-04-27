@@ -210,6 +210,7 @@ slice_where_tx <- c(0, slice_where_tx)
 
 # Set data for stan:
 # NO PRIORS
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
 stan_data <- list(N = N,
                   N_SCI = N_SCI,
                   n_to_sci = n_to_sci,
@@ -228,6 +229,7 @@ stan_data <- list(N = N,
                   slice_where_tx = slice_where_tx)
 
 # WITH PRIORS
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
 # stan_data <- list(N = N,
 #                   N_SCI = N_SCI,
 #                   n_to_sci = n_to_sci,

@@ -187,6 +187,7 @@ land_feed_fp <- fp_dat %>%
 
 # FIX IT - remove data related to water impact model since this is now separated out
 # Set data for stan:
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
 # NO PRIORS
 stan_data <- list(N = N,
                   N_SCI = N_SCI,
@@ -206,6 +207,7 @@ stan_data <- list(N = N,
                   slice_where_tx = slice_where_tx)
 
 # WITH FCR PRIORS
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
 # stan_data <- list(N = N,
 #                   N_SCI = N_SCI,
 #                   n_to_sci = n_to_sci,

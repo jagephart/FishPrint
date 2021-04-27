@@ -13,14 +13,29 @@ library(cowplot) ## for plot_grid
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
+# Theme
+tx_plot_theme <- theme(axis.title = element_text(size = 9),
+                       axis.text.x = element_text(size = 9, color = "black"),
+                       axis.text.y = element_text(size = 8, color = "black"),
+                       legend.position = "none",
+                       plot.margin = unit(c(0, 3, 0, 0), "mm")) # increase the right margin so that there can be some pillover from x-axis
+
+
+# RESULTS WITH EDIBLE PORTIONS ADJUSTMENT:
+# Mass allocation 
+c_results <- "Nature-submitted-2021-05/Bayesian-Means/PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Mass-allocation.RData"
+wild_results <- "Nature-submitted-2021-05/Bayesian-Means/PRIORS/Wild/2021-04-27_full-model-posterior_Wild-capture-ghg.RData"
+
+# RESULTS WITH NO EDIBLE PORTIONS ADJUSTMENT:
+# FIX IT - Filepaths have chagned
 # Set filenames:
 # Mass allocation - FIGURE 1
-c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
-n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-land_results <- "PRIORS/Land/2021-01-20_full-model-posterior_Land Use_Mass-allocation.RData"
-water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Mass-allocation.RData"
-wild_results <- "PRIORS/Wild/2021-01-16_full-model-posterior_Wild-Capture-ghg.RData"
+# c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
+# n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+# p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+# land_results <- "PRIORS/Land/2021-01-20_full-model-posterior_Land Use_Mass-allocation.RData"
+# water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Mass-allocation.RData"
+# wild_results <- "PRIORS/Wild/2021-01-16_full-model-posterior_Wild-Capture-ghg.RData"
 
 # Economic allocation (no wild capture results) - FIGURE S8
 # c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Economic-allocation.RData"
@@ -59,13 +74,6 @@ load(file.path(outdir, c_results))
 #units_for_plot = bquote('kg'~CO[2]*'-eq per tonne')
 units_for_plot = bquote('kg'~CO[2]*' t'^-1)
 interval_palette <- c("#9EA8B7", "#6A7A90", "#364F6B") # Order: light to dark
-
-# Theme
-tx_plot_theme <- theme(axis.title = element_text(size = 9),
-                       axis.text.x = element_text(size = 9, color = "black"),
-                       axis.text.y = element_text(size = 8, color = "black"),
-                       legend.position = "none",
-                       plot.margin = unit(c(0, 3, 0, 0), "mm")) # increase the right margin so that there can be some pillover from x-axis
 
 # Key for naming taxa levels
 # Get full taxa group names back
@@ -132,10 +140,12 @@ p_carbon <- fit_no_na %>%
   geom_point(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   geom_hline(yintercept = 1:12, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
-  coord_cartesian(xlim = c(0, 12500)) +
+  #coord_cartesian(xlim = c(0, 12500)) +
   theme_classic() + 
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "")
+p_carbon
+ggsave(filename = file.path(outdir, "plot_Global warming potential_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.png"), width = 11, height = 8.5)
 
 
 # Clear before next model
@@ -408,9 +418,11 @@ p_wild <- fit_no_na %>%
   geom_hline(yintercept = 1:11, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
   theme_classic() + 
-  coord_cartesian(xlim = c(0, 12500)) +
+  #coord_cartesian(xlim = c(0, 12500)) +
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "")
+# p_wild
+# ggsave(filename = file.path(outdir, "plot_WILD-GHG-TAXA-LEVEL-WEIGHTED-formatted.png"), width = 11, height = 8.5)
 
 rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx_plot_theme",
                            "c_results", "p_results", "n_results", "land_results", "water_results", "wild_results",
