@@ -59,8 +59,6 @@ lca_model_dat <- lca_full_dat %>%
   # OPTION 1: TEST MODEL ON SPECIES THAT ARE FED 
   #filter(fcr != 0)  %>% 
   # OPTION 2: INCLUDE FED AND NON-FED SPECIES BUT mutate feed proportions to be the average within it's clean_sci_name; otherwise, give it an arbitrary simplex (0.25 per component) to avoid STAN error for simplexes that don't sum to 1
-  # FIX IT - in terms of on-farm footprint, this is OK because feed proportions are multiplied by FCR == 0 so on-farm footprint for these studies will be 0
-  # BUT this will affect the pooled sci and taxa level feed proportions since they enter as 0.25
   group_by(clean_sci_name) %>%
   mutate(feed_soy = if_else(fcr==0, true = mean(feed_soy), false = feed_soy),
          feed_crops = if_else(fcr==0, true = mean(feed_crops), false = feed_crops),
@@ -100,7 +98,7 @@ lca_model_dat <- lca_full_dat %>%
          tx = as.numeric(taxa)) 
 
 # OPTION: Apply EDIBLE PORTIONS adjustment
-# REMINDER: for plants change edible_mean from NA to 100
+# REMINDER: for plants edible_mean should be 100
 farmed_edible <- read.csv(file.path(datadir, "aquaculture_edible_CFs.csv"))
 lca_model_dat <- lca_model_dat %>%
   left_join(farmed_edible, by = c("taxa" = "fishprint_taxa")) %>%
@@ -109,13 +107,13 @@ lca_model_dat <- lca_model_dat %>%
 
 ##########################################################################################
 # BEGIN LOOP 
-# Loop through entire code by allocation_method (get new feed impact constants and recreate everything after lca_model_dat)
-for (i in c("Mass", "Gross energy content", "Economic")){
-set_allocation <- i
+# If desired, loop through entire code by allocation_method (get new feed impact constants and recreate everything after lca_model_dat)
+#for (i in c("Mass", "Gross energy content", "Economic")){
+#set_allocation <- i
 
 # FEED IMPACT CONSTANTS:
 # Or Choose allocation method manually
-#set_allocation <- "Mass"
+set_allocation <- "Mass"
 #set_allocation <- "Gross energy content"
 #set_allocation <- "Economic"
 
@@ -149,14 +147,11 @@ priors_csv <- clean_priors("Priors - Nonfeed.csv") %>%
 # can't pass NAs into STAN - drop NAs but keep track of vector positions
 prior_vec_index <- which(is.na(priors_csv$Ave.FCR)==FALSE)
 priors <- priors_csv$Ave.FCR[prior_vec_index]
-# priors_1 <- priors_csv$Ave.FCR[1]
-# priors_4 <- priors_csv$Ave.FCR[4]
-# priors_6_12 <- priors_csv$Ave.FCR[6:12]
 
+##########################################################################################
 # Set data, indices, constants, weights for STAN
 
 # VARIABLE-SPECIFIC DATA:
-
 # For on_farm ghg
 farm <- lca_model_dat$total_ghg
 # For FCR model:
@@ -333,10 +328,6 @@ transformed parameters {
 model {
   // PRIORS
   tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
-  
-  // example priors for dirichlet model for feed proportions
-  // sci_phi defined as sci_phi[n_to_sci][K]
-  // sci_phi[2][1] ~ normal(0.13, 5); // mean for Oncorhynhchus mykiss soy feed
 
   // weak priors on sigma
   tx_sigma_fcr ~ cauchy(0, 1);
@@ -370,7 +361,6 @@ generated quantities {
   vector[N_SCI] sci_feed_fp;
   vector[N_SCI] sci_total_fp; // unweighted
   vector[N_TX] tx_total_fp; //
-  //vector[N_SCI] sci_total_fp_w; // only need this if applying weights directly to the total impact
   vector[N_TX] tx_total_fp_w; // weighted
   vector[N_TX] tx_feed_fp_w;
   vector[N_TX] tx_farm_fp_w;
@@ -459,9 +449,6 @@ tx_plot_theme <- list(theme(title = element_text(size = 20),
                         axis.text=element_text(size=20, color = "black"),
                        legend.position = "none"),
                       scale_color_manual(values = interval_palette))
-
-#scale_color_manual(values = c("red", "green", "blue")) + # This works
-
 
 # Set units:
 if (impact == "Global warming potential") {
@@ -801,7 +788,7 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 
 rm(fit_no_na) # Clear fit-no-na before restarting loop
 
-} # End loop by allocation method: for (i in c("Mass", "Gross energy content", "Economic")){
+#} # End loop by allocation method: for (i in c("Mass", "Gross energy content", "Economic")){
 
 # BEFORE CLEARING WORKSPACE, run 04_plot_fcr_and_feed at least once (outputs will be the same for all models)
 

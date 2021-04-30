@@ -59,62 +59,12 @@ priors_csv <- clean_wild_priors("Priors - Capture.csv") %>%
   right_join(wild_dat_new_weights %>% select(taxa) %>% unique(), by = "taxa") %>%
   arrange(taxa)
   
-
 # Format priors for STAN
 # can't pass NAs into STAN - drop NAs but keep track of vector positions
 prior_vec_index <- which(is.na(priors_csv$Mean.GHG)==FALSE)
 priors <- priors_csv$Mean.GHG[prior_vec_index]
-# priors_1 <- priors_csv$Ave.FCR[1]
-# priors_4 <- priors_csv$Ave.FCR[4]
-# priors_6_12 <- priors_csv$Ave.FCR[6:12]
 
-##### COMPARE with non-Bayesian calculation
-
-# # 2-step weighting
-# jg_results <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>%
-# # Remove mixed gear and nei observations
-#   filter(!str_detect(pattern = " nei", species)) %>%
-#   filter(gear != "Other, Mixed, or Unknown") %>%
-#   # Remove observations with 0 gear, species, or consumption weighting
-#   filter(gear_weighting > 0 & species_weighting > 0 & consumption_weighting > 0) %>%
-#   # Re-weight gear within each species
-#   group_by(species_group, species) %>%
-#   mutate(gear_weighting_new = gear_weighting/sum(gear_weighting)) %>%
-#   # Create species gear-weighted means
-#   summarise(species_ghg_kg_t = sum(ghg*gear_weighting_new), 
-#             species_weighting = mean(species_weighting), 
-#             consumption_weighting = mean(consumption_weighting)) %>%
-#   # Re-weight species and consumption within taxa group
-#   ungroup() %>%
-#   group_by(species_group) %>%
-#   mutate(species_consumption_weighting = (species_weighting*consumption_weighting)/sum(species_weighting*consumption_weighting)) %>%
-#   summarise(ghg_kg_t = sum(species_ghg_kg_t*species_consumption_weighting))
-# 
-# # 1-step weighting
-# jg_results_2 <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>%
-#   # Remove mixed gear and nei observations
-#   filter(!str_detect(pattern = " nei", species)) %>%
-#   filter(gear != "Other, Mixed, or Unknown") %>%
-#   # Remove observations with 0 gear, species, or consumption weighting
-#   filter(gear_weighting > 0 & species_weighting > 0 & consumption_weighting > 0) %>%
-#   # Re-weight gear within species
-#   group_by(species) %>%
-#   mutate(gear_weights_new = gear_weighting/sum(gear_weighting)) %>%
-#   ungroup() %>%
-#   # Re-weight species and consumption within species_groups
-#   group_by(species_group) %>%
-#   mutate(species_weights_new = species_weighting/sum(species_weighting),
-#          consumption_weights_new = consumption_weighting/sum(consumption_weighting)) %>%
-#   ungroup() %>%
-#   # Calculate overall weights and re-weight
-#   mutate(prod_of_weights = gear_weights_new * species_weights_new * consumption_weights_new) %>%
-#   group_by(species_group) %>%
-#   mutate(overall_weights = prod_of_weights/sum(prod_of_weights)) %>%
-#   ungroup() %>%
-#   mutate(ghg_w = ghg * overall_weights) %>%
-#   group_by(species_group) %>%
-#   summarise(ghg_taxa_w = sum(ghg_w))
-
+#################################################################
 # Set data, indices, and weights for STAN
 
 # DATA
