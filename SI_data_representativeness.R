@@ -147,10 +147,10 @@ write.csv(lca_dat_for_si_clean, file = file.path(datadir, "LCA_compiled_for_SI.c
 fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2020.1.0.zip")
 
 # Match taxa group to ISSCAAP group(s)
-# 2014 - 2018
+# 2012 - 2018
 prod_clean <- fishstat_dat %>% 
-  #filter(year > 2012) %>%
-  filter(year > 2013) %>%
+  filter(year > 2012) %>%
+  #filter(year > 2013) %>%
   filter(unit == "t") %>%
   filter(source_name_en %in% c("Aquaculture production (marine)", "Aquaculture production (brackishwater)", "Aquaculture production (freshwater)")) %>%
   filter(is.na(quantity)==FALSE) %>%
@@ -206,14 +206,15 @@ prod_by_taxa %>%
 non_human_isscaap <- c("Pearls, mother-of-pearl, shells", "Corals", "Sponges", "Brown seaweeds", "Red seaweeds", "Green seaweeds", "Miscellaneous aquatic plants") 
 
 # Match taxa group to ISSCAAP group(s)
-# 2014 - 2018
+# 2012 - 2018
 # Aligning Rob's groupings with ISSCAAP: according to http://www.fao.org/3/Y5852E10.htm
 # Jacks, mullets, sauries are Misc demersal fishes
 # Redfishes, basses, and congers are Misc coastal fishes
 # Large pelagic fishes are Tunas, bonitos, billfishes + Misc pelagic fishes
 # Small pelagic fishes are Herrings, sardines, anchovies <- all Clupeidae found here, find number to adjust this
 wild_prod_clean <- fishstat_dat %>% 
-  filter(year > 2013) %>%
+  filter(year > 2012) %>%
+  #filter(year > 2013) %>%
   filter(unit == "t") %>%
   filter(source_name_en == "Capture production") %>%
   filter(isscaap_group %in% non_human_isscaap == FALSE) %>%
