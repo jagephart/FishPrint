@@ -20,7 +20,9 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # outdir <- "K:BFA Environment 2/Outputs"
 
 # Full dataset (not aggregated)
-lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201222.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+#lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201222.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+# New dataset with additional algae studies and fixed references column
+lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20210405.csv")) 
 source("Functions.R")
 
 # Clean LCA data

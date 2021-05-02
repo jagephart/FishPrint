@@ -30,7 +30,8 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # STEP 1: LOAD AND FORMAT DATA
 
 # Load Data
-lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
+#lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "2021-04-27_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
 
 # Format data for model:
 lca_model_dat <- lca_full_dat %>%
@@ -42,8 +43,6 @@ lca_model_dat <- lca_full_dat %>%
   # filter(fcr != 0)  %>%
   # filter(system %in% c("Ponds", "Recirculating and tanks")) %>%
   # OPTION 2: INCLUDE FED AND NON-FED SPECIES BUT mutate feed proportions to be the average within it's clean_sci_name; otherwise, give it an arbitrary simplex (0.25 per component) to avoid STAN error for simplexes that don't sum to 1
-  # FIX IT - in terms of on-farm footprint, this is OK because feed proportions are multiplied by FCR == 0 so on-farm footprint for these studies will be 0
-  # BUT this will affect the pooled sci and taxa level feed proportions since they enter as 0.25
   group_by(clean_sci_name) %>%
   mutate(feed_soy = if_else(fcr==0, true = mean(feed_soy), false = feed_soy),
          feed_crops = if_else(fcr==0, true = mean(feed_crops), false = feed_crops),
@@ -71,28 +70,27 @@ lca_model_dat <- lca_full_dat %>%
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
 
+# OPTION: Apply EDIBLE PORTIONS adjustment
+# REMINDER: for plants edible_mean should be 100
+farmed_edible <- read.csv(file.path(datadir, "aquaculture_edible_CFs.csv"))
+lca_model_dat <- lca_model_dat %>%
+  left_join(farmed_edible, by = c("taxa" = "fishprint_taxa")) %>%
+  mutate(yield = yield * 1/(edible_mean/100)) %>%
+  mutate(fcr = fcr * 1/(edible_mean/100))
+
 # Get priors on taxa-level FCR
 # Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
 source("Functions.R")
 priors_csv <- clean_priors("Priors - Nonfeed.csv") %>%
-  #select(contains(c("taxa", "FCR"))) %>%
+  select(contains(c("taxa", "FCR"))) %>%
   arrange(taxa) # Arrange by taxa so that index matches tx in lca_model_dat
 
 # Format priors for STAN
 # can't pass NAs into STAN - drop NAs but keep track of vector positions
 prior_vec_index <- which(is.na(priors_csv$Ave.FCR)==FALSE)
 priors <- priors_csv$Ave.FCR[prior_vec_index]
-# priors_1 <- priors_csv$Ave.FCR[1]
-# priors_4 <- priors_csv$Ave.FCR[4]
-# priors_6_12 <- priors_csv$Ave.FCR[6:12]
-
-# Try land priors:
-# prior_vec_index_land <- which(is.na(priors_csv$Mean.Annual.Yield.m2.per.tonne)==FALSE)
-# priors_land <- priors_csv$Mean.Annual.Yield.m2.per.tonne[prior_vec_index_land]
-# priors_land_sigma <- 10^(floor(log10(priors_land)))
 
 #####################
-
 # Set data, indices, constants, weights for STAN
 
 # VARIABLE-SPECIFIC DATA:
@@ -162,8 +160,8 @@ slice_where_tx <- c(0, slice_where_tx)
 # FEED IMPACT CONSTANTS: need to include both land and water constants in the model
 
 # Choose allocation method
-set_allocation <- "Mass"
-#set_allocation <- "Gross energy content"
+#set_allocation <- "Mass"
+set_allocation <- "Gross energy content"
 #set_allocation <- "Economic"
 
 fp_dat <- read.csv(file.path(datadir, "weighted_feed_fp.csv")) %>%
@@ -185,9 +183,30 @@ land_feed_fp <- fp_dat %>%
 ######################################################################################################
 # STEP 2: RUN STAN MODEL
 
-# FIX IT - remove data related to water impact model since this is now separated out
 # Set data for stan:
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
+# SPECIFIC FOR LAND MODEL: When NOT using priors, add weak priors on sigma_land (see STAN code)
 # NO PRIORS
+# stan_data <- list(N = N,
+#                   N_SCI = N_SCI,
+#                   n_to_sci = n_to_sci,
+#                   N_TX = N_TX,
+#                   sci_to_tx = sci_to_tx,
+#                   fcr = fcr,
+#                   K = K,
+#                   feed_weights = feed_weights,
+#                   land = land,
+#                   sci_kappa = sci_kappa,
+#                   tx_kappa = tx_kappa,
+#                   land_feed_fp = land_feed_fp,
+#                   sci_w = sci_w,
+#                   where_tx = where_tx,
+#                   n_sci_in_tx = n_sci_in_tx,
+#                   slice_where_tx = slice_where_tx)
+
+# WITH FCR PRIORS
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
+# REMINDER: Attempted using priors on both FCR and LAND - model does not converge, stick with priors on just FCR
 stan_data <- list(N = N,
                   N_SCI = N_SCI,
                   n_to_sci = n_to_sci,
@@ -203,51 +222,9 @@ stan_data <- list(N = N,
                   sci_w = sci_w,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
-                  slice_where_tx = slice_where_tx)
-
-# WITH FCR PRIORS
-# stan_data <- list(N = N,
-#                   N_SCI = N_SCI,
-#                   n_to_sci = n_to_sci,
-#                   N_TX = N_TX,
-#                   sci_to_tx = sci_to_tx,
-#                   fcr = fcr,
-#                   K = K,
-#                   feed_weights = feed_weights,
-#                   land = land,
-#                   sci_kappa = sci_kappa,
-#                   tx_kappa = tx_kappa,
-#                   land_feed_fp = land_feed_fp,
-#                   sci_w = sci_w,
-#                   where_tx = where_tx,
-#                   n_sci_in_tx = n_sci_in_tx,
-#                   slice_where_tx = slice_where_tx,
-#                   priors = priors,
-#                   prior_vec_index = prior_vec_index)
-
-# FIX IT - revisit whether or not LAND PRIORS SHOULD BE USED (do they help the model converge at all?)
-# WITH PRIORS (FCR AND LAND)
-# stan_data <- list(N = N,
-#                   N_SCI = N_SCI,
-#                   n_to_sci = n_to_sci,
-#                   N_TX = N_TX,
-#                   sci_to_tx = sci_to_tx,
-#                   fcr = fcr,
-#                   K = K,
-#                   feed_weights = feed_weights,
-#                   land = land,
-#                   sci_kappa = sci_kappa,
-#                   tx_kappa = tx_kappa,
-#                   land_feed_fp = land_feed_fp,
-#                   sci_w = sci_w,
-#                   where_tx = where_tx,
-#                   n_sci_in_tx = n_sci_in_tx,
-#                   slice_where_tx = slice_where_tx,
-#                   priors = priors,
-#                   prior_vec_index = prior_vec_index,
-#                   priors_land = priors_land, 
-#                   prior_vec_index_land = prior_vec_index_land,
-#                   priors_land_sigma = priors_land_sigma)
+                  slice_where_tx = slice_where_tx,
+                  priors = priors,
+                  prior_vec_index = prior_vec_index)
 
 # NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {
@@ -266,11 +243,8 @@ stan_no_na <- 'data {
   int tx_kappa[N_TX]; // number of observations per taxa group
   
   // PRIORS
-  //vector[11] priors; // priors on FCR
-  //int prior_vec_index[11];
-  //vector[9] priors_land; // priors on land
-  //int prior_vec_index_land[9];
-  //vector[9] priors_land_sigma; // different scales for each taxa
+  vector[11] priors; // priors on FCR
+  int prior_vec_index[11];
   
   // data for on-farm footrpint
   vector<lower=0>[N] land; // data
@@ -319,18 +293,13 @@ transformed parameters {
 }
 model {
   // PRIORS
-  //tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
-  //tx_land_farm[prior_vec_index_land] ~ normal(priors_land, priors_land_sigma);
-
-  // example priors for dirichlet model for feed proportions
-  // sci_phi defined as sci_phi[n_to_sci][K]
-  // sci_phi[2][1] ~ normal(0.13, 5); // mean for Oncorhynhchus mykiss soy feed
+  tx_mu_fcr[prior_vec_index] ~ normal(priors, 1); // priors on FCR
 
   // weak priors on sigma
   tx_sigma_fcr ~ cauchy(0, 1);
   sci_sigma_fcr ~ cauchy(0, 1);
-  tx_sigma_land ~ cauchy(0, 10000); // only need priors on sigma_land when NOT using priors on mu_fcr
-  sci_sigma_land ~ cauchy(0, 10000);
+  //tx_sigma_land ~ cauchy(0, 10000); // only need priors on sigma_land when NOT using priors on mu_fcr
+  //sci_sigma_land ~ cauchy(0, 10000);
 
   // likelihood
   // normal model sci-name and taxa-level for FCR
@@ -358,7 +327,6 @@ generated quantities {
   vector[N_SCI] sci_land_feed;
   vector[N_SCI] sci_land_total; // unweighted
   vector[N_TX] tx_land_total; //
-  //vector[N_SCI] sci_total_fp_w; // only need this if applying weights directly to the total impact
   vector[N_TX] tx_land_total_w; // weighted
   vector[N_TX] tx_land_feed_w;
   vector[N_TX] tx_land_farm_w;

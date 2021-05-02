@@ -30,27 +30,22 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 ######################
 # STEP 1: LOAD AND FORMAT DATA
 
-# Phosphorus model:
-# fish_element <- "P_t_liveweight_t"
-# impact <- "Freshwater eutrophication"
-# feed_element <- "P"
-# interval_palette <- c("#FFB4C4", "#FF86A4", "#FC5185") # Order: light to dark
+# SELECT BETWEEN PHOSPHORUS VS NITROGEN MODEL
+# option 1: Phosphorus model
+fish_element <- "P_t_liveweight_t"
+impact <- "Freshwater eutrophication"
+feed_element <- "P"
+interval_palette <- c("#FFB4C4", "#FF86A4", "#FC5185") # Order: light to dark
 
-# Nitrogen model:
-fish_element <- "N_t_liveweight_t"
-impact <- "Marine eutrophication"
-feed_element <- "N"
-interval_palette <- c("#FFD5A9", "#FFBD79", "#FFA647") # COMPLEMENTARY COLOR - use orange instead of yellow
-# interval_palette <- c("#FFEDAD", "#FFE37D", "#FFD947") ## PRIMARY COLOR (Azote guideliens)# Order: light to dark
+# option 2: Nitrogen model:
+# fish_element <- "N_t_liveweight_t"
+# impact <- "Marine eutrophication"
+# feed_element <- "N"
+# interval_palette <- c("#FFD5A9", "#FFBD79", "#FFA647") # COMPLEMENTARY COLOR - use orange instead of yellow
 
 # Load Data
-lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
-
-# Format data for model:
-# Merge this with FISH/SHELLFISH CONTENT CONSTANTS so this can also be passed as data - paired to the correct clean_sci_name
-# This is set at the top of the code:
-#fish_element <- "P_t_liveweight_t"
-#fish_element <- "N_t_liveweight_t"
+# lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "2021-04-27_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
 
 fish_content_dat <- read.csv(file.path(datadir, "fish_NP_clean.csv")) %>%
   select(clean_sci_name, !!sym(fish_element))
@@ -65,8 +60,6 @@ lca_model_dat <- lca_full_dat %>%
   # OPTION 1: TEST MODEL ON SPECIES THAT ARE FED 
   #filter(fcr != 0)  %>% 
   # OPTION 2: INCLUDE FED AND NON-FED SPECIES BUT mutate feed proportions to be the average within it's clean_sci_name; otherwise, give it an arbitrary simplex (0.25 per component) to avoid STAN error for simplexes that don't sum to 1
-  # FIX IT - in terms of on-farm footprint, this is OK because feed proportions are multiplied by FCR == 0 so on-farm footprint for these studies will be 0
-  # BUT this will affect the pooled sci and taxa level feed proportions since they enter as 0.25
   group_by(clean_sci_name) %>%
   mutate(feed_soy = if_else(fcr==0, true = mean(feed_soy), false = feed_soy),
          feed_crops = if_else(fcr==0, true = mean(feed_crops), false = feed_crops),
@@ -91,16 +84,18 @@ lca_model_dat <- lca_full_dat %>%
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
 
+# OPTION: Apply EDIBLE PORTIONS adjustment
+# REMINDER: for plants edible_mean should be 100
+farmed_edible <- read.csv(file.path(datadir, "aquaculture_edible_CFs.csv"))
+lca_model_dat <- lca_model_dat %>%
+  left_join(farmed_edible, by = c("taxa" = "fishprint_taxa")) %>%
+  mutate(fcr = fcr * 1/(edible_mean/100)) %>%
+  mutate(!!sym(fish_element) := !!sym(fish_element) * 1/(edible_mean/100))
 
 # CHOOSE FEED IMPACT CONSTANT:
-# current looping code doesn't work, need to add Nitrogen vs Phosphorus parameters from top of code to list in save.image
-# for (i in c("Mass", "Gross energy content", "Economic")){
-# set_allocation <- i
-
-# Choose allocation method MANUALLY:
-#set_allocation <- "Mass"
+set_allocation <- "Mass"
 #set_allocation <- "Gross energy content"
-set_allocation <- "Economic"
+#set_allocation <- "Economic"
 
 # IMPORTANT - multiply all values by 1000 to convert to kg CO2 per tonne (currently in kg CO2 per kg)
   fp_dat <- read.csv(file.path(datadir, "weighted_feed_fp.csv")) %>%
@@ -130,11 +125,9 @@ priors_csv <- clean_priors("Priors - Nonfeed.csv") %>%
 # can't pass NAs into STAN - drop NAs but keep track of vector positions
 prior_vec_index <- which(is.na(priors_csv$Ave.FCR)==FALSE)
 priors <- priors_csv$Ave.FCR[prior_vec_index]
-# priors_1 <- priors_csv$Ave.FCR[1]
-# priors_4 <- priors_csv$Ave.FCR[4]
-# priors_6_12 <- priors_csv$Ave.FCR[6:12]
 
 
+#####################################################################
 # Set data, indices, constants, weights for STAN
 
 # VARIABLE-SPECIFIC DATA:
@@ -178,7 +171,6 @@ fish_content <- lca_model_dat %>%
   unique() %>%
   pull(!!sym(fish_element))
 
-
 # FEED CONTENT CONSTANTS (for on-farm model):
 source("Functions.R") 
 feed_NP <-clean_feedNutrition(feedNutrition_data = read.csv(file.path(datadir, "United-States-Canadian-Tables-of-Feed-1982-pages-68-921-with_CrudeProtein.csv"),
@@ -192,10 +184,7 @@ feed_NP <-clean_feedNutrition(feedNutrition_data = read.csv(file.path(datadir, "
   select(-c("ingredient", "sd")) %>%
   pivot_wider(names_from = "element", values_from = "value")
 
-# Choose feed element
-# This is set at the top of the code
-#feed_element <- "N"
-#feed_element <- "P"
+# Choose feed element (N or P)
 set_feed_content_order <- c("soy", "crops", "fmfo", "animal")
 
 # Divide by 100 to get the correct units (N/P feed content data are in percentages)
@@ -235,26 +224,8 @@ slice_where_tx <- c(0, slice_where_tx)
 # STEP 2: RUN STAN MODEL
 
 # Set data for stan:
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
 # NO PRIORS
-# stan_data <- list(N = N,
-#                   N_SCI = N_SCI,
-#                   n_to_sci = n_to_sci,
-#                   N_TX = N_TX,
-#                   sci_to_tx = sci_to_tx,
-#                   fcr = fcr,
-#                   K = K,
-#                   feed_weights = feed_weights,
-#                   sci_kappa = sci_kappa,
-#                   tx_kappa = tx_kappa,
-#                   fp_constant = fp_constant,
-#                   fish_content = fish_content,
-#                   feed_content = feed_content,
-#                   sci_w = sci_w,
-#                   where_tx = where_tx,
-#                   n_sci_in_tx = n_sci_in_tx,
-#                   slice_where_tx = slice_where_tx)
-
-#WITH PRIORS
 stan_data <- list(N = N,
                   N_SCI = N_SCI,
                   n_to_sci = n_to_sci,
@@ -271,9 +242,29 @@ stan_data <- list(N = N,
                   sci_w = sci_w,
                   where_tx = where_tx,
                   n_sci_in_tx = n_sci_in_tx,
-                  slice_where_tx = slice_where_tx,
-                  priors = priors,
-                  prior_vec_index = prior_vec_index)
+                  slice_where_tx = slice_where_tx)
+
+#WITH PRIORS
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
+# stan_data <- list(N = N,
+#                   N_SCI = N_SCI,
+#                   n_to_sci = n_to_sci,
+#                   N_TX = N_TX,
+#                   sci_to_tx = sci_to_tx,
+#                   fcr = fcr,
+#                   K = K,
+#                   feed_weights = feed_weights,
+#                   sci_kappa = sci_kappa,
+#                   tx_kappa = tx_kappa,
+#                   fp_constant = fp_constant,
+#                   fish_content = fish_content,
+#                   feed_content = feed_content,
+#                   sci_w = sci_w,
+#                   where_tx = where_tx,
+#                   n_sci_in_tx = n_sci_in_tx,
+#                   slice_where_tx = slice_where_tx,
+#                   priors = priors,
+#                   prior_vec_index = prior_vec_index)
 
 # NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {
@@ -339,10 +330,6 @@ model {
   // PRIORS
   tx_mu_fcr[prior_vec_index] ~ normal(priors, 1);
 
-  // example priors for dirichlet model for feed proportions
-  // sci_phi defined as sci_phi[n_to_sci][K]
-  // sci_phi[2][1] ~ normal(0.13, 5); // mean for Oncorhynhchus mykiss soy feed
-
   // weak priors on sigma
   tx_sigma_fcr ~ cauchy(0, 1);
   sci_sigma_fcr ~ cauchy(0, 1);
@@ -369,8 +356,7 @@ generated quantities {
   vector[N_TX] tx_feed_fp;
   vector[N_SCI] sci_feed_fp;
   vector[N_SCI] sci_total_fp; // unweighted
-  //vector[N_TX] tx_total_fp; // not available for this model
-  //vector[N_SCI] sci_total_fp_w; // only need this if applying weights directly to the total impact
+  //vector[N_TX] tx_total_fp; // not applicable for this model
   vector[N_TX] tx_total_fp_w; // weighted
   vector[N_TX] tx_feed_fp_w;
   vector[N_TX] tx_farm_fp_w;
@@ -401,7 +387,7 @@ generated quantities {
 
   // Apply weightings
   
-  // Option 1: Apply individually to sci_feed_fp and sci_mu_farm and sum to get sci_total_fp
+  // Apply individually to sci_feed_fp and sci_mu_farm and sum to get sci_total_fp
   sci_feed_fp_w = sci_feed_fp .* sci_w; // WEIGHTED sci-level off-farm impacts
   sci_mu_farm_w = sci_mu_farm .* sci_w; // WEIGHTED sci-level on-farm impacts
   
@@ -420,14 +406,6 @@ generated quantities {
     tx_total_fp_w[n_tx] = tx_feed_fp_w[n_tx] + tx_farm_fp_w[n_tx];
   }
   
-  // Option 2: Apply weightings to sci_total_fp
-  //sci_total_fp_w = sci_total_fp .* sci_w; // WEIGHTED sci-level total impacts
-
-  //for (n_tx in 1:N_TX){
-  //  vector[n_sci_in_tx[n_tx]] sci_mu_w_vec; // declare vector of sci_mu in taxa-level n_tx
-  //  sci_mu_w_vec = sci_total_fp_w[where_tx[slice_where_tx[n_tx]+1:slice_where_tx[n_tx+1]]]; // get all the sci_mu in taxa-level n_tx
-  //  tx_total_fp_w[n_tx] = sum(sci_mu_w_vec); // sum sci_mu_w_vec to get WEIGHTED tx-level outputs
-  //}
 }'
 
 no_na_mod <- stan_model(model_code = stan_no_na)
@@ -463,18 +441,6 @@ save.image(file = file.path(outdir, paste(Sys.Date(), "_full-model-posterior_", 
 ###########################################################
 
 # SET THEME
-# FOR N and P, interval_palette is set at the top of the code:
-# Nitrogen:
-# x <- seq(0, 1, length.out = 16)
-# base_color <- "#FFD947"
-# show_col(seq_gradient_pal(base_color, "white")(x)) # Get hexadecimals for other colors
-# interval_palette <- c("FFEDAD", "FFE37D", "#FFD947") # Order: light to dark
-# Phosphorus:
-# x <- seq(0, 1, length.out = 16)
-# base_color <- "#FC5185"
-# show_col(seq_gradient_pal(base_color, "white")(x)) # Get hexadecimals for other colors
-# interval_palette <- c("FFB4C4", "#FF86A4", "#FC5185") # Order: light to dark
-
 full_taxa_name_order <- c("plants", "bivalves", "shrimp", "misc marine fishes", "milkfish", "salmon", "misc diadromous fishes", "trout", "tilapia", "catfish", "misc carps", "bighead/silverhead carp")
 sci_plot_theme <- theme(title = element_text(size = 18),
                         axis.title.x = element_text(size = 16),
@@ -772,18 +738,7 @@ fit_no_na %>%
   labs(x = units_for_plot, y = "", title = "Mean on-farm impact", color = "taxa group")
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_ON-FARM-SCI-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
-# TAXA-LEVEL UNWEIGHTED ON-FARM IMPACTS NOT CALCULATED BY THIS MODEL (no taxa-level fish content info to calculate this in the "generated quantities" section)
-# Taxa-level
-# fit_no_na %>%
-#   spread_draws(tx_mu_farm[tx]) %>%
-#   median_qi(.width = 0.95) %>%
-#   left_join(index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-#   ggplot(aes(y = full_taxa_name, x = tx_mu_farm, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-#   geom_pointinterval() +
-#   theme_classic() + 
-#   tx_plot_theme + 
-#   labs(x = units_for_plot, y = "", title = "Mean on-farm impact", color = "taxa group")
-# ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_ON-FARM-TAXA-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
+# NA: TAXA-LEVEL UNWEIGHTED ON-FARM IMPACTS NOT CALCULATED BY THIS MODEL (no taxa-level fish content info to calculate this in the "generated quantities" section)
 
 ###########################################################
 # Mean unweighted total (on + off-farm) impact sci-level
@@ -799,21 +754,7 @@ fit_no_na %>%
   labs(x = units_for_plot, y = "", title = "Total (on and off-farm) impact", color = "taxa group") 
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-SCI-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
-# TAXA-LEVEL UNWEIGHTED ON-FARM IMPACTS NOT CALCULATED BY THIS MODEL (no taxa-level fish content info to calculate this in the "generated quantities" section)
-# Taxa-level
-# fit_no_na %>%
-#   spread_draws(tx_total_fp[tx]) %>%
-#   median_qi(.width = 0.95) %>%
-#   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-#   ggplot(aes(y = full_taxa_name, x = tx_total_fp, xmin = .lower, xmax = .upper, color = full_taxa_name)) +
-#   geom_pointinterval() +
-#   theme_classic() + 
-#   tx_plot_theme + 
-#   labs(x = units_for_plot, y = "", title = "Total (on and off-farm) impact", color = "taxa group")
-# ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-UNWEIGHTED.png", sep = "")), width = 11, height = 8.5)
-
-#rm(fit_no_na) # Clear fit-no-na before restarting loop
-# } # loop currently not working - End Loop through allocation_method: for (i in c("Mass", "Gross energy content", "Economic")){
+# NA: TAXA-LEVEL UNWEIGHTED ON-FARM IMPACTS NOT CALCULATED BY THIS MODEL (no taxa-level fish content info to calculate this in the "generated quantities" section)
 
 ######################################################################################################
 # NEXT: Before clearing workspace, use 04_plot_common_outputs.R - plot other intermediate-level calculations (these are universally shared among all models)

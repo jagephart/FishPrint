@@ -283,7 +283,7 @@ rebuild_fish <- function(path_to_zipfile) {
 #_____________________________________________________________________________________________________#
 clean_priors <- function(priors_dat){
   priors_csv <- read.csv(file.path(datadir, priors_dat)) %>%
-    select(Group.name, Mean.Annual.Yield.t.ha, Annual.Yield.t.ha.Variance, Ave.FCR, Upper.FCR, Lower.FCR) %>%
+    select(Group.name, Mean.Annual.Yield.t.ha, Ave.FCR, Upper.FCR, Lower.FCR) %>%
     # Deal with "-" entries
     mutate(across(everything(), str_replace, pattern = "-", replacement = "")) %>%
     # Convert data cols to numeric
@@ -304,7 +304,6 @@ clean_priors <- function(priors_dat){
                             TRUE ~ "not_grouped")) %>%
     group_by(taxa) %>%
     summarise(Mean.Annual.Yield.t.ha = mean(Mean.Annual.Yield.t.ha, na.rm = TRUE), 
-              Annual.Yield.t.ha.Variance = mean(Annual.Yield.t.ha.Variance, na.rm = TRUE),
               Ave.FCR = mean(Ave.FCR, na.rm = TRUE),
               Upper.FCR = mean(Upper.FCR, na.rm = TRUE),
               Lower.FCR = mean(Lower.FCR, na.rm = TRUE)) %>%

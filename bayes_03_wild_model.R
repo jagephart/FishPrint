@@ -12,8 +12,10 @@ library(tidybayes)
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
+# GHG data
 wild_dat <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>% as_tibble()
 
+# Apply gear, species, and consumption weighting
 wild_dat_new_weights <- wild_dat %>%
   filter(species_group != "Finfish") %>%
   # Remove mixed gear and nei observations
@@ -35,77 +37,34 @@ wild_dat_new_weights <- wild_dat %>%
   group_by(species_group) %>%
   mutate(overall_weights = prod_of_weights/sum(prod_of_weights)) %>%
   ungroup() %>%
-  # LAST FORMATING STEP - always arrange by clean_sci_name
-  arrange(species) %>%
+  # ADD sci and taxa-level indices
   mutate(clean_sci_name = as.factor(species),
          sci = as.numeric(clean_sci_name),
          taxa = as.factor(species_group),
-         tx = as.numeric(taxa)) 
+         tx = as.numeric(taxa)) %>%
+  # LAST FORMATING STEP - always arrange by clean_sci_name
+  arrange(species)
 
+# OPTION: Apply EDIBLE PORTIONS adjustment
+wild_edible <- read.csv(file.path(datadir, "capture_edible_CFs.csv"))
+wild_dat_new_weights <- wild_dat_new_weights %>% # Join and apply edible portions weightings
+  left_join(wild_edible, by = c("taxa" = "full_taxa_name")) %>% 
+  mutate(ghg = ghg * 1/(edible_mean/100))
+  
 # Get priors on taxa-level GHG
 source("Functions.R")
 priors_csv <- clean_wild_priors("Priors - Capture.csv") %>%
   select(taxa = Group.name, Mean.GHG) %>%
   filter(taxa %in% unique(wild_dat_new_weights$taxa)) %>%
-  right_join(wild_dat_new_weights %>% select(taxa) %>% unique(), ty = "taxa") %>%
+  right_join(wild_dat_new_weights %>% select(taxa) %>% unique(), by = "taxa") %>%
   arrange(taxa)
   
-
 # Format priors for STAN
 # can't pass NAs into STAN - drop NAs but keep track of vector positions
 prior_vec_index <- which(is.na(priors_csv$Mean.GHG)==FALSE)
 priors <- priors_csv$Mean.GHG[prior_vec_index]
-# priors_1 <- priors_csv$Ave.FCR[1]
-# priors_4 <- priors_csv$Ave.FCR[4]
-# priors_6_12 <- priors_csv$Ave.FCR[6:12]
 
-##### COMPARE with non-Bayesian calculation
-
-# # 2-step weighting
-# jg_results <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>%
-# # Remove mixed gear and nei observations
-#   filter(!str_detect(pattern = " nei", species)) %>%
-#   filter(gear != "Other, Mixed, or Unknown") %>%
-#   # Remove observations with 0 gear, species, or consumption weighting
-#   filter(gear_weighting > 0 & species_weighting > 0 & consumption_weighting > 0) %>%
-#   # Re-weight gear within each species
-#   group_by(species_group, species) %>%
-#   mutate(gear_weighting_new = gear_weighting/sum(gear_weighting)) %>%
-#   # Create species gear-weighted means
-#   summarise(species_ghg_kg_t = sum(ghg*gear_weighting_new), 
-#             species_weighting = mean(species_weighting), 
-#             consumption_weighting = mean(consumption_weighting)) %>%
-#   # Re-weight species and consumption within taxa group
-#   ungroup() %>%
-#   group_by(species_group) %>%
-#   mutate(species_consumption_weighting = (species_weighting*consumption_weighting)/sum(species_weighting*consumption_weighting)) %>%
-#   summarise(ghg_kg_t = sum(species_ghg_kg_t*species_consumption_weighting))
-# 
-# # 1-step weighting
-# jg_results_2 <- read.csv(file.path(datadir, "fisheries_fuel_use.csv")) %>%
-#   # Remove mixed gear and nei observations
-#   filter(!str_detect(pattern = " nei", species)) %>%
-#   filter(gear != "Other, Mixed, or Unknown") %>%
-#   # Remove observations with 0 gear, species, or consumption weighting
-#   filter(gear_weighting > 0 & species_weighting > 0 & consumption_weighting > 0) %>%
-#   # Re-weight gear within species
-#   group_by(species) %>%
-#   mutate(gear_weights_new = gear_weighting/sum(gear_weighting)) %>%
-#   ungroup() %>%
-#   # Re-weight species and consumption within species_groups
-#   group_by(species_group) %>%
-#   mutate(species_weights_new = species_weighting/sum(species_weighting),
-#          consumption_weights_new = consumption_weighting/sum(consumption_weighting)) %>%
-#   ungroup() %>%
-#   # Calculate overall weights and re-weight
-#   mutate(prod_of_weights = gear_weights_new * species_weights_new * consumption_weights_new) %>%
-#   group_by(species_group) %>%
-#   mutate(overall_weights = prod_of_weights/sum(prod_of_weights)) %>%
-#   ungroup() %>%
-#   mutate(ghg_w = ghg * overall_weights) %>%
-#   group_by(species_group) %>%
-#   summarise(ghg_taxa_w = sum(ghg_w))
-
+#################################################################
 # Set data, indices, and weights for STAN
 
 # DATA
@@ -151,19 +110,8 @@ slice_where_tx <- cumsum(n_sci_in_tx) # These are the breaks in where_tx corresp
 slice_where_tx <- c(0, slice_where_tx)
 
 # Set data for stan:
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
 # NO PRIORS
-stan_data <- list(N = N,
-                  N_SCI = N_SCI,
-                  n_to_sci = n_to_sci,
-                  N_TX = N_TX,
-                  sci_to_tx = sci_to_tx,
-                  ghg = ghg,
-                  sci_w = sci_w,
-                  where_tx = where_tx,
-                  n_sci_in_tx = n_sci_in_tx,
-                  slice_where_tx = slice_where_tx)
-
-# WITH PRIORS
 # stan_data <- list(N = N,
 #                   N_SCI = N_SCI,
 #                   n_to_sci = n_to_sci,
@@ -173,9 +121,22 @@ stan_data <- list(N = N,
 #                   sci_w = sci_w,
 #                   where_tx = where_tx,
 #                   n_sci_in_tx = n_sci_in_tx,
-#                   slice_where_tx = slice_where_tx,
-#                   priors = priors,
-#                   prior_vec_index = prior_vec_index)
+#                   slice_where_tx = slice_where_tx)
+
+# WITH PRIORS
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
+stan_data <- list(N = N,
+                  N_SCI = N_SCI,
+                  n_to_sci = n_to_sci,
+                  N_TX = N_TX,
+                  sci_to_tx = sci_to_tx,
+                  ghg = ghg,
+                  sci_w = sci_w,
+                  where_tx = where_tx,
+                  n_sci_in_tx = n_sci_in_tx,
+                  slice_where_tx = slice_where_tx,
+                  priors = priors,
+                  prior_vec_index = prior_vec_index)
 
 # NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {
@@ -190,8 +151,8 @@ stan_no_na <- 'data {
   vector<lower=0>[N] ghg; // data
   
   // PRIORS
-  //vector[8] priors;
-  //int prior_vec_index[8];
+  vector[8] priors;
+  int prior_vec_index[8];
   
   // indices for slicing vectors for calculating weighted means
   vector<lower=0>[N_SCI] sci_w; // sci-level production weights
@@ -208,7 +169,7 @@ parameters {
 }
 model {
   // PRIORS
-  //tx_mu_ghg[prior_vec_index] ~ normal(priors, 1000);
+  tx_mu_ghg[prior_vec_index] ~ normal(priors, 1000);
 
   // example priors for dirichlet model for feed proportions
   // sci_phi defined as sci_phi[n_to_sci][K]
@@ -316,7 +277,7 @@ fit_no_na %>%
   ggplot(aes(y = taxa, x = tx_ghg_w)) +
   geom_interval(aes(xmin = .lower, xmax = .upper)) +
   theme_classic() + 
-  coord_cartesian(xlim = c(0, 12500)) +
+  #coord_cartesian(xlim = c(0, 12500)) +
   tx_plot_theme + 
   labs(x = units_for_plot, y = "", title = "")
 ggsave(filename = file.path(outdir, "plot_WILD-GHG-TAXA-LEVEL-WEIGHTED.png"), width = 11, height = 8.5)
