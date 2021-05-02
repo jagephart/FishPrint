@@ -10,7 +10,7 @@ library(ggpubr)
 
 # Set data directories
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs/Nature-submitted-2021-05"
 
 # Load data FIXIT: Copy data to drive and read from there
 df_all <- read.csv("Data/edible_muscle_raw.csv")
