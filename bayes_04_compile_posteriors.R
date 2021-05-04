@@ -13,78 +13,30 @@ datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # Theme
-tx_plot_theme <- theme(axis.title = element_text(size = 9),
-                       axis.text.x = element_text(size = 9, color = "black"),
+# ORIGINAL tx_plot_theme_final for first Nature submission
+# tx_plot_theme_final <- theme(axis.title = element_text(size = 9),
+#                        axis.text.x = element_text(size = 9, color = "black"),
+#                        axis.text.y = element_text(size = 8, color = "black"),
+#                        legend.position = "none",
+#                        plot.margin = unit(c(0, 3, 0, 0), "mm")) # increase the right margin so that there can be some pillover from x-axis
+# NEW tx_plot_theme_final for first Nature submission - smaller x-axis font + hjust on x-axis
+tx_plot_theme_final <- theme(axis.title = element_text(size = 9),
+                       axis.text.x = element_text(hjust = 0.6, size = 7, color = "black"),
                        axis.text.y = element_text(size = 8, color = "black"),
                        legend.position = "none",
                        plot.margin = unit(c(0, 3, 0, 0), "mm")) # increase the right margin so that there can be some pillover from x-axis
-
-###########################################################################################
-# OPTIONS: Choose which environmental stressors for Chicken to display - only applies to Mass allocation
-# CF for chicken = 37% i.e., For edible weight chicken numbers, multiply live weight by 1/0.37
-# For Edible Weight + Mass Allocation
-chx_fill <- "#D6CCB7"
-chx_ghg_xmin <- 8554
-chx_ghg_xmax <- 9803
-chx_land_xmin <- 15659
-chx_land_xmax <- 16343
-chx_n_xmin <- 208
-chx_n_xmax <- 249
-chx_p_xmin <- 30
-chx_p_xmax <- 43
-chx_water_xmin <- 459
-chx_water_xmax <- 546
-
-# For Live Weight + Mass Allocation
-# chx_fill <- "#D6CCB7"
-# chx_ghg_xmin <- 3165
-# chx_ghg_xmax <- 3627
-# chx_land_xmin <- 5794
-# chx_land_xmax <- 6047
-# chx_n_xmin <- 77
-# chx_n_xmax <- 92
-# chx_p_xmin <- 11
-# chx_p_xmax <- 16
-# chx_water_xmin <- 170
-# chx_water_xmax <- 202
-
-# For all Economic or Gross energy content allocations: i.e., fully transparent white
-# chx_fill <- "#00FFFFFF"
-# chx_ghg_xmin <- 0
-# chx_ghg_xmax <- 0
-# chx_land_xmin <- 0
-# chx_land_xmax <- 0
-# chx_n_xmin <- 0
-# chx_n_xmax <- 0
-# chx_p_xmin <- 0
-# chx_p_xmax <- 0
-# chx_water_xmin <- 0
-# chx_water_xmax <- 0
-
-###########################################################################################
-# OPTIONS: LIVE WEIGHT VS EDIBLE WEIGHT MINOR PLOT ADJUSTMENTS
-# (1) Set x-axis limits for GHG plots so plots for wild and farmed are aligned
-# (2) X-axis label: per tonne 'live weight' vs 'edible weight'
-
-# For Live Weight
-#ghg_xlimit <- 12500
-#weight_type <- 'live weight'
-
-# For Edible Weight
-ghg_xlimit <- 26000
-weight_type <- 'edible weight'
 
 ###########################################################################################
 # OPTIONS: Set filenames
 # EDIBLE WEIGHT RESULTS
 
 # EDIBLE WEIGHT Mass allocation + FCR Priors
-c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Mass-allocation.RData"
-n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/2021-04-27_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/2021-04-30_full-model-posterior_Land Use_Mass-allocation.RData"
-water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Mass-allocation.RData"
-wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wild/2021-04-27_full-model-posterior_Wild-capture-ghg.RData"
+# c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Mass-allocation.RData"
+# n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+# p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/2021-04-28_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+# land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/2021-04-28_full-model-posterior_Land Use_Mass-allocation.RData"
+# water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Mass-allocation.RData"
+# wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wild/2021-04-27_full-model-posterior_Wild-capture-ghg.RData"
 
 # EDIBLE WEIGHT Economic allocation (no wild capture results) + FCR Priors
 # c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Economic-allocation.RData"
@@ -134,12 +86,81 @@ wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wi
 # water_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Gross energy content-allocation.RData"
 
 # LIVE WEIGHT Mass allocation + NO Priors
-# c_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/NO PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
-# n_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/NO PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-# p_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/NO PRIORS/Phosphorus/2021-01-15_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-# land_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/NO PRIORS/Land/2021-01-20_full-model-posterior_Land Use_Mass-allocation.RData"
-# water_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/NO PRIORS/Water/2021-01-16_full-model-posterior_Water Consumption_Mass-allocation.RData"
-# wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/NO PRIORS/Wild/2021-01-16_full-model-posterior_Wild-capture-ghg.RData"
+c_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/NO PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
+n_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/NO PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+p_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/NO PRIORS/Phosphorus/2021-01-15_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+land_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/NO PRIORS/Land/2021-01-20_full-model-posterior_Land Use_Mass-allocation.RData"
+water_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/NO PRIORS/Water/2021-01-16_full-model-posterior_Water Consumption_Mass-allocation.RData"
+wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/NO PRIORS/Wild/2021-01-16_full-model-posterior_Wild-capture-ghg.RData"
+
+###########################################################################################
+# SET LIVE WEIGHT NUMBERS (need this to produce both live weight and edible weight options below):
+chx_ghg_xmin_live <- 3165
+chx_ghg_xmax_live <- 3627
+chx_land_xmin_live <- 5794
+chx_land_xmax_live <- 6047
+chx_n_xmin_live <- 77
+chx_n_xmax_live <- 92
+chx_p_xmin_live <- 11
+chx_p_xmax_live <- 16
+chx_water_xmin_live <- 170
+chx_water_xmax_live <- 202
+
+# OPTIONS: Choose which environmental stressors for Chicken to display - only applies to Mass allocation
+# CF for chicken = 40% i.e., For edible weight chicken numbers, multiply live weight by 1/0.40
+
+# FOR EDIBLE WEIGHT + MASS ALLOCATION
+# chx_fill <- "#D6CCB7"
+# chx_ghg_xmin <- chx_ghg_xmin_live * (1/0.40)
+# chx_ghg_xmax <- chx_ghg_xmax_live * (1/0.40)
+# chx_land_xmin <- chx_land_xmin_live * (1/0.40)
+# chx_land_xmax <- chx_land_xmax_live * (1/0.40)
+# chx_n_xmin <- chx_n_xmin_live * (1/0.40)
+# chx_n_xmax <- chx_n_xmax_live * (1/0.40)
+# chx_p_xmin <- chx_p_xmin_live * (1/0.40)
+# chx_p_xmax <- chx_p_xmax_live * (1/0.40)
+# chx_water_xmin <- chx_water_xmin_live * (1/0.40)
+# chx_water_xmax <- chx_water_xmax_live * (1/0.40)
+
+# FOR LIVE WEIGHT + MASS ALLOCATION
+chx_fill <- "#D6CCB7"
+chx_ghg_xmin <- chx_ghg_xmin_live
+chx_ghg_xmax <- chx_ghg_xmax_live
+chx_land_xmin <- chx_land_xmin_live
+chx_land_xmax <- chx_land_xmax_live
+chx_n_xmin <- chx_n_xmin_live
+chx_n_xmax <- chx_n_xmax_live
+chx_p_xmin <- chx_p_xmin_live
+chx_p_xmax <- chx_p_xmax_live
+chx_water_xmin <- chx_water_xmin_live
+chx_water_xmax <- chx_water_xmax_live
+
+# FOR ALL ECONOMIC OR GROSS ENERGY CONTENT ALLOCATIONS (Live or Edible weight): I.E., FULLY TRANSPARENT WHITE
+# chx_fill <- "#00FFFFFF"
+# chx_ghg_xmin <- 0
+# chx_ghg_xmax <- 0
+# chx_land_xmin <- 0
+# chx_land_xmax <- 0
+# chx_n_xmin <- 0
+# chx_n_xmax <- 0
+# chx_p_xmin <- 0
+# chx_p_xmax <- 0
+# chx_water_xmin <- 0
+# chx_water_xmax <- 0
+
+###########################################################################################
+# OPTIONS: LIVE WEIGHT VS EDIBLE WEIGHT MINOR PLOT ADJUSTMENTS
+# (1) Set x-axis limits for GHG plots so plots for wild and farmed are aligned
+# (2) X-axis label: per tonne 'live weight' vs 'edible weight'
+
+# FOR LIVE WEIGHT
+ghg_xlimit <- 12500
+weight_type <- 'live weight'
+
+# FOR EDIBLE WEIGHT
+# ghg_xlimit <- 26000
+# #ghg_xlimit <- 29000 # use this for GHG gross-energy-allocation - misc_diad, upper credible interval gets cutoff 
+# weight_type <- 'edible weight'
 
 ######################################################################################################
 # Carbon
@@ -152,7 +173,7 @@ interval_palette <- c("#9EA8B7", "#6A7A90", "#364F6B") # Order: light to dark
 
 # Key for naming taxa levels
 # Get full taxa group names back
-tx_index_key <- lca_model_dat %>%
+tx_index_key_final <- lca_model_dat %>%
   group_by(clean_sci_name) %>%
   mutate(n_obs = n()) %>%
   ungroup() %>%
@@ -174,17 +195,17 @@ tx_index_key <- lca_model_dat %>%
 
 
 # Set taxa order from low to high GHG (keep this order for all plots)
-full_taxa_name_order <- fit_no_na %>%
+full_taxa_name_order_final <- fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
   median_qi(.width = c(0.95)) %>%
-  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  left_join(tx_index_key_final, by = "tx") %>% # Join with index key to get sci and taxa names
   # Filter out tx_total_fp_w for plants and bivalves
   filter(taxa %in% c("bivalves", "plants")==FALSE) %>%
   # Substitute on_farm data as total impact for plants and bivalves
   bind_rows(fit_no_na %>% 
               spread_draws(tx_farm_fp_w[tx]) %>% 
               median_qi(.width = c(0.95)) %>% 
-              left_join(tx_index_key, by = "tx") %>% 
+              left_join(tx_index_key_final, by = "tx") %>% 
               filter(taxa %in% c("bivalves", "plants")) %>% 
               rename(tx_total_fp_w = tx_farm_fp_w)) %>%
   arrange(tx_total_fp_w) %>%
@@ -195,18 +216,18 @@ full_taxa_name_order <- fit_no_na %>%
 p_carbon <- fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
   median_qi(.width = c(0.95, 0.8, 0.5)) %>%
-  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  left_join(tx_index_key_final, by = "tx") %>% # Join with index key to get sci and taxa names
   # Filter out tx_total_fp_w for plants and bivalves
   filter(taxa %in% c("bivalves", "plants")==FALSE) %>%
   # Substitute on_farm data as total impact for plants and bivalves
   bind_rows(fit_no_na %>% 
               spread_draws(tx_farm_fp_w[tx]) %>% 
               median_qi(.width = c(0.95, 0.8, 0.5)) %>% 
-              left_join(tx_index_key, by = "tx") %>% 
+              left_join(tx_index_key_final, by = "tx") %>% 
               filter(taxa %in% c("bivalves", "plants")) %>% 
               rename(tx_total_fp_w = tx_farm_fp_w)) %>%
   # REORDER taxa axis
-  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
+  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order_final)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_total_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w, xmin = .lower, xmax = .upper)) +
   # ADD CHICKEN RESULTS:
@@ -217,15 +238,16 @@ p_carbon <- fit_no_na %>%
   scale_color_manual(values = interval_palette) +
   coord_cartesian(xlim = c(0, ghg_xlimit)) +
   theme_classic() + 
-  tx_plot_theme + 
+  tx_plot_theme_final + 
   labs(x = units_for_plot, y = "", title = "")
 #p_carbon
 #ggsave(filename = file.path(outdir, "plot_Global warming potential_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.png"), width = 11, height = 8.5)
 
-
+chx_info <- ls()[grep("chx", ls())]
 # Clear before next model
-rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx_plot_theme",
+rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key_final", "full_taxa_name_order_final", "tx_plot_theme_final",
                            "c_results", "p_results", "n_results", "land_results", "water_results", "wild_results",
+                           chx_info, "chx_info", "ghg_xlimit", "weight_type",
                            "p_carbon"))])
 
 ######################################################################################################
@@ -252,7 +274,7 @@ interval_palette <- c("#57D182", "#42955E", "#2E5C3C")
 p_land <- fit_no_na %>%
   spread_draws(tx_land_total_w[tx]) %>%
   median_qi(.width = c(0.95, 0.8, 0.5)) %>%
-  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  left_join(tx_index_key_final, by = "tx") %>% # Join with index key to get sci and taxa names
   # Set plant and bivalves distributions to 0 (both are 0 for on and off farm)
   mutate(tx_land_total_w = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_land_total_w),
          .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
@@ -260,7 +282,7 @@ p_land <- fit_no_na %>%
   # LAND can't be less than zero: (lower bound for misc diad fishes is negative)
   mutate(.lower = if_else(.lower < 0, true = 0, false = .lower)) %>%
   # REORDER taxa axis
-  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
+  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order_final)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(., aes(y = full_taxa_name, x = tx_land_total_w, xmin = .lower, xmax = .upper)) +
   # ADD CHICKEN RESULTS:
@@ -272,14 +294,15 @@ p_land <- fit_no_na %>%
   geom_hline(yintercept = 1:12, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
   theme_classic() + 
-  tx_plot_theme + 
+  tx_plot_theme_final + 
   theme(axis.text.y=element_blank()) +
   labs(x = units_for_plot, y = "", title = "")
 #p_land
 #ggsave(filename = file.path(outdir, "plot_Land Use_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED-formatted.png"), width = 11, height = 8.5)
 
-rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx_plot_theme",
+rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key_final", "full_taxa_name_order_final", "tx_plot_theme_final",
                            "c_results", "p_results", "n_results", "land_results", "water_results", "wild_results",
+                           chx_info, "chx_info", "ghg_xlimit", "weight_type",
                            "p_carbon",
                            "p_land"))])
 
@@ -305,11 +328,11 @@ interval_palette <- c("#FFA647", "#B57736", "#704B25")
 p_nitrogen <- fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
   median_qi(.width = c(0.95, 0.8, 0.5)) %>%
-  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  left_join(tx_index_key_final, by = "tx") %>% # Join with index key to get sci and taxa names
   # Set .lower limit of plants and bivalves to be 0
   #mutate(.lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower)) %>% 
   # REORDER taxa axis
-  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
+  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order_final)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   # ADD CHICKEN RESULTS:
@@ -319,20 +342,21 @@ p_nitrogen <- fit_no_na %>%
   geom_hline(yintercept = 1:12, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
   theme_classic() + 
-  tx_plot_theme + 
+  tx_plot_theme_final + 
   #theme(axis.text.y=element_blank()) +
-  scale_y_discrete(labels = rep("", times = length(tx_index_key$full_taxa_name))) +
+  scale_y_discrete(labels = rep("", times = length(tx_index_key_final$full_taxa_name))) +
   # theme(axis.text.y=element_blank(),
   #       axis.title.y=element_blank(),
   #       panel.grid = element_blank(),
   #       panel.border = element_blank()) +
   labs(x = units_for_plot, y = "", title = "")
-p_nitrogen
-ggsave(filename = file.path(outdir, "plot_Marine eutrophication_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED-formatted.png"), width = 11, height = 8.5)
+#p_nitrogen
+#ggsave(filename = file.path(outdir, "plot_Marine eutrophication_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED-formatted.png"), width = 11, height = 8.5)
 
 
-rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx_plot_theme",
+rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key_final", "full_taxa_name_order_final", "tx_plot_theme_final",
                            "c_results", "p_results", "n_results", "land_results", "water_results", "wild_results",
+                           chx_info, "chx_info", "ghg_xlimit", "weight_type",
                            "p_carbon",
                            "p_land",
                            "p_nitrogen"))])
@@ -351,31 +375,32 @@ interval_palette <- c("#FFB4C4", "#FF86A4", "#FC5185") # sample palette base to 
 p_phosphorus <- fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
   median_qi(.width = c(0.95, 0.8, 0.5)) %>%
-  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  left_join(tx_index_key_final, by = "tx") %>% # Join with index key to get sci and taxa names
   # Set .lower limit of plants and bivalves to be 0
   #mutate(.lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower)) %>% 
   # REORDER taxa axis
-  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
+  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order_final)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   # ADD CHICKEN RESULTS:
-  geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = chx_p_xmin, xmax = chx_p_xmin), fill = chx_fill) +
+  geom_rect(aes(ymin = -Inf, ymax = nlevels(full_taxa_name), xmin = chx_p_xmin, xmax = chx_p_xmax), fill = chx_fill) +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
   geom_point(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   geom_hline(yintercept = 1:12, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
   theme_classic() + 
-  tx_plot_theme + 
+  tx_plot_theme_final + 
   #theme(axis.text.y=element_blank()) +
-  scale_y_discrete(labels = rep("", times = length(tx_index_key$full_taxa_name))) +
+  scale_y_discrete(labels = rep("", times = length(tx_index_key_final$full_taxa_name))) +
   # theme(axis.text.y=element_blank(),
   #       axis.title.y=element_blank(),
   #       panel.grid = element_blank(),
   #       panel.border = element_blank()) +
   labs(x = units_for_plot, y = "", title = "")
 
-rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx_plot_theme",
+rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key_final", "full_taxa_name_order_final", "tx_plot_theme_final",
                            "c_results", "p_results", "n_results", "land_results", "water_results", "wild_results",
+                           chx_info, "chx_info", "ghg_xlimit", "weight_type",
                            "p_carbon",
                            "p_land",
                            "p_nitrogen",
@@ -401,13 +426,13 @@ interval_palette <- c("#3FC1C9", "#348A8F", "#275659") # sample palette base to 
 p_water <- fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
   median_qi(.width = c(0.95, 0.8, 0.5)) %>%
-  left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  left_join(tx_index_key_final, by = "tx") %>% # Join with index key to get sci and taxa names
   # Set plant and bivalves distributions to 0 (both are 0 for on and off farm)
   mutate(tx_total_fp_w = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_total_fp_w),
          .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
          .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
   # REORDER taxa axis
-  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
+  mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order_final)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w)) +
   # ADD CHICKEN RESULTS:
@@ -419,11 +444,12 @@ p_water <- fit_no_na %>%
   geom_hline(yintercept = 1:12, linetype = "dotted") +
   scale_color_manual(values = interval_palette) +
   theme_classic() + 
-  tx_plot_theme + 
+  tx_plot_theme_final + 
   labs(x = units_for_plot, y = "", title = "")
 
-rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx_plot_theme",
+rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key_final", "full_taxa_name_order_final", "tx_plot_theme_final",
                            "c_results", "p_results", "n_results", "land_results", "water_results", "wild_results",
+                           chx_info, "chx_info", "ghg_xlimit", "weight_type",
                            "p_carbon",
                            "p_land",
                            "p_nitrogen",
@@ -431,7 +457,7 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
                            "p_water"))])
 
 ######################################################################################################
-# WILD CATCH - (plot LAST because it has a different tx_index_key)
+# WILD CATCH - (plot LAST because it has a different tx_index_key_final)
 
 # Load model outputs individually, save to plot_grid, and create multi-panel plot
 load(file.path(outdir, wild_results))
@@ -440,7 +466,7 @@ units_for_plot = bquote('kg'~CO[2]*' t'^-1~.(weight_type))
 
 interval_palette <- c("#9EA8B7", "#6A7A90", "#364F6B") # Order: light to dark
 
-wild_index_key <- wild_dat_new_weights %>%
+wild_index_key_final <- wild_dat_new_weights %>%
   group_by(clean_sci_name) %>%
   mutate(n_obs = n()) %>%
   ungroup() %>%
@@ -480,7 +506,7 @@ wild_index_key <- wild_dat_new_weights %>%
 p_wild <- fit_no_na %>%
   spread_draws(tx_ghg_w[tx]) %>%
   median_qi(tx_ghg_w, .width = c(0.95, 0.8, 0.5)) %>%
-  left_join(wild_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  left_join(wild_index_key_final, by = "tx") %>% # Join with index key to get sci and taxa names
   # Reorder from highest to lowest
   mutate(plot_taxa = as.factor(plot_taxa)) %>%
   mutate(plot_taxa = fct_reorder(plot_taxa, tx_ghg_w)) %>%
@@ -493,13 +519,14 @@ p_wild <- fit_no_na %>%
   scale_color_manual(values = interval_palette) +
   theme_classic() + 
   coord_cartesian(xlim = c(0, ghg_xlimit)) +
-  tx_plot_theme + 
+  tx_plot_theme_final + 
   labs(x = units_for_plot, y = "", title = "")
 # p_wild
 # ggsave(filename = file.path(outdir, "plot_WILD-GHG-TAXA-LEVEL-WEIGHTED-formatted.png"), width = 11, height = 8.5)
 
-rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx_plot_theme",
+rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key_final", "full_taxa_name_order_final", "tx_plot_theme_final",
                            "c_results", "p_results", "n_results", "land_results", "water_results", "wild_results",
+                           chx_info, "chx_info", "ghg_xlimit", "weight_type",
                            "p_carbon",
                            "p_land",
                            "p_nitrogen",
@@ -509,6 +536,7 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key", "full_taxa_name_order", "tx
 
 # COMBINE INTO PANEL WITH FACET LABELS:
 # USE: facet_grid(switch = "y") # "switch" moves y-axis label from right to left side
+# OPTION: Choose 5 panel or 6 panel plot
 
 # 6 panel plot:
 p_carbon_facet <- p_carbon + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
@@ -517,8 +545,8 @@ p_left <- plot_grid(p_carbon_facet, p_wild_facet, ncol = 1, nrow = 2, align = "h
 p_water_facet <- p_water + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
 p_right <- plot_grid(p_nitrogen, p_phosphorus, p_water_facet, p_land, ncol = 2, nrow = 2, align = "h", axis = "b", labels = c("b", "c", "e", "f"), rel_widths = c(1.3, 1))
 plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
-ggsave(filename = file.path(outdir, "plot_Figure-1_facet-labels.png"), width = 183, height = 90, units = "mm")
-ggsave(filename = file.path(outdir, "plot_Figure-1_facet-labels.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
+ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm") # manually change filename after save
+ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")  # manually change filename after save
 
 # Use NO FACET version below for 5-panel plot
 # 5 panel plot
