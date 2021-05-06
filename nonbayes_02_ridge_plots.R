@@ -129,7 +129,6 @@ ghg_ridge_intensity <- ggplot(total_stressor_species_summary_plot %>%
        aes(x = total_value, y = full_intensity)) +
   #geom_density_ridges(alpha = 0.7, fill = "#364F6B") +
   geom_density_ridges(alpha = 0.7, fill = "#364F6B", scale = 0.9) +
-  scale_x_continuous(labels = c("0", "1e4", "2e4", "3e4"), breaks = c(0, 10000, 20000, 30000)) +
   labs(title = "GHG", x = units_for_ghg, y = "") +
   theme_ridges() +
   ridge_plot_theme
@@ -285,19 +284,22 @@ water_ridge_taxa <- ggplot(total_stressor_species_summary_plot %>%
   theme(axis.text.y=element_blank())
 
 #png(file.path(outdir, "ridge-plots_intensity.png"), width = 8, height = 4, units = "in", res = 300)
-png(file.path(outdir, "scaled-ridge-plots_intensity.png"), width = 8, height = 4, units = "in", res = 300)
+#png(file.path(outdir, "scaled-ridge-plots_intensity.png"), width = 8, height = 4, units = "in", res = 300)
+pdf(file = file.path(outdir, "scaled-ridge-plots_intensity.pdf"), width = 8, height = 4) 
 ggarrange(ghg_ridge_intensity, N_ridge_intensity, P_ridge_intensity,
           land_ridge_intensity, water_ridge_intensity, nrow = 1)
 dev.off()
 
 #png(file.path(outdir, "ridge-plots_system.png"), width = 8, height = 4, units = "in", res = 300)
-png(file.path(outdir, "scaled-ridge-plots_system.png"), width = 8, height = 4, units = "in", res = 300)
+#png(file.path(outdir, "scaled-ridge-plots_system.png"), width = 8, height = 4, units = "in", res = 300)
+pdf(file = file.path(outdir, "scaled-ridge-plots_system.pdf"), width = 8, height = 4) 
 ggarrange(ghg_ridge_system, N_ridge_system, P_ridge_system,
           land_ridge_system, water_ridge_system, nrow = 1)
 dev.off()
 
 #png(file.path(outdir, "ridge-plots_taxa.png"), width = 8, height = 4, units = "in", res = 300)
-png(file.path(outdir, "scaled-ridge-plots_taxa.png"), width = 8, height = 4, units = "in", res = 300)
+#png(file.path(outdir, "scaled-ridge-plots_taxa.png"), width = 8, height = 4, units = "in", res = 300)
+pdf(file = file.path(outdir, "scaled-ridge-plots_taxa.pdf"), width = 8, height = 4) 
 ggarrange(ghg_ridge_taxa, N_ridge_taxa, P_ridge_taxa,
           land_ridge_taxa, water_ridge_taxa, nrow = 1)
 dev.off()

@@ -3,6 +3,7 @@
 #_______________________________________________________________________________________________________________________#
 # Load packages and source functions
 #_______________________________________________________________________________________________________________________#
+rm(list=ls())
 library(tidyverse)
 library(countrycode)
 library(ggplot2)
@@ -22,7 +23,7 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # Load data
 #_______________________________________________________________________________________________________________________#
 # Load full lca data with predicted parameters
-df <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"))
+df <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"))
 
 # Load and join weightings
 prod_weightings <- read.csv(file.path(datadir, "aqua_prod_weightings.csv"))
@@ -101,7 +102,7 @@ fish_NP <- fish_NP %>%
   select(clean_sci_name, N_t_liveweight_t, P_t_liveweight_t)
 
 df <- df %>%
-  left_join(fish_NP, by = "clean_sci_name")
+  left_join(fish_NP, by = c("clean_sci_name", "N_t_liveweight_t", "P_t_liveweight_t"))
 
 #_______________________________________________________________________________________________________________________#
 # Format data into taxa means and SDs for each model parameter
@@ -166,27 +167,31 @@ perturbation_mean <- compare_perturbations_mean(n = -0.10)
 plot_perturbation <- perturbation_mean %>% 
   pivot_longer(cols = fcr_ghg_percent_change:yield_water_percent_change, names_sep = "_", names_to = c("Parameter", "Stressor", "drop1", "drop2")) %>%
   select(-contains("drop")) %>%
-  mutate(taxa = case_when(
-    taxa == "trout" ~ "trout",
-    taxa == "tilapia" ~ "tilapia",
-    taxa == "shrimp" ~ "shrimp",
-    taxa == "salmon" ~ "salmon",
-    taxa == "oth_carp" ~ "misc carp",
-    taxa == "misc_marine" ~ "misc marine",
-    taxa == "misc_diad" ~ "misc diad",
-    taxa == "milkfish" ~ "milkfish",
-    taxa == "hypoph_carp" ~ "big/silverhead",
-    taxa == "catfish" ~ "catfish",
-    taxa == "bivalves" ~"bivalves",
-    taxa == "plants" ~ "seaweeds"
+  mutate(taxa = case_when(taxa == "hypoph_carp" ~ "silver/bighead",
+                          taxa == "oth_carp" ~ "misc carp",
+                          taxa == "misc_diad" ~ "misc diad",
+                          taxa == "misc_fresh" ~ "misc freshwater",
+                          taxa == "misc_marine" ~ "misc marine",
+                          taxa == "fresh_crust" ~ "freshwater crust",
+                          taxa == "plants" ~ "seaweeds",
+                          TRUE ~ taxa
   ))
 
 plot_perturbation$Parameter <- factor(plot_perturbation$Parameter, levels = c("fcr", "soy", "crops", "animal", "fmfo", "energy", "yield"))
-plot_perturbation$taxa <- factor(plot_perturbation$taxa, levels = c("misc diad", "misc marine", 
-                                                    "shrimp", "milkfish", "tilapia", "catfish", 
-                                                    "misc carp", "trout", "salmon", 
-                                                    "big/silverhead", "seaweeds", "bivalves"))
-plot_perturbation$taxa <- factor(plot_perturbation$taxa, levels=rev(levels(plot_perturbation$taxa)))
+# Set taxa order to match Figure 1
+taxa_order <- c("seaweeds",
+                "bivalves",
+                "silver/bighead",
+                "salmon",
+                "trout",
+                "misc carp",
+                "catfish",
+                "milkfish",
+                "shrimp",
+                "tilapia",
+                "misc marine",
+                "misc diad")
+plot_perturbation$taxa <- factor(plot_perturbation$taxa, levels = taxa_order)
 
 base_size <- 10
 base_family <- "sans"
@@ -199,18 +204,26 @@ names(label_names) <- c("ghg", "land", "water", "N", "P")
 plot_perturbation$value[is.na(plot_perturbation$value)] <- 0
 plot_perturbation$value[plot_perturbation$value > 20] <- NA 
 
+low_color <- "#364F6B" # blue
+#low_color <- "#799442" # green i.e., For green light vs red light (reduction vs increase in stressors)
+high_color <- "#C93F3F" # red
+mid_color <- "white"
+
 fig_4a <- ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
   geom_tile() +
   labs(x = "", y = "") +
   facet_wrap(~Stressor, nrow = 1, labeller = labeller(Stressor = label_names)) +
-  scale_fill_gradientn(colours = c("#FFD947", "#FFE78B", "#FFF3C4", "#FFFBEC", "#F3F5F6", "#C3CAD3", "#758699", "#364F6B"),
+  scale_fill_gradient2(low = low_color,
+                       mid = mid_color,
+                       high = high_color,
+                       midpoint = 0,
                        na.value = "black") +
   guides(fill = guide_colourbar(barwidth = 10, barheight = 0.5)) +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
         axis.title = element_text(size = ceiling(base_size*0.8)), 
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        axis.text.x = element_text(angle = 90, vjust = 0.2, hjust = 1),
         panel.grid.minor = element_blank(), 
         panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
         panel.grid.major.x = element_blank(), 
@@ -305,7 +318,7 @@ stressor_s2c <- stressor_s2c %>%
   select(taxa, contains("total")) %>%
   pivot_longer(cols = total_ghg:total_water, names_sep = "_", names_to = c("drop", "Stressor")) %>%
   select(-contains("drop"))
-stressor_s2c$scenario <- "Replace FMFO with fish by-products"
+stressor_s2c$scenario <- "Replace FMFO w/ byproducts"
 
 # Scenario 2d: Replace FMFO with low impact fishery by-products
 feed_fp_s2d <- read.csv(file.path(datadir, "feed_fp_scenario_2d_mass.csv"))
@@ -437,32 +450,24 @@ scenarios <- stressor_baseline %>%
   bind_rows(stressor_s7) %>%
   bind_rows(stressor_s8) %>%
   filter(!(taxa %in% c("bivalves", "plants"))) %>%
-  mutate(taxa = case_when(
-    taxa == "trout" ~ "trout",
-    taxa == "tilapia" ~ "tilapia",
-    taxa == "shrimp" ~ "shrimp",
-    taxa == "salmon" ~ "salmon",
-    taxa == "oth_carp" ~ "misc carps",
-    taxa == "misc_marine" ~ "misc marine fishes",
-    taxa == "misc_diad" ~ "misc diad fishes",
-    taxa == "milkfish" ~ "milkfish",
-    taxa == "hypoph_carp" ~ "big/silverhead carp",
-    taxa == "catfish" ~ "catfish"
+  mutate(taxa = case_when(taxa == "hypoph_carp" ~ "silver/bighead",
+                          taxa == "oth_carp" ~ "misc carp",
+                          taxa == "misc_diad" ~ "misc diad",
+                          taxa == "misc_fresh" ~ "misc freshwater",
+                          taxa == "misc_marine" ~ "misc marine",
+                          taxa == "fresh_crust" ~ "freshwater crust",
+                          taxa == "plants" ~ "seaweeds",
+                          TRUE ~ taxa
   ))
 
 scenarios$Stressor <- factor(scenarios$Stressor, levels = c("ghg", "land", "water", "N", "P"))
-scenarios$taxa <- factor(scenarios$taxa, levels = c("misc marine fishes", "misc diad fishes",
-                                                    "shrimp", "trout", "milkfish", "salmon", 
-                                                    "tilapia", "catfish", "misc carps", 
-                                                    "big/silverhead carp"))
-scenarios$taxa <- factor(scenarios$taxa, levels=rev(levels(scenarios$taxa)))
+scenarios$taxa <- factor(scenarios$taxa, levels = taxa_order)
 
-png("scenarios_facetwrap_20120107.png", height = 11, width = 8.5, units = "in", res = 300)
-ggplot(scenarios, aes(x = value, y = scenario)) +
-  geom_bar(stat = "identity") +
-  facet_grid(rows = vars(taxa), cols = vars(Stressor), scales = "free")
-dev.off()
-
+# png("scenarios_facetwrap_20120107.png", height = 11, width = 8.5, units = "in", res = 300)
+# ggplot(scenarios, aes(x = value, y = scenario)) +
+#   geom_bar(stat = "identity") +
+#   facet_grid(rows = vars(taxa), cols = vars(Stressor), scales = "free")
+# dev.off()
 
 scenarios_diff <- scenarios %>%
   filter(scenario != "Baseline") %>%
@@ -470,85 +475,106 @@ scenarios_diff <- scenarios %>%
             by = c("taxa", "Stressor")) %>%
   mutate(value_change = value - baseline_value, value_percent_change = 100*(value - baseline_value)/baseline_value)
 
+lollipop_theme <- theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+                        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+                        axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
+                        axis.title = element_text(size = ceiling(base_size*0.8)), 
+                        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+                        panel.grid.minor = element_blank(), 
+                        panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
+                        panel.grid.major.x = element_blank(), 
+                        panel.background = element_blank(), panel.border = element_blank(),
+                        strip.background = element_rect(linetype = 1, fill = "white"), 
+                        strip.text = element_text(), 
+                        strip.text.x = element_text(hjust = 0, vjust = 0), 
+                        strip.text.y = element_text(angle = -90, size = base_size*0.7), 
+                        strip.placement.y = "outside",
+                        legend.text = element_blank(), 
+                        legend.title = element_blank(), 
+                        legend.key = element_blank(), 
+                        legend.position="none",
+                        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+                        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
 
-fig_4b <- ggplot(scenarios_diff %>% 
-                   filter(scenario %in% c("FCR lower 20th", "Replace FMFO with fish by-products", 
-                                "Yield upper 20th", "Deforestation-free soy & crops")) %>%
-                   mutate(plot_shape = ifelse(value_percent_change < -100, "over", "under")) %>%
-                   mutate(value_percent_change = ifelse(value_percent_change < -100, -100, value_percent_change)), 
-       aes(x = value_percent_change, y = taxa, shape = plot_shape)) +
-  geom_point(size = 2) + 
+# ORIGINAL 100% lollipop cutoff
+# lollipop_dat <- scenarios_diff %>% 
+#   filter(scenario %in% c("FCR lower 20th", "Replace FMFO w/ byproducts", 
+#                          "Yield upper 20th", "Deforestation-free soy & crops")) %>%
+#   mutate(plot_shape = ifelse(value_percent_change < -100, "over", "under")) %>%
+#   mutate(value_percent_change = ifelse(value_percent_change < -100, -100, value_percent_change))
+
+# fig_4b <- ggplot(lollipop_dat, 
+#        aes(x = value_percent_change, y = taxa, shape = plot_shape)) +
+#   geom_point(size = 2) + 
+#   scale_shape_manual(values=c(60, 20)) +
+#   geom_segment(aes(x = 0, xend=value_percent_change, yend = taxa)) +
+#   geom_vline(xintercept = 0) +
+#   labs(x = "% Change", y = "") +
+#   scale_x_continuous(limits = c(-100, 25)) +
+#   facet_grid(rows = vars(scenario), cols = vars(Stressor), switch = "y",  
+#              labeller = labeller(Stressor = label_names, scenario =label_wrap_gen(15))) +
+#   lollipop_theme
+
+# Try with a 50% cutoff
+lollipop_dat <- scenarios_diff %>%
+  filter(scenario %in% c("FCR lower 20th", "Replace FMFO w/ byproducts",
+                         "Yield upper 20th", "Deforestation-free soy & crops")) %>%
+  mutate(plot_shape = ifelse(value_percent_change < -50, "over", "under")) %>%
+  mutate(value_percent_change = ifelse(value_percent_change < -50, -50, value_percent_change))
+
+fig_4b <- ggplot(lollipop_dat,
+                 aes(x = value_percent_change, y = taxa, shape = plot_shape)) +
+  geom_point(size = 2) +
   scale_shape_manual(values=c(60, 20)) +
   geom_segment(aes(x = 0, xend=value_percent_change, yend = taxa)) +
   geom_vline(xintercept = 0) +
   labs(x = "% Change", y = "") +
-  scale_x_continuous(limits = c(-100, 25)) +
-  facet_grid(rows = vars(scenario), cols = vars(Stressor), switch = "y",  
+  scale_x_continuous(limits = c(-50, 25), labels = c(-50, -25, 0), breaks = c(-50, -25, 0)) +
+  facet_grid(rows = vars(scenario), cols = vars(Stressor), switch = "y",
              labeller = labeller(Stressor = label_names, scenario =label_wrap_gen(15))) +
-  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-        axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
-        axis.title = element_text(size = ceiling(base_size*0.8)), 
-        axis.text.x = element_text(angle = 90),
-        panel.grid.minor = element_blank(), 
-        panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
-        panel.grid.major.x = element_blank(), 
-        panel.background = element_blank(), panel.border = element_blank(),
-        strip.background = element_rect(linetype = 1, fill = "white"), 
-        strip.text = element_text(), 
-        strip.text.x = element_text(vjust = 0.5), 
-        strip.text.y = element_text(angle = -90), 
-        strip.placement.y = "outside",
-        legend.text = element_blank(), 
-        legend.title = element_blank(), 
-        legend.key = element_blank(), 
-        legend.position="none",
-        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
-        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+  lollipop_theme
 
-png("fig_4.png", width = 89, height = 189, units = "mm", res = 300)
-ggarrange(fig_4a, fig_4b, nrow = 2, heights = c(1, 2.25), labels = c("a", "b"))
+margin_theme <- theme(plot.margin = unit(c(0, 0, 0, -3), "mm"),
+                                 panel.spacing = unit(1, "mm"),
+                                 axis.title.y = element_text(margin = unit(c(0, 0, 0, -1), "mm")),
+                                 axis.text.y = element_text(margin = unit(c(0, 0, 0, -3), "mm")))
+
+#png(file = file.path(outdir, "plot_Figure-4.png"), width = 89, height = 189, units = "mm", res = 300)
+pdf(file = file.path(outdir, "plot_Figure-4.pdf"), width = 3.5, height = 7.44) # convert 89 x 189 mm to inches
+# Adjust spacing between and around plots
+plot_grid(fig_4a + margin_theme,
+          fig_4b + margin_theme,
+          nrow = 2, align = "v", labels = c("a", "b"), axis = "l", rel_heights = c(0.4, 1))
 dev.off()
 
-                            
 
-# SI Fig for the other scenarios
-SI_fig_4b_other_scenarios <- ggplot(scenarios_diff %>% 
-                   filter(scenario %in% c("Replace FMFO with soy & crops", "Replace FMFO with deforestation-free soy", 
-                                          "Replace FMFO with low impact fishery by-products", 
+#_______________________________________________________________________________________________________________________#
+# Additional aquaculture intervention figures for SI
+#_______________________________________________________________________________________________________________________#
+                            
+SI_fig_4b_other_scenarios <- ggplot(scenarios_diff %>%
+                   filter(scenario %in% c("Replace FMFO with soy & crops", "Replace FMFO with deforestation-free soy",
+                                          "Replace FMFO with low impact fishery by-products",
                                           #"All by-products sourced from low impact fisheries",
-                                          "Zero emission electricity" )), 
+                                          "Zero emission electricity" )),
                  aes(x = value_percent_change, y = taxa)) +
-  geom_point() + 
+  geom_point() +
   geom_segment(aes(x = 0, xend=value_percent_change, yend = taxa)) +
   geom_vline(xintercept = 0) +
   labs(x = "% Change", y = "") +
+  scale_x_continuous(limits = c(-50, 25), labels = c(-50, -25, 0), breaks = c(-50, -25, 0)) +
   facet_grid(rows = vars(scenario), cols = vars(Stressor), switch = "y",
-             labeller = label_wrap_gen(20)) +
-  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-        axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
-        axis.title = element_text(size = ceiling(base_size*0.8)), 
-        axis.text.x = element_text(angle = 90),
-        panel.grid.minor = element_blank(), 
-        panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
-        panel.grid.major.x = element_blank(), 
-        panel.background = element_blank(), panel.border = element_blank(),
-        strip.background = element_rect(linetype = 1, fill = "white"), 
-        strip.text = element_text(), 
-        strip.text.x = element_text(vjust = 0.5), 
-        strip.text.y = element_text(angle = -90), 
-        strip.placement.y = "outside",
-        legend.text = element_text(size = ceiling(base_size*0.9), family = "sans"), 
-        legend.title = element_blank(), 
-        legend.key = element_rect(fill = "white", colour = NA), 
-        legend.position="bottom",
-        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
-        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+             labeller = labeller(Stressor = label_names, scenario = label_wrap_gen(20))) +
+  lollipop_theme
 
-png("fig_4_other_scenarios.png", width = 4, height = 8, units = "in", res = 300)
-SI_fig_4b_other_scenarios
+png(file.path(outdir, "plot_Figure-SI-X_other-lever-scenarios.png"), width = 89, height = 189*(1/1.4), units = "mm", res = 300)
+SI_fig_4b_other_scenarios + margin_theme
 dev.off()
+
+
+#_______________________________________________________________________________________________________________________#
+# Capture fishery interventions figures for SI
+#_______________________________________________________________________________________________________________________#
 
 # Capture fishery intervention figures
 capture_scenarios_diff <- capture_scenarios %>%
