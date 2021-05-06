@@ -33,21 +33,16 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # STEP 1: LOAD AND FORMAT DATA
 
 # Load Data
-# lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
-lca_full_dat <- read.csv(file.path(datadir, "2021-04-27_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
-
-# Load on-farm evaporative water loss (NOAA data - country-level mean of monthly climatological means 1981-2010)
-evap_clim <- read.csv(file.path(datadir, "20201222_clim_summarise_by_country.csv")) %>%
-  mutate(iso3c = countrycode(admin, origin = "country.name", destination = "iso3c")) %>%
-  select(-X) %>%
-  drop_na()
+#lca_full_dat <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"), fileEncoding="UTF-8-BOM")
 
 # Format data for model:
 lca_model_dat <- lca_full_dat %>%
   select(study_id, iso3c, clean_sci_name, taxa, intensity, system, 
          feed_soy, feed_crops, feed_fmfo, feed_animal, 
          fcr, 
-         yield = Yield_m2_per_t) %>%
+         yield = Yield_m2_per_t,
+         mean_evap_mm) %>%
   # Option 1: TEST ON "UNIFIED" Dataset first: only system == ponds or recirculating tanks & FCR != 0 - later need to add conditionals to STAN
   # filter(fcr != 0)  %>%
   # filter(system %in% c("Ponds", "Recirculating and tanks")) %>%
@@ -73,7 +68,7 @@ lca_model_dat <- lca_full_dat %>%
   mutate(yield = if_else(system %in% c("Ponds", "Recirculating and tanks")==FALSE, true = 0, false = yield)) %>%
   drop_na() %>% # After fixing NA's in yield, drop all other NAs
   # Merge evap dat with Countries in lca_data - only need mean_evap_mm and ID columns: study_id, Country, iso3c
-  left_join(evap_clim, by = "iso3c") %>%
+  # left_join(evap_clim, by = "iso3c") %>%
   # For non-freshwater taxa, set mean_evap_mm to 0
   mutate(mean_evap_mm = if_else(taxa %in% c("oth_carp", "catfish", "hypoph_carp", "tilapia", "trout", "fresh_crust")==FALSE, true = 0, false = mean_evap_mm)) %>%
   # Add grow out period as a proportion of the year (i.e., no. of days (mean per taxa group) / 365)
@@ -95,21 +90,13 @@ lca_model_dat <- lca_full_dat %>%
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
 
-# OPTION: Apply EDIBLE PORTIONS adjustment
-# REMINDER: for plants edible_mean should be 100
-farmed_edible <- read.csv(file.path(datadir, "aquaculture_edible_CFs.csv"))
-lca_model_dat <- lca_model_dat %>%
-  left_join(farmed_edible, by = c("taxa" = "fishprint_taxa")) %>%
-  mutate(water = water * 1/(edible_mean/100)) %>%
-  mutate(fcr = fcr * 1/(edible_mean/100))
-
 # Choose allocation method:
 # Loop through FEED IMPACT CONSTANTS by allocation_method (recreate everything after lca_model_dat which was cleared from workspace)
-for (i in c("Mass", "Gross energy content", "Economic")){
-set_allocation <- i
+#for (i in c("Mass", "Gross energy content", "Economic")){
+#set_allocation <- i
   
   # OR.. Choose allocation method manually
-  #set_allocation <- "Mass"
+  set_allocation <- "Mass"
   #set_allocation <- "Gross energy content"
   #set_allocation <- "Economic"
   
@@ -830,6 +817,6 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 
 rm(fit_no_na) # clear fit_no_na before restarting loop
 
-} # End Loop by allocation method: for (i in c("Mass", "Gross energy content", "Economic")){
+#} # End Loop by allocation method: for (i in c("Mass", "Gross energy content", "Economic")){
 
 # BEFORE CLEARING WORKSPACE, run 04_plot_fcr_and_feed at least once (outputs will be the same for all models)

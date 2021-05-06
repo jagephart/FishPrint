@@ -32,26 +32,26 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # SELECT BETWEEN PHOSPHORUS VS NITROGEN MODEL
 # option 1: Phosphorus model
-fish_element <- "P_t_liveweight_t"
-impact <- "Freshwater eutrophication"
-feed_element <- "P"
-interval_palette <- c("#FFB4C4", "#FF86A4", "#FC5185") # Order: light to dark
+# fish_element <- "P_t_liveweight_t"
+# impact <- "Freshwater eutrophication"
+# feed_element <- "P"
+# interval_palette <- c("#FFB4C4", "#FF86A4", "#FC5185") # Order: light to dark
 
 # option 2: Nitrogen model:
-# fish_element <- "N_t_liveweight_t"
-# impact <- "Marine eutrophication"
-# feed_element <- "N"
-# interval_palette <- c("#FFD5A9", "#FFBD79", "#FFA647") # COMPLEMENTARY COLOR - use orange instead of yellow
+fish_element <- "N_t_liveweight_t"
+impact <- "Marine eutrophication"
+feed_element <- "N"
+interval_palette <- c("#FFD5A9", "#FFBD79", "#FFA647") # COMPLEMENTARY COLOR - use orange instead of yellow
 
 # Load Data
-# lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
-lca_full_dat <- read.csv(file.path(datadir, "2021-04-27_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
+#lca_full_dat <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"), fileEncoding="UTF-8-BOM")
 
-fish_content_dat <- read.csv(file.path(datadir, "fish_NP_clean.csv")) %>%
-  select(clean_sci_name, !!sym(fish_element))
+# fish_content_dat <- read.csv(file.path(datadir, "fish_NP_clean.csv")) %>%
+#   select(clean_sci_name, !!sym(fish_element))
 
 lca_model_dat <- lca_full_dat %>%
-  left_join(fish_content_dat, by = "clean_sci_name") %>%
+  #left_join(fish_content_dat, by = "clean_sci_name") %>%
   select(study_id, iso3c, clean_sci_name, taxa, intensity, system, 
          feed_soy, feed_crops, feed_fmfo, feed_animal, 
          fcr,
@@ -83,14 +83,6 @@ lca_model_dat <- lca_full_dat %>%
          sci = as.numeric(clean_sci_name),
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
-
-# OPTION: Apply EDIBLE PORTIONS adjustment
-# REMINDER: for plants edible_mean should be 100
-farmed_edible <- read.csv(file.path(datadir, "aquaculture_edible_CFs.csv"))
-lca_model_dat <- lca_model_dat %>%
-  left_join(farmed_edible, by = c("taxa" = "fishprint_taxa")) %>%
-  mutate(fcr = fcr * 1/(edible_mean/100)) %>%
-  mutate(!!sym(fish_element) := !!sym(fish_element) * 1/(edible_mean/100))
 
 # CHOOSE FEED IMPACT CONSTANT:
 set_allocation <- "Mass"
@@ -226,26 +218,6 @@ slice_where_tx <- c(0, slice_where_tx)
 # Set data for stan:
 # REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
 # NO PRIORS
-stan_data <- list(N = N,
-                  N_SCI = N_SCI,
-                  n_to_sci = n_to_sci,
-                  N_TX = N_TX,
-                  sci_to_tx = sci_to_tx,
-                  fcr = fcr,
-                  K = K,
-                  feed_weights = feed_weights,
-                  sci_kappa = sci_kappa,
-                  tx_kappa = tx_kappa,
-                  fp_constant = fp_constant,
-                  fish_content = fish_content,
-                  feed_content = feed_content,
-                  sci_w = sci_w,
-                  where_tx = where_tx,
-                  n_sci_in_tx = n_sci_in_tx,
-                  slice_where_tx = slice_where_tx)
-
-#WITH PRIORS
-# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
 # stan_data <- list(N = N,
 #                   N_SCI = N_SCI,
 #                   n_to_sci = n_to_sci,
@@ -262,9 +234,29 @@ stan_data <- list(N = N,
 #                   sci_w = sci_w,
 #                   where_tx = where_tx,
 #                   n_sci_in_tx = n_sci_in_tx,
-#                   slice_where_tx = slice_where_tx,
-#                   priors = priors,
-#                   prior_vec_index = prior_vec_index)
+#                   slice_where_tx = slice_where_tx)
+
+#WITH PRIORS
+# REMINDER RE: PRIORS vs NO PRIORS - make sure STAN code below for defining/applying priors is allowed to run or commented out as needed
+stan_data <- list(N = N,
+                  N_SCI = N_SCI,
+                  n_to_sci = n_to_sci,
+                  N_TX = N_TX,
+                  sci_to_tx = sci_to_tx,
+                  fcr = fcr,
+                  K = K,
+                  feed_weights = feed_weights,
+                  sci_kappa = sci_kappa,
+                  tx_kappa = tx_kappa,
+                  fp_constant = fp_constant,
+                  fish_content = fish_content,
+                  feed_content = feed_content,
+                  sci_w = sci_w,
+                  where_tx = where_tx,
+                  n_sci_in_tx = n_sci_in_tx,
+                  slice_where_tx = slice_where_tx,
+                  priors = priors,
+                  prior_vec_index = prior_vec_index)
 
 # NORMAL DISTRIBUTION model - fed and non-fed
 stan_no_na <- 'data {

@@ -50,7 +50,8 @@ wild_edible <- read.csv(file.path(datadir, "capture_edible_CFs.csv"))
 wild_dat_new_weights <- wild_dat_new_weights %>% # Join and apply edible portions weightings
   left_join(wild_edible, by = c("taxa" = "full_taxa_name")) %>% 
   mutate(ghg = ghg * 1/(edible_mean/100))
-  
+
+
 # Get priors on taxa-level GHG
 source("Functions.R")
 priors_csv <- clean_wild_priors("Priors - Capture.csv") %>%

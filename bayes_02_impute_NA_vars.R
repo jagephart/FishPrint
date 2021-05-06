@@ -3,6 +3,7 @@
 # Feed proportions
 # All energy inputs: Electricity, Diesel, Petrol, Natural Gas
 # Yield
+# Apply edible weight adjustment
 
 # First run: 01_process_data_for_analysis.R, to make lca_dat_clean_groups
 rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups"))])
@@ -1481,4 +1482,43 @@ lca_dat_imputed <- feed_dat_merge %>%
          feed_animal = if_else(fcr==0, true = 0, false = feed_animal))
 
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-write.csv(lca_dat_imputed, file.path(datadir, paste(Sys.Date(), "_lca-dat-imputed-vars.csv", sep = "")), row.names = FALSE)
+
+write.csv(lca_dat_imputed, file.path(datadir, paste(Sys.Date(), "_lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv", sep = "")), row.names = FALSE)
+
+
+# OPTION: EDIBLE WEIGHT ADJUSTMENT
+# REMINDER: for plants edible_mean should be 100
+# NOTE: No data imputation required for wild capture model, so edible weight adjustment happens in bayes_03_wild_model.R
+farmed_edible <- read.csv(file.path(datadir, "aquaculture_edible_CFs.csv"))
+
+# Join with other data that also need edible weight adjustment
+# For N and P models: N and P content of seafood products
+fish_content_dat <- read.csv(file.path(datadir, "fish_NP_clean.csv"))
+# For water models: On-farm evaporative water loss (NOAA data - country-level mean of monthly climatological means 1981-2010)
+# library(countrycode)
+evap_clim <- read.csv(file.path(datadir, "20201222_clim_summarise_by_country.csv")) %>%
+  mutate(iso3c = countrycode(admin, origin = "country.name", destination = "iso3c")) %>%
+  select(-X) %>%
+  drop_na()
+
+lca_dat_edible <- lca_dat_imputed %>%
+  left_join(farmed_edible, by = c("taxa" = "fishprint_taxa")) %>%
+  left_join(fish_content_dat, by = "clean_sci_name") %>%
+  left_join(evap_clim, by = "iso3c") %>%
+  # FCR
+  mutate(fcr = fcr * 1/(edible_mean/100)) %>%
+  # GHG
+  mutate(Electricity_kwh = Electricity_kwh * 1/(edible_mean/100),
+         Diesel_L = Diesel_L * 1/(edible_mean/100),
+         Petrol_L = Petrol_L * 1/(edible_mean/100),
+         NaturalGas_L = NaturalGas_L * 1/(edible_mean/100)) %>%
+  # Land
+  mutate(Yield_m2_per_t = Yield_m2_per_t * 1/(edible_mean/100)) %>%
+  # N and P
+  mutate(N_t_liveweight_t = N_t_liveweight_t * 1/(edible_mean/100),
+         P_t_liveweight_t = P_t_liveweight_t * 1/(edible_mean/100)) %>%
+  # Water
+  mutate(mean_evap_mm = mean_evap_mm * 1/(edible_mean/100))
+  
+write.csv(lca_dat_edible, file.path(datadir, paste(Sys.Date(), "_lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv", sep = "")), row.names = FALSE)
+         

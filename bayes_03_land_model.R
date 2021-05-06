@@ -30,8 +30,8 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # STEP 1: LOAD AND FORMAT DATA
 
 # Load Data
-#lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
-lca_full_dat <- read.csv(file.path(datadir, "2021-04-27_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"), fileEncoding="UTF-8-BOM")
 
 # Format data for model:
 lca_model_dat <- lca_full_dat %>%
@@ -69,14 +69,6 @@ lca_model_dat <- lca_full_dat %>%
          sci = as.numeric(clean_sci_name),
          taxa = as.factor(taxa),
          tx = as.numeric(taxa)) 
-
-# OPTION: Apply EDIBLE PORTIONS adjustment
-# REMINDER: for plants edible_mean should be 100
-farmed_edible <- read.csv(file.path(datadir, "aquaculture_edible_CFs.csv"))
-lca_model_dat <- lca_model_dat %>%
-  left_join(farmed_edible, by = c("taxa" = "fishprint_taxa")) %>%
-  mutate(yield = yield * 1/(edible_mean/100)) %>%
-  mutate(fcr = fcr * 1/(edible_mean/100))
 
 # Get priors on taxa-level FCR
 # Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
