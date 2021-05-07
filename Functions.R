@@ -644,7 +644,159 @@ clean_feedNutrition <- function(feedNutrition_data){
 
 # Refer to clean_fish_NP.R for functions to estimate fish N and P content
 
+#_____________________________________________________________________________________________________#
+# Calculate the weighted averages for the feed components
+#_____________________________________________________________________________________________________#
 
+# Calculate soy weightings
+# Since the specific soy products don't map onto the FAO items, use all soy exports for all soy products
+calc_soy_weights <- function(faostat = faostat, feed_fp = feed_fp, deforestation_free = FALSE){
+  weightings <-  faostat %>% 
+    filter(Unit == "tonnes") %>% 
+    filter(Item %in% c("Soybeans", "Cake, soybeans", "Oil, soybean")) %>%
+    {if (deforestation_free == TRUE) filter(., iso3c != "BRA")
+      else .} %>%
+    group_by(iso3c) %>%
+    summarise(Exports = sum(Value, na.rm = TRUE)) %>%
+    filter(Exports > 0) %>% 
+    left_join(feed_fp %>% filter(Input.type == "Soy"), by = c("iso3c")) %>%
+    filter(is.na(Input.type) == FALSE) %>%
+    group_by(iso3c) %>%
+    summarise(Exports = sum(Exports, na.rm = TRUE)) %>%
+    mutate(weighting = Exports/sum(Exports)) %>%
+    select(iso3c, weighting)
+  
+  weighted_soy <- feed_fp %>% 
+    filter(Input.type == "Soy") %>%
+    left_join(weightings, by = "iso3c") %>%
+    filter(is.na(weighting) == FALSE) %>%
+    group_by(Input.type, Input, Impact.category, Allocation, Units) %>%
+    # Normalize weightings to sum to 1
+    mutate(reweighting = weighting/sum(weighting, na.rm = TRUE)) %>%
+    summarise(Value = sum(Value * reweighting)) %>%
+    # If weighting ingredient types, do here along with country weightings
+    group_by(Input.type, Impact.category, Allocation, Units) %>%
+    summarise(ave_stressor = mean(Value, na.rm = TRUE))
+  
+  return(weighted_soy)
+}
+  
+# Calculate crop weightings
+calc_crop_weights <- function(faostat = faostat, feed_fp = feed_fp, deforestation_free = FALSE){
+  weightings <- faostat %>% 
+    filter(Unit == "tonnes") %>% 
+    {if (deforestation_free == TRUE) filter(., iso3c != "ARG")
+      else .} %>%
+    group_by(iso3c, Item) %>%
+    summarise(Exports = sum(Value, na.rm = TRUE)) %>%
+    filter(Exports > 0) %>% 
+    mutate(Input = case_when(
+      (Item %in% c("Cassava Equivalent")) ~ "Cassava",
+      (Item %in% c("Maize")) ~ "Maize",
+      (Item %in% c("Cake, maize")) ~ "Corn gluten meal",
+      (Item %in% c("Cake, groundnuts")) ~ "Peanut meal",
+      (Item %in% c("Rape and Mustard Oils")) ~ "Rapeseed oil",
+      (Item %in% c("Cake, rapeseed")) ~ "Rapeseed meal",
+      (Item %in% c("Wheat")) ~ "Wheat",
+      (Item %in% c("Bran, wheat")) ~ "Wheat bran",
+      (Item %in% c("Rice")) ~ "Rice bran",
+      (Item %in% c("Cake, sunflower")) ~ "Sunflower meal"
+    )) %>%
+    filter(is.na(Input) == FALSE) %>% 
+    left_join(feed_fp %>% filter(Input.type == "Crop"), by = c("iso3c", "Input")) %>%
+    filter(is.na(Input.type) == FALSE) %>%
+    ungroup() %>%
+    group_by(Input, iso3c) %>%
+    summarise(Exports = sum(Exports, na.rm = TRUE)) %>%
+    mutate(weighting = Exports/sum(Exports)) %>%
+    select(iso3c, Input, weighting)
+  
+  weighted_crop <- feed_fp %>% 
+    filter(Input.type == "Crop") %>%
+    left_join(weightings, by = c("iso3c", "Input")) %>%
+    filter(is.na(weighting) == FALSE) %>% 
+    # If weighting soy ingredient types, do here along with country weightings
+    group_by(Input.type, Input, Impact.category, Allocation, Units) %>%
+    # Normalize weightings to sum to 1
+    mutate(reweighting = weighting/sum(weighting, na.rm = TRUE)) %>%
+    summarise(Value = sum(Value * reweighting)) %>%
+    # If weighting ingredient types, do here along with country weightings
+    group_by(Input.type, Impact.category, Allocation, Units) %>%
+    summarise(ave_stressor = mean(Value, na.rm = TRUE))
+  
+  return(weighted_crop)
+}
+
+# Calculate chicken weightings
+calc_chicken_weights <- function(faostat = faostat, feed_fp = feed_fp){
+  
+  weightings <-  faostat %>%
+    filter(Unit == "tonnes") %>%
+    filter(Item %in% c("Poultry Meat")) %>%
+    mutate(iso3c = ifelse(iso3c %in% c("FRA", "ITA"), "EUR", iso3c)) %>%
+    group_by(iso3c) %>%
+    summarise(Exports = sum(Value, na.rm = TRUE)) %>%
+    filter(Exports > 0) %>%
+    left_join(feed_fp %>%
+                filter(Input %in% c("Chicken by-product meal", "Chicken by-product oil")), by = c("iso3c")) %>%
+    filter(is.na(Input.type) == FALSE) %>%
+    group_by(iso3c) %>%
+    summarise(Exports = sum(Exports, na.rm = TRUE)) %>%
+    mutate(weighting = Exports/sum(Exports)) %>%
+    select(iso3c, weighting)
+  
+  weighted_chicken <- feed_fp %>% 
+    filter(Input %in% c("Chicken by-product meal", "Chicken by-product oil")) %>%
+    left_join(weightings, by = "iso3c") %>%
+    filter(is.na(weighting) == FALSE) %>% 
+    # If weighting soy ingredient types, do here along with country weightings
+    group_by(Input.type, Input, Impact.category, Allocation, Units) %>%  
+    # Normalize weightings to sum to 1
+    mutate(reweighting = weighting/sum(weighting, na.rm = TRUE)) %>%
+    summarise(Value = sum(Value * reweighting)) %>%
+    # If weighting ingredient types, do here along with country weightings
+    group_by(Input.type, Impact.category, Allocation, Units) %>%
+    summarise(ave_stressor = mean(Value, na.rm = TRUE))
+  
+  return(weighted_chicken)
+}
+
+# Calculate fishery weights
+calc_fishery_weights <- function(fmfo_prod = fmfo_prod, feed_fp = feed_fp){
+  weighted_fishery <- feed_fp %>%
+    filter(Input.type == c("Fishery")) %>% 
+    left_join(fmfo_prod, by = c("Input" = "Name")) %>%
+    group_by(Input.type, Impact.category, Allocation, Units) %>%
+    # Normalize weightings to sum to 1
+    mutate(reweighting = Weighting/sum(Weighting, na.rm = TRUE)) %>%
+    summarise(Value = sum(Value * reweighting)) %>%
+    group_by(Impact.category, Allocation, Units) %>%
+    summarise(ave_stressor = mean(Value, na.rm = TRUE))
+  return(weighted_fishery)
+}
+
+# Calculate fish byproduct weights
+calc_byproduct_weights <- function(fmfo_prod = fmfo_prod, feed_fp = feed_fp){
+  weighted_fishbyproduct <- feed_fp %>%
+    filter(Input.type == c("Fishery by-product")) %>% 
+    left_join(fmfo_prod, by = c("Input" = "Name")) %>%
+    group_by(Input.type,  Impact.category, Allocation, Units) %>%
+    # Normalize weightings to sum to 1
+    mutate(reweighting = Weighting/sum(Weighting, na.rm = TRUE)) %>%
+    summarise(Value = sum(Value * reweighting)) %>%
+    group_by(Impact.category, Allocation, Units) %>%
+    summarise(ave_stressor = mean(Value, na.rm = TRUE))
+  return(weighted_fishbyproduct)
+}
+
+# Combine fishery and byproduct weights
+combine_fish_weights <- function(weighted_fishery = weighted_fishery, weighted_fishbyproduct = weighted_fishbyproduct){
+  weighted_fish <- weighted_fishery %>% 
+    left_join(weighted_fishbyproduct, by = c("Impact.category", "Allocation", "Units")) %>%
+    mutate(ave_stressor = 0.675*ave_stressor.x + 0.325*ave_stressor.y) %>%
+    select(-ave_stressor.x, -ave_stressor.y)
+  return(weighted_fish)
+}
 
 #_____________________________________________________________________________________________________#
 # Create visualizations of brms gamma (or dirichlet) regression outputs

@@ -1,8 +1,10 @@
 # Generate alternate feed constants for scenarios
 
 # Libraries for processing and analyses
+rm(list=ls())
 library(tidyverse)
 library(countrycode) # part of clean.lca
+source("Functions.R")
 
 #_________________________________________________________________________________________________________________________________#
 # Load and clean data
@@ -22,85 +24,21 @@ feed_fp <- feed_fp %>%
 faostat <- read.csv(file.path(datadir, "FAOSTAT_data_12-9-2020.csv"))
 faostat$iso3c <- countrycode(faostat$Area, origin = "country.name", destination = "iso3c")
 
-# Set allocation method
-allocation_method <- "Mass"
-
 #_________________________________________________________________________________________________________________________________#
 # Load baseline feed data
 #_________________________________________________________________________________________________________________________________#
 feed_fp_baseline <- read.csv(file.path(datadir, "weighted_feed_fp.csv"))
 
 #_________________________________________________________________________________________________________________________________#
-# No land use soy and crops
+# No land use soy and crops - create mass and economic allocation versions of this
 #_________________________________________________________________________________________________________________________________#
-# Calculate soy weightings
-# Since the specific soy products don't map onto the FAO items, use all soy exports for all soy products
-weightings <-  faostat %>% 
-  filter(Unit == "tonnes") %>% 
-  filter(Item %in% c("Soybeans", "Cake, soybeans", "Oil, soybean")) %>%
-  filter(iso3c != "BRA") %>%
-  group_by(iso3c) %>%
-  summarise(Exports = sum(Value, na.rm = TRUE)) %>%
-  filter(Exports > 0) %>% 
-  left_join(feed_fp %>% filter(Input.type == "Soy"), by = c("iso3c")) %>%
-  filter(is.na(Input.type) == FALSE) %>%
-  group_by(iso3c) %>%
-  summarise(Exports = sum(Exports, na.rm = TRUE)) %>%
-  mutate(weighting = Exports/sum(Exports)) %>%
-  select(iso3c, weighting)
 
-weighted_soy <- feed_fp %>% 
-  filter(Input.type == "Soy") %>%
-  left_join(weightings, by = "iso3c") %>%
-  filter(is.na(weighting) == FALSE) %>%
-  group_by(Input.type, Input, Impact.category, Allocation, Units) %>%
-  # Normalize weightings to sum to 1
-  mutate(reweighting = weighting/sum(weighting, na.rm = TRUE)) %>%
-  summarise(Value = sum(Value * reweighting)) %>%
-  # If weighting ingredient types, do here along with country weightings
-  group_by(Input.type, Impact.category, Allocation, Units) %>%
-  summarise(ave_stressor = mean(Value, na.rm = TRUE))
+# OPTION: Choose allocation method
+allocation_method <- "Mass"
+#allocation_method <- "Economic"
 
-# Calculate crop weightings
-weightings <- faostat %>% 
-  filter(Unit == "tonnes") %>% 
-  filter(iso3c != "ARG") %>%
-  group_by(iso3c, Item) %>%
-  summarise(Exports = sum(Value, na.rm = TRUE)) %>%
-  filter(Exports > 0) %>% 
-  mutate(Input = case_when(
-    (Item %in% c("Cassava Equivalent")) ~ "Cassava",
-    (Item %in% c("Maize")) ~ "Maize",
-    (Item %in% c("Cake, maize")) ~ "Corn gluten meal",
-    (Item %in% c("Cake, groundnuts")) ~ "Peanut meal",
-    (Item %in% c("Rape and Mustard Oils")) ~ "Rapeseed oil",
-    (Item %in% c("Cake, rapeseed")) ~ "Rapeseed meal",
-    (Item %in% c("Wheat")) ~ "Wheat",
-    (Item %in% c("Bran, wheat")) ~ "Wheat bran",
-    (Item %in% c("Rice")) ~ "Rice bran",
-    (Item %in% c("Cake, sunflower")) ~ "Sunflower meal"
-  )) %>%
-  filter(is.na(Input) == FALSE) %>% 
-  left_join(feed_fp %>% filter(Input.type == "Crop"), by = c("iso3c", "Input")) %>%
-  filter(is.na(Input.type) == FALSE) %>%
-  ungroup() %>%
-  group_by(Input, iso3c) %>%
-  summarise(Exports = sum(Exports, na.rm = TRUE)) %>%
-  mutate(weighting = Exports/sum(Exports)) %>%
-  select(iso3c, Input, weighting)
-
-weighted_crop <- feed_fp %>% 
-  filter(Input.type == "Crop") %>%
-  left_join(weightings, by = c("iso3c", "Input")) %>%
-  filter(is.na(weighting) == FALSE) %>% 
-  # If weighting soy ingredient types, do here along with country weightings
-  group_by(Input.type, Input, Impact.category, Allocation, Units) %>%
-  # Normalize weightings to sum to 1
-  mutate(reweighting = weighting/sum(weighting, na.rm = TRUE)) %>%
-  summarise(Value = sum(Value * reweighting)) %>%
-  # If weighting ingredient types, do here along with country weightings
-  group_by(Input.type, Impact.category, Allocation, Units) %>%
-  summarise(ave_stressor = mean(Value, na.rm = TRUE))
+weighted_soy <- calc_soy_weights(faostat, feed_fp, deforestation_free = TRUE)
+weighted_crop <- calc_crop_weights(faostat, feed_fp, deforestation_free = TRUE)
 
 # Replace baseline soy and crops with new soy and crops
 feed_fp_noland <- feed_fp_baseline %>%
@@ -110,7 +48,6 @@ feed_fp_noland <- feed_fp_baseline %>%
   bind_rows(weighted_crop)
 
 # Format for analysis
-# Change names to match df
 feed_fp_noland <- feed_fp_noland %>%
   mutate(feed_type = case_when(
     (Input.type == "Soy") ~ "soy",
@@ -129,32 +66,20 @@ feed_fp_noland <- feed_fp_noland %>%
   filter(Allocation == allocation_method) %>%
   select(feed_type, stressor, ave_stressor)
 
-write.csv(feed_fp_noland, file.path(datadir, "feed_fp_scenario_7_mass.csv"), row.names = FALSE)
+feed_fp_noland_filename <- paste("feed_fp_scenario_7_", str_to_lower(allocation_method), ".csv", sep = "")
+write.csv(feed_fp_noland, file.path(datadir, feed_fp_noland_filename), row.names = FALSE)
 
 #_________________________________________________________________________________________________________________________________#
-# Replace FMFO with fishery by-products
+# Replace FMFO with fishery by-products - create mass and economic allocation versions of this
 #_________________________________________________________________________________________________________________________________#
-# fmfo_trade <- read.csv(file.path(datadir, "FMFO_trade.csv"))
-# weightings <- fmfo_trade %>% 
-#   filter(!(Importer %in% c("Other Asia, nes", "Areas, nes", "Other Europe, nes", "Free Zones"))) %>%
-#   filter(!(Exporter %in% c("Other Asia, nes", "Areas, nes", "Other Europe, nes", "Free Zones")))%>% 
-#   group_by(Exporter.ISO) %>% 
-#   summarise(Exports = sum(Max.Weight.Live, na.rm = TRUE)) %>% 
-#   mutate(weighting = Exports/sum(Exports)) %>%
-#   select("iso3c" = "Exporter.ISO", weighting)
 
+# OPTION: Choose allocation method
+allocation_method <- "Mass"
+#allocation_method <- "Economic"
+
+# Calculate fish byproduct weights
 fmfo_prod <- read.csv(file.path(datadir, "fish_weightings.csv"))
-
-weighted_fishbyproduct <- feed_fp %>%
-  filter(Input.type == c("Fishery by-product")) %>% 
-  left_join(fmfo_prod, by = c("Input" = "Name")) %>%
-  group_by(Input.type, Impact.category, Allocation, Units) %>%
-  # Normalize weightings to sum to 1
-  mutate(reweighting = Weighting/sum(Weighting, na.rm = TRUE)) %>%
-  summarise(Value = sum(Value * reweighting)) %>%
-  group_by(Impact.category, Allocation, Units) %>%
-  summarise(ave_stressor = mean(Value, na.rm = TRUE))
-
+weighted_fishbyproduct <- calc_byproduct_weights(fmfo_prod, feed_fp)
 weighted_fishbyproduct$Input.type <- "Fishery"
 
 feed_fp_fish_bp <- feed_fp_baseline %>%
@@ -162,7 +87,6 @@ feed_fp_fish_bp <- feed_fp_baseline %>%
   bind_rows(weighted_fishbyproduct)
 
 # Format for analysis
-# Change names to match df
 feed_fp_fish_bp <- feed_fp_fish_bp %>%
   mutate(feed_type = case_when(
     (Input.type == "Soy") ~ "soy",
@@ -181,21 +105,19 @@ feed_fp_fish_bp <- feed_fp_fish_bp %>%
   filter(Allocation == allocation_method) %>%
   select(feed_type, stressor, ave_stressor)
 
-write.csv(feed_fp_fish_bp, file.path(datadir, "feed_fp_scenario_2c_mass.csv"), row.names = FALSE)
+feed_fp_fish_bp_filename <- paste("feed_fp_scenario_2c_", str_to_lower(allocation_method), ".csv", sep = "")
+write.csv(feed_fp_fish_bp, file.path(datadir, feed_fp_fish_bp_filename), row.names = FALSE)
 
 #_________________________________________________________________________________________________________________________________#
 # Replace FMFO with low impact (Alaska Pollock) fishery by-products
 #_________________________________________________________________________________________________________________________________#
-# weightings <- fmfo_trade %>% 
-#   filter(!(Importer %in% c("Other Asia, nes", "Areas, nes", "Other Europe, nes", "Free Zones"))) %>%
-#   filter(!(Exporter %in% c("Other Asia, nes", "Areas, nes", "Other Europe, nes", "Free Zones")))%>% 
-#   group_by(Exporter.ISO) %>% 
-#   summarise(Exports = sum(Max.Weight.Live, na.rm = TRUE)) %>% 
-#   mutate(weighting = Exports/sum(Exports)) %>%
-#   select("iso3c" = "Exporter.ISO", weighting)
 
+# OPTION: Choose allocation method
+#allocation_method <- "Mass"
+allocation_method <- "Economic"
 
-weighted_fishbyproduct <- feed_fp %>%
+# Modified function calc_byproduct_weights for just Alaska Pollock
+weighted_fishbyproduct_pollock <- feed_fp %>%
   filter(Input.type == c("Fishery by-product")) %>% 
   filter(str_detect(Input, pattern = "pollock")) %>%
   left_join(fmfo_prod, by = c("Input" = "Name")) %>%
@@ -206,11 +128,12 @@ weighted_fishbyproduct <- feed_fp %>%
   # If weighting ingredient types, do here along with country weightings
   group_by(Impact.category, Allocation, Units) %>%
   summarise(ave_stressor = mean(Value, na.rm = TRUE))
-weighted_fishbyproduct$Input.type <- "Fishery"
+
+weighted_fishbyproduct_pollock$Input.type <- "Fishery"
 
 feed_fp_fish_low_impact_bp <- feed_fp_baseline %>%
   filter(Input.type != "Fishery") %>%
-  bind_rows(weighted_fishbyproduct)
+  bind_rows(weighted_fishbyproduct_pollock)
 
 # Format for analysis
 # Change names to match df
@@ -232,48 +155,19 @@ feed_fp_fish_low_impact_bp <- feed_fp_fish_low_impact_bp %>%
   filter(Allocation == allocation_method) %>%
   select(feed_type, stressor, ave_stressor)
 
-write.csv(feed_fp_fish_low_impact_bp, file.path(datadir, "feed_fp_scenario_2d_mass.csv"), row.names = FALSE)
+feed_fp_fish_low_impact_bp_filename <- paste("feed_fp_scenario_2d_", str_to_lower(allocation_method), ".csv", sep = "")
+write.csv(feed_fp_fish_low_impact_bp, file.path(datadir, feed_fp_fish_low_impact_bp_filename), row.names = FALSE)
 
 #_________________________________________________________________________________________________________________________________#
 # Low impact (Alaska Pollock) fishery by-products in FMFO
 #_________________________________________________________________________________________________________________________________#
-# weightings <- fmfo_trade %>% 
-#   filter(!(Importer %in% c("Other Asia, nes", "Areas, nes", "Other Europe, nes", "Free Zones"))) %>%
-#   filter(!(Exporter %in% c("Other Asia, nes", "Areas, nes", "Other Europe, nes", "Free Zones")))%>% 
-#   group_by(Exporter.ISO) %>% 
-#   summarise(Exports = sum(Max.Weight.Live, na.rm = TRUE)) %>% 
-#   mutate(weighting = Exports/sum(Exports)) %>%
-#   select("iso3c" = "Exporter.ISO", weighting)
 
-weighted_fishery <- feed_fp %>%
-  filter(Input.type == c("Fishery")) %>% 
-  left_join(fmfo_prod, by = c("Input" = "Name")) %>%
-  group_by(Input.type, Impact.category, Allocation, Units) %>%
-  # Normalize weightings to sum to 1
-  mutate(reweighting = Weighting/sum(Weighting, na.rm = TRUE)) %>%
-  summarise(Value = sum(Value * reweighting)) %>%
-  # If weighting ingredient types, do here along with country weightings
-  group_by(Impact.category, Allocation, Units) %>%
-  summarise(ave_stressor = mean(Value, na.rm = TRUE))
+# OPTION: Choose allocation method
+#allocation_method <- "Mass"
+allocation_method <- "Economic"
 
-weighted_fishbyproduct <- feed_fp %>%
-  filter(Input.type == c("Fishery by-product")) %>% 
-  filter(str_detect(Input, pattern = "pollock")) %>%
-  left_join(weightings, by = "iso3c") %>%
-  filter(is.na(weighting) == FALSE) %>% 
-  group_by(Input.type, Input, Impact.category, Allocation, Units) %>%
-  # Normalize weightings to sum to 1
-  mutate(reweighting = weighting/sum(weighting, na.rm = TRUE)) %>%
-  summarise(Value = sum(Value * reweighting)) %>%
-  # If weighting ingredient types, do here along with country weightings
-  group_by(Impact.category, Allocation, Units) %>%
-  summarise(ave_stressor = mean(Value, na.rm = TRUE))
-weighted_fishbyproduct$Input.type <- "Fishery"
-
-weighted_fish <- weighted_fishery %>% 
-  left_join(weighted_fishbyproduct, by = c("Impact.category", "Allocation", "Units")) %>%
-  mutate(ave_stressor = 0.675*ave_stressor.x + 0.325*ave_stressor.y) %>%
-  select(-ave_stressor.x, -ave_stressor.y)
+weighted_fishery <- calc_fishery_weights(fmfo_prod, feed_fp)
+weighted_fish <- combine_fish_weights(weighted_fishery, weighted_fishbyproduct_pollock)
 weighted_fish$Input.type <- "Fishery"
 
 feed_fp_fmfo_low_impact_bp <- feed_fp_baseline %>%
@@ -300,4 +194,5 @@ feed_fp_fmfo_low_impact_bp <- feed_fp_fmfo_low_impact_bp %>%
   filter(Allocation == allocation_method) %>%
   select(feed_type, stressor, ave_stressor)
 
-write.csv(feed_fp_fmfo_low_impact_bp, file.path(datadir, "feed_fp_scenario_6_mass.csv"), row.names = FALSE)
+feed_fp_fmfo_low_impact_bp_filename <- paste("feed_fp_scenario_6_", str_to_lower(allocation_method), ".csv", sep = "")
+write.csv(feed_fp_fmfo_low_impact_bp, file.path(datadir, feed_fp_fmfo_low_impact_bp_filename), row.names = FALSE)
