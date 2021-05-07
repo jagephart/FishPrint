@@ -1,4 +1,5 @@
-# Generate alternate feed constants for scenarios
+# Generate alternate feed constants for lever scenarios
+# Do this for both Mass allocation and Economic allocation versions
 
 # Libraries for processing and analyses
 rm(list=ls())
@@ -24,6 +25,12 @@ feed_fp <- feed_fp %>%
 faostat <- read.csv(file.path(datadir, "FAOSTAT_data_12-9-2020.csv"))
 faostat$iso3c <- countrycode(faostat$Area, origin = "country.name", destination = "iso3c")
 
+##########################################################################################################################
+# OPTION: Choose allocation method (used for all analyses below and filenames)
+# allocation_method <- "Mass"
+allocation_method <- "Economic"
+##########################################################################################################################
+
 #_________________________________________________________________________________________________________________________________#
 # Load baseline feed data
 #_________________________________________________________________________________________________________________________________#
@@ -32,10 +39,6 @@ feed_fp_baseline <- read.csv(file.path(datadir, "weighted_feed_fp.csv"))
 #_________________________________________________________________________________________________________________________________#
 # No land use soy and crops - create mass and economic allocation versions of this
 #_________________________________________________________________________________________________________________________________#
-
-# OPTION: Choose allocation method
-allocation_method <- "Mass"
-#allocation_method <- "Economic"
 
 weighted_soy <- calc_soy_weights(faostat, feed_fp, deforestation_free = TRUE)
 weighted_crop <- calc_crop_weights(faostat, feed_fp, deforestation_free = TRUE)
@@ -73,10 +76,6 @@ write.csv(feed_fp_noland, file.path(datadir, feed_fp_noland_filename), row.names
 # Replace FMFO with fishery by-products - create mass and economic allocation versions of this
 #_________________________________________________________________________________________________________________________________#
 
-# OPTION: Choose allocation method
-allocation_method <- "Mass"
-#allocation_method <- "Economic"
-
 # Calculate fish byproduct weights
 fmfo_prod <- read.csv(file.path(datadir, "fish_weightings.csv"))
 weighted_fishbyproduct <- calc_byproduct_weights(fmfo_prod, feed_fp)
@@ -109,12 +108,8 @@ feed_fp_fish_bp_filename <- paste("feed_fp_scenario_2c_", str_to_lower(allocatio
 write.csv(feed_fp_fish_bp, file.path(datadir, feed_fp_fish_bp_filename), row.names = FALSE)
 
 #_________________________________________________________________________________________________________________________________#
-# Replace FMFO with low impact (Alaska Pollock) fishery by-products
+# Replace FMFO with low impact (Alaska Pollock) fishery by-products - create mass and economic allocation versions of this
 #_________________________________________________________________________________________________________________________________#
-
-# OPTION: Choose allocation method
-#allocation_method <- "Mass"
-allocation_method <- "Economic"
 
 # Modified function calc_byproduct_weights for just Alaska Pollock
 weighted_fishbyproduct_pollock <- feed_fp %>%
@@ -159,12 +154,8 @@ feed_fp_fish_low_impact_bp_filename <- paste("feed_fp_scenario_2d_", str_to_lowe
 write.csv(feed_fp_fish_low_impact_bp, file.path(datadir, feed_fp_fish_low_impact_bp_filename), row.names = FALSE)
 
 #_________________________________________________________________________________________________________________________________#
-# Low impact (Alaska Pollock) fishery by-products in FMFO
+# Low impact (Alaska Pollock) fishery by-products in FMFO - create mass and economic allocation versions of this
 #_________________________________________________________________________________________________________________________________#
-
-# OPTION: Choose allocation method
-#allocation_method <- "Mass"
-allocation_method <- "Economic"
 
 weighted_fishery <- calc_fishery_weights(fmfo_prod, feed_fp)
 weighted_fish <- combine_fish_weights(weighted_fishery, weighted_fishbyproduct_pollock)
