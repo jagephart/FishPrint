@@ -22,7 +22,8 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # Load data
 #_______________________________________________________________________________________________________________________#
 # Load full lca data with predicted parameters
-df <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"))
+#df <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"))
+df <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"))
 
 # Load and join weightings
 prod_weightings <- read.csv(file.path(datadir, "aqua_prod_weightings.csv"))
