@@ -1,6 +1,7 @@
 # Generate alternate feed constants for scenarios
 
 # Libraries for processing and analyses
+rm(list=ls())
 library(tidyverse)
 library(countrycode) # part of clean.lca
 
