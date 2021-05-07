@@ -1,4 +1,5 @@
-# Analysis of levers
+# Analysis of levers using alternate feed constants
+# Do this for both Mass allocation and Economic allocation versions
 
 #_______________________________________________________________________________________________________________________#
 # Load packages and source functions
@@ -19,6 +20,12 @@ source("Functions.R")
 # Set data directories
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+
+##########################################################################################################################
+# OPTION: Choose allocation method (used for all analyses and plotting below)
+#allocation_method <- "Mass"
+allocation_method <- "Economic"
+##########################################################################################################################
 
 #_______________________________________________________________________________________________________________________#
 # Load data
@@ -79,7 +86,7 @@ feed_fp <- feed_fp %>%
     Impact.category == "Land use" ~ "land",
     Impact.category == "Water consumption" ~ "water"
   )) %>%
-  filter(Allocation == "Mass") %>%
+  filter(Allocation == allocation_method) %>%
   select(feed_type, stressor, ave_stressor)
 
 # Load feed N/P data
@@ -202,45 +209,77 @@ plot_perturbation$Stressor <- factor(plot_perturbation$Stressor, levels = c("ghg
 label_names <- c("GHG", "Land", "Water", "N", "P")
 names(label_names) <- c("ghg", "land", "water", "N", "P")
 
-plot_perturbation$value[is.na(plot_perturbation$value)] <- 0
-plot_perturbation$value[plot_perturbation$value > 20] <- NA 
 
 low_color <- "#364F6B" # blue
 #low_color <- "#799442" # green i.e., For green light vs red light (reduction vs increase in stressors)
 high_color <- "#C93F3F" # red
 mid_color <- "white"
 
-fig_4a <- ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
-  geom_tile() +
-  labs(x = "", y = "") +
-  facet_wrap(~Stressor, nrow = 1, labeller = labeller(Stressor = label_names)) +
-  scale_fill_gradient2(low = low_color,
-                       mid = mid_color,
-                       high = high_color,
-                       midpoint = 0,
-                       na.value = "black") +
-  guides(fill = guide_colourbar(barwidth = 10, barheight = 0.5)) +
-  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-        axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
-        axis.title = element_text(size = ceiling(base_size*0.8)), 
-        axis.text.x = element_text(angle = 90, vjust = 0.2, hjust = 1),
-        panel.grid.minor = element_blank(), 
-        panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
-        panel.grid.major.x = element_blank(), 
-        panel.background = element_blank(), panel.border = element_blank(),
-        strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
-        strip.text.x = element_text(vjust = 0, hjust = 0), 
-        strip.text.y = element_text(angle = -90), 
-        legend.text = element_text(size = ceiling(base_size*0.7), family = "sans"), 
-        legend.title = element_blank(), 
-        legend.key = element_rect(fill = "white", colour = NA), 
-        legend.position="bottom",
-        legend.margin=margin(t=-0.5, r=0, b=0, l=0, unit="cm"),
-        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
-        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
-  
+# For mass allocation insert NA for > 20 and color cell as black
+if (allocation_method == "Mass"){
+  plot_perturbation$value[is.na(plot_perturbation$value)] <- 0
+  plot_perturbation$value[plot_perturbation$value > 20] <- NA 
+  fig_4a <- ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
+    geom_tile() +
+    labs(x = "", y = "") +
+    facet_wrap(~Stressor, nrow = 1, labeller = labeller(Stressor = label_names)) +
+    scale_fill_gradient2(low = low_color,
+                         mid = mid_color,
+                         high = high_color,
+                         midpoint = 0,
+                         na.value = "black") +
+    guides(fill = guide_colourbar(barwidth = 10, barheight = 0.5)) +
+    theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+          axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+          axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
+          axis.title = element_text(size = ceiling(base_size*0.8)), 
+          axis.text.x = element_text(angle = 90, vjust = 0.2, hjust = 1),
+          panel.grid.minor = element_blank(), 
+          panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
+          panel.grid.major.x = element_blank(), 
+          panel.background = element_blank(), panel.border = element_blank(),
+          strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
+          strip.text.x = element_text(vjust = 0, hjust = 0), 
+          strip.text.y = element_text(angle = -90), 
+          legend.text = element_text(size = ceiling(base_size*0.7), family = "sans"), 
+          legend.title = element_blank(), 
+          legend.key = element_rect(fill = "white", colour = NA), 
+          legend.position="bottom",
+          legend.margin=margin(t=-0.5, r=0, b=0, l=0, unit="cm"),
+          plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+          plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+} else if (allocation_method == "Economic") {
+  fig_4a <- ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
+    geom_tile() +
+    labs(x = "", y = "") +
+    facet_wrap(~Stressor, nrow = 1, labeller = labeller(Stressor = label_names)) +
+    scale_fill_gradient2(low = low_color,
+                         mid = mid_color,
+                         high = high_color,
+                         midpoint = 0) +
+    guides(fill = guide_colourbar(barwidth = 10, barheight = 0.5)) +
+    theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+          axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+          axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
+          axis.title = element_text(size = ceiling(base_size*0.8)), 
+          axis.text.x = element_text(angle = 90, vjust = 0.2, hjust = 1),
+          panel.grid.minor = element_blank(), 
+          panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
+          panel.grid.major.x = element_blank(), 
+          panel.background = element_blank(), panel.border = element_blank(),
+          strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
+          strip.text.x = element_text(vjust = 0, hjust = 0), 
+          strip.text.y = element_text(angle = -90), 
+          legend.text = element_text(size = ceiling(base_size*0.7), family = "sans"), 
+          legend.title = element_blank(), 
+          legend.key = element_rect(fill = "white", colour = NA), 
+          legend.position="bottom",
+          legend.margin=margin(t=-0.5, r=0, b=0, l=0, unit="cm"),
+          plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+          plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+}
 
+  
 # Run sd perturbation function
 # perturbation_sd <- compare_perturbations_sd(n.sd = -2)
 # 
@@ -296,7 +335,8 @@ stressor_s2a$scenario <- "Replace FMFO with soy"
 
 # Scenario 2b: Replace FMFO with land change-free soy (currently only replacement soy is land change-free)
 ## Land use change free soy
-feed_fp_s7 <- read.csv(file.path(datadir, "feed_fp_scenario_7_mass.csv"))
+feed_fp_s7_file <- paste("feed_fp_scenario_7_", str_to_lower(allocation_method), ".csv", sep = "")
+feed_fp_s7 <- read.csv(file.path(datadir, feed_fp_s7_file))
 
 stressor_s2b <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
                                      delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
@@ -309,7 +349,8 @@ stressor_s2b <- stressor_s2b %>%
 stressor_s2b$scenario <- "Replace FMFO with deforestation-free soy"
 
 # Scenario 2c: Replace FMFO with fishery by-products
-feed_fp_s2c <- read.csv(file.path(datadir, "feed_fp_scenario_2c_mass.csv"))
+feed_fp_s2c_file <- paste("feed_fp_scenario_2c_", str_to_lower(allocation_method), ".csv", sep = "")
+feed_fp_s2c <- read.csv(file.path(datadir, feed_fp_s2c_file))
 
 stressor_s2c <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
                                      delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
@@ -322,7 +363,8 @@ stressor_s2c <- stressor_s2c %>%
 stressor_s2c$scenario <- "Replace FMFO w/ byproducts"
 
 # Scenario 2d: Replace FMFO with low impact fishery by-products
-feed_fp_s2d <- read.csv(file.path(datadir, "feed_fp_scenario_2d_mass.csv"))
+feed_fp_s2d_file <- paste("feed_fp_scenario_2d_", str_to_lower(allocation_method), ".csv", sep = "")
+feed_fp_s2d <- read.csv(file.path(datadir, feed_fp_s2d_file))
 
 stressor_s2d <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
                                      delta_FCR = 0, delta_soy = 0, delta_crops = 0, 
@@ -364,7 +406,8 @@ stressor_s3 <- stressor_s3 %>%
 stressor_s3$scenario <- "Yield upper 20th"
 
 # Scenario 4: Capture fisheries - catch 1.2 x as much fish with 60% less effort
-df_capture <- read.csv(file.path(datadir, "20210107_capture_stressors_nonbayes.csv"))
+#df_capture <- read.csv(file.path(datadir, "20210107_capture_stressors_nonbayes.csv"))
+df_capture <- read.csv(file.path(datadir, "non-bayes-stressors_capture_observation-level_edible-weight.csv"))
 
 delta_ghg <- 0.56/1.13 # Confirm with Rob
 
@@ -373,7 +416,6 @@ stressor_s4 <- df_capture %>%
 stressor_s4$scenario <- "13% more catch with 56% of the effort"
 
 df_capture$scenario <- "capture_baseline"
-
 
 # Scenario 5: Capture fisheries - Take minimum gear GHG per species and apply to the group
 df_capture_raw <- read.csv(file.path(datadir, "fisheries_fuel_use.csv"))
@@ -403,7 +445,8 @@ capture_scenarios <- df_capture %>%
   bind_rows(stressor_s5)
 
 # Scenario 6: All by-products sourced from Alaska Pollock
-feed_fp_s6 <- read.csv(file.path(datadir, "feed_fp_scenario_6_mass.csv"))
+feed_fp_s6_file <- paste("feed_fp_scenario_6_", str_to_lower(allocation_method), ".csv", sep = "")
+feed_fp_s6 <- read.csv(file.path(datadir, feed_fp_s6_file))
 
 stressor_s6 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
                                      delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
@@ -416,7 +459,8 @@ stressor_s6 <- stressor_s6 %>%
 stressor_s6$scenario <- "All by-products sourced from low impact fisheries"
 
 # Scenario 7: All soy and crops from non-rainforest depleting sources
-feed_fp_s7 <- read.csv(file.path(datadir, "feed_fp_scenario_7_mass.csv"))
+feed_fp_s7_file <- paste("feed_fp_scenario_7_", str_to_lower(allocation_method), ".csv", sep = "")
+feed_fp_s7 <- read.csv(file.path(datadir, feed_fp_s7_file))
 
 stressor_s7 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
@@ -497,26 +541,7 @@ lollipop_theme <- theme(axis.line.x = element_line(colour = "black", size = 0.5,
                         plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
                         plot.subtitle = element_text(size = ceiling(base_size*1.05)))
 
-# ORIGINAL 100% lollipop cutoff
-# lollipop_dat <- scenarios_diff %>% 
-#   filter(scenario %in% c("FCR lower 20th", "Replace FMFO w/ byproducts", 
-#                          "Yield upper 20th", "Deforestation-free soy & crops")) %>%
-#   mutate(plot_shape = ifelse(value_percent_change < -100, "over", "under")) %>%
-#   mutate(value_percent_change = ifelse(value_percent_change < -100, -100, value_percent_change))
-
-# fig_4b <- ggplot(lollipop_dat, 
-#        aes(x = value_percent_change, y = taxa, shape = plot_shape)) +
-#   geom_point(size = 2) + 
-#   scale_shape_manual(values=c(60, 20)) +
-#   geom_segment(aes(x = 0, xend=value_percent_change, yend = taxa)) +
-#   geom_vline(xintercept = 0) +
-#   labs(x = "% Change", y = "") +
-#   scale_x_continuous(limits = c(-100, 25)) +
-#   facet_grid(rows = vars(scenario), cols = vars(Stressor), switch = "y",  
-#              labeller = labeller(Stressor = label_names, scenario =label_wrap_gen(15))) +
-#   lollipop_theme
-
-# Try with a 50% cutoff
+# Use a 50% cutoff for lollipop plot (use arrowheads if beyond cutoff point)
 lollipop_dat <- scenarios_diff %>%
   mutate(plot_shape = ifelse(value_percent_change < -50, "over", "under")) %>%
   mutate(value_percent_change = ifelse(value_percent_change < -50, -50, value_percent_change))
@@ -541,8 +566,9 @@ margin_theme <- theme(plot.margin = unit(c(0, 0, 0, -3), "mm"),
                                  axis.title.y = element_text(margin = unit(c(0, 0, 0, -1), "mm")),
                                  axis.text.y = element_text(margin = unit(c(0, 0, 0, -3), "mm")))
 
-#png(file = file.path(outdir, "plot_Figure-4.png"), width = 89, height = 189, units = "mm", res = 300)
-pdf(file = file.path(outdir, "plot_Figure-4.pdf"), width = 3.5, height = 7.44) # convert 89 x 189 mm to inches
+fig_4_file <- paste("plot_Figure-4_", str_to_lower(allocation_method), sep = "")
+png(file = file.path(outdir, paste(fig_4_file, ".png", sep = "")), width = 89, height = 189, units = "mm", res = 300)
+#pdf(file = file.path(outdir, paste(fig_4_file, ".pdf", sep = "")), width = 3.5, height = 7.44) # convert 89 x 189 mm to inches
 # Adjust spacing between and around plots
 plot_grid(fig_4a + margin_theme,
           fig_4b + margin_theme,
@@ -553,13 +579,23 @@ dev.off()
 #_______________________________________________________________________________________________________________________#
 # Additional aquaculture intervention figures for SI
 #_______________________________________________________________________________________________________________________#
-                           
-SI_fig_4b_dat <- lollipop_dat %>%
-  filter(scenario %in% c("Replace FMFO with deforestation-free soy",
-                         "Replace FMFO with low impact fishery by-products",
-                         #"Replace FMFO with soy & crops", 
-                         #"All by-products sourced from low impact fisheries",
-                         "Zero emission electricity" ))
+                   
+if (allocation_method == "Mass") {
+  SI_fig_4b_dat <- lollipop_dat %>%
+    filter(scenario %in% c("Replace FMFO with deforestation-free soy",
+                           "Replace FMFO with low impact fishery by-products",
+                           #"Replace FMFO with soy & crops", 
+                           #"All by-products sourced from low impact fisheries",
+                           "Zero emission electricity" ))
+} else if (allocation_method == "Economic") {
+  SI_fig_4b_dat <- lollipop_dat %>%
+    filter(scenario %in% c("All by-products sourced from low impact fisheries",
+                           "Replace FMFO with deforestation-free soy",
+                           "Replace FMFO with low impact fishery by-products",
+                           #"Replace FMFO with soy & crops", 
+                           "Zero emission electricity" ))
+}
+
  
 SI_fig_4b_other_scenarios <- ggplot(SI_fig_4b_dat, aes(x = value_percent_change, y = taxa, shape = plot_shape)) +
   scale_shape_manual(values=c(60, 20)) +
@@ -572,12 +608,15 @@ SI_fig_4b_other_scenarios <- ggplot(SI_fig_4b_dat, aes(x = value_percent_change,
              labeller = labeller(Stressor = label_names, scenario = label_wrap_gen(20))) +
   lollipop_theme
 
-png(file.path(outdir, "plot_Figure-SI-X_other-farmed-lever-scenarios.png"), width = 89, height = 189*(1/1.4)*(3/4), units = "mm", res = 300)
+SI_file <- paste("plot_Figure-SI-X_other-farmed-lever-scenarios_", str_to_lower(allocation_method), sep = "")
+png(file.path(outdir, paste(SI_file, ".png", sep = "")), width = 89, height = 189*(1/1.4)*(3/4), units = "mm", res = 300) # Match relative height of main figure
+#pdf(file = file.path(outdir, paste(SI_file, ".pdf", sep = "")), width = 3.5, height = 7.44*(1/1.4)*(3/4))
 SI_fig_4b_other_scenarios + margin_theme
 dev.off()
 
 #_______________________________________________________________________________________________________________________#
 # Capture fishery interventions figures for SI
+# Note: allocation_method option does not apply (only Mass allocation available for capture)
 #_______________________________________________________________________________________________________________________#
 
 # Capture fishery intervention figures
@@ -614,7 +653,7 @@ wild_taxa_order <- c("herring, etc",
                      "flounder, etc")
 capture_scenarios_diff$plot_taxa <- factor(capture_scenarios_diff$plot_taxa, levels = wild_taxa_order)
 
-# DON'T ADD 50% CUTOFF FOR WILD (results in all of scenario: 13% catch with 56% effort having more than 50%)
+# DON'T ADD 50% CUTOFF FOR WILD (results in all taxa having more than 50% for scenario: 13% catch with 56% effort )
 
 # SI Fig for the capture scenarios
 SI_fig_4b_capture_scenarios <- ggplot(capture_scenarios_diff, aes(x = value_percent_change, y = plot_taxa)) +
@@ -632,7 +671,8 @@ dev.off()
 #_______________________________________________________________________________________________________________________#
 # Identify common features of low stressor systems for 
 #_______________________________________________________________________________________________________________________#
-df_species <- read.csv(file.path(datadir, "20210107_stressor_species_summary.csv"))
+# df_species <- read.csv(file.path(datadir, "20210107_stressor_species_summary.csv"))
+df_species <- read.csv(file.path(datadir, "non-bayes-stressors_farmed_observation-level_edible-weight.csv"))
 df_species <- df_species %>%
   filter(taxa %in% c("salmon", "hypoph_carp", "oth_carp", "catfish", "tilapia", "shrimp")) %>%
   mutate(total_ghg = feed_GHG + onfarm_ghg, total_N = feed_N + onfarm_N, total_P = feed_P + onfarm_P,
