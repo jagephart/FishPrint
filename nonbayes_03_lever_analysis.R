@@ -12,6 +12,7 @@ library(viridis)
 library(RColorBrewer)
 library(ggthemes)
 library(ggpubr)
+library(cowplot) ## for plot_grid
 
 source("Functions.R")
 
@@ -517,13 +518,14 @@ lollipop_theme <- theme(axis.line.x = element_line(colour = "black", size = 0.5,
 
 # Try with a 50% cutoff
 lollipop_dat <- scenarios_diff %>%
-  filter(scenario %in% c("FCR lower 20th", "Replace FMFO w/ byproducts",
-                         "Yield upper 20th", "Deforestation-free soy & crops")) %>%
   mutate(plot_shape = ifelse(value_percent_change < -50, "over", "under")) %>%
   mutate(value_percent_change = ifelse(value_percent_change < -50, -50, value_percent_change))
 
-fig_4b <- ggplot(lollipop_dat,
-                 aes(x = value_percent_change, y = taxa, shape = plot_shape)) +
+fig_4b_dat <- lollipop_dat %>%
+  filter(scenario %in% c("FCR lower 20th", "Replace FMFO w/ byproducts",
+                         "Yield upper 20th", "Deforestation-free soy & crops"))
+
+fig_4b <- ggplot(fig_4b_dat, aes(x = value_percent_change, y = taxa, shape = plot_shape)) +
   geom_point(size = 2) +
   scale_shape_manual(values=c(60, 20)) +
   geom_segment(aes(x = 0, xend=value_percent_change, yend = taxa)) +
@@ -551,13 +553,16 @@ dev.off()
 #_______________________________________________________________________________________________________________________#
 # Additional aquaculture intervention figures for SI
 #_______________________________________________________________________________________________________________________#
-                            
-SI_fig_4b_other_scenarios <- ggplot(scenarios_diff %>%
-                   filter(scenario %in% c("Replace FMFO with soy & crops", "Replace FMFO with deforestation-free soy",
-                                          "Replace FMFO with low impact fishery by-products",
-                                          #"All by-products sourced from low impact fisheries",
-                                          "Zero emission electricity" )),
-                 aes(x = value_percent_change, y = taxa)) +
+                           
+SI_fig_4b_dat <- lollipop_dat %>%
+  filter(scenario %in% c("Replace FMFO with deforestation-free soy",
+                         "Replace FMFO with low impact fishery by-products",
+                         #"Replace FMFO with soy & crops", 
+                         #"All by-products sourced from low impact fisheries",
+                         "Zero emission electricity" ))
+ 
+SI_fig_4b_other_scenarios <- ggplot(SI_fig_4b_dat, aes(x = value_percent_change, y = taxa, shape = plot_shape)) +
+  scale_shape_manual(values=c(60, 20)) +
   geom_point() +
   geom_segment(aes(x = 0, xend=value_percent_change, yend = taxa)) +
   geom_vline(xintercept = 0) +
@@ -567,10 +572,9 @@ SI_fig_4b_other_scenarios <- ggplot(scenarios_diff %>%
              labeller = labeller(Stressor = label_names, scenario = label_wrap_gen(20))) +
   lollipop_theme
 
-png(file.path(outdir, "plot_Figure-SI-X_other-lever-scenarios.png"), width = 89, height = 189*(1/1.4), units = "mm", res = 300)
+png(file.path(outdir, "plot_Figure-SI-X_other-farmed-lever-scenarios.png"), width = 89, height = 189*(1/1.4)*(3/4), units = "mm", res = 300)
 SI_fig_4b_other_scenarios + margin_theme
 dev.off()
-
 
 #_______________________________________________________________________________________________________________________#
 # Capture fishery interventions figures for SI
@@ -582,36 +586,47 @@ capture_scenarios_diff <- capture_scenarios %>%
   rename("value" = "ghg_kg_t") %>%
   left_join(capture_scenarios %>% filter(scenario == "capture_baseline") %>% select(species_group, "baseline_value" = "ghg_kg_t"), 
             by = c("species_group")) %>%
-  mutate(value_change = value - baseline_value, value_percent_change = 100*(value - baseline_value)/baseline_value)
+  mutate(value_change = value - baseline_value, value_percent_change = 100*(value - baseline_value)/baseline_value) %>%
+  # Format names to match Figure 1
+  mutate(species_group = tolower(species_group)) %>%
+  mutate(plot_taxa = case_when(species_group == "bivalves" ~ "bivalves",
+                               species_group == "cephalopods" ~ "squid, etc",
+                               species_group == "flatfishes" ~ "flounder, etc",
+                               species_group == "gadiformes" ~ "cod, etc",
+                               species_group == "jacks, mullets, sauries" ~ "jack, etc",
+                               species_group == "large pelagic fishes" ~ "tuna, etc",
+                               species_group == "lobsters" ~ "lobster",
+                               species_group == "redfishes, basses, congers" ~ "redfish, etc",
+                               species_group == "salmonids" ~ "salmon, etc",
+                               species_group == "shrimps" ~ "shrimp",
+                               species_group == "small pelagic fishes" ~ "herring, etc")) 
+
+wild_taxa_order <- c("herring, etc",
+                     "cod, etc",
+                     "salmon, etc",
+                     "tuna, etc",
+                     "squid, etc",
+                     "jack, etc",
+                     "redfish, etc",
+                     "bivalves",
+                     "shrimp",
+                     "lobster",
+                     "flounder, etc")
+capture_scenarios_diff$plot_taxa <- factor(capture_scenarios_diff$plot_taxa, levels = wild_taxa_order)
+
+# DON'T ADD 50% CUTOFF FOR WILD (results in all of scenario: 13% catch with 56% effort having more than 50%)
 
 # SI Fig for the capture scenarios
-SI_fig_4b_capture_scenarios <- ggplot(capture_scenarios_diff, 
-                                    aes(x = value_percent_change, y = species_group)) +
+SI_fig_4b_capture_scenarios <- ggplot(capture_scenarios_diff, aes(x = value_percent_change, y = plot_taxa)) +
   geom_point() + 
-  geom_segment(aes(x = 0, xend=value_percent_change, yend = species_group)) +
+  geom_segment(aes(x = 0, xend=value_percent_change, yend = plot_taxa)) +
   geom_vline(xintercept = 0) +
   labs(x = "% Change", y = "") +
-  facet_grid(rows = vars(scenario), labeller = label_wrap_gen(20)) +
-  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-        axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
-        axis.title = element_text(size = ceiling(base_size*0.8)), 
-        axis.text.x = element_text(angle = 90),
-        panel.grid.minor = element_blank(), 
-        panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
-        panel.grid.major.x = element_blank(), 
-        panel.background = element_blank(), panel.border = element_blank(),
-        strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
-        strip.text.x = element_text(vjust = 0.5), strip.text.y = element_text(angle = -90), 
-        legend.text = element_text(size = ceiling(base_size*0.9), family = "sans"), 
-        legend.title = element_blank(), 
-        legend.key = element_rect(fill = "white", colour = NA), 
-        legend.position="bottom",
-        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
-        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+  facet_grid(rows = vars(scenario), switch = "y", labeller = label_wrap_gen(20)) +
+  lollipop_theme
 
-png("fig_4_capture_scenarios.png", width = 4, height = 4, units = "in", res = 300)
-SI_fig_4b_capture_scenarios
+png(file.path(outdir, "plot_Figure-SI-X_capture-lever-scenarios.png"), width = 89, height = 189*(1/1.4)*(1/2), units = "mm", res = 300)
+SI_fig_4b_capture_scenarios # Margin theme not needed
 dev.off()
 
 #_______________________________________________________________________________________________________________________#
