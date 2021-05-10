@@ -1,28 +1,41 @@
-# Kelvin Gorospe kdgorospe@gmail.com
-# Process NOAA global evaporation dataset 
+# Kelvin Gorospe
+# Download NOAA global evaporation dataset for evaporative water loss model 
 
 rm(list=ls())
+library(RCurl) # for getURL 
 library(tidyverse)
 library(stars) # newer package for working with raster data; better integration with sf package
 library(sf)
 library(raster) # needed for rotate to reset climate data from 0 to 360 to -180 to 180
 library(rnaturalearth)
-# library(rgeos) # required for rnaturalearth
-# OLD spatial packages:
-#library(raster) # for raster()
-#library(rgdal) # for GDALinfo()
 
+# GET FILES from NOAA FTP:
+# https://ftp.cpc.ncep.noaa.gov/wd51yf/global_monthly
+
+# Download Climatology Data:
+climatology_evap <- "/Volumes/jgephart/BFA Environment 2/Data/Evaporation/Monthly Climatology 1981-2010" 
+url <- "ftp://ftp.cpc.ncep.noaa.gov/wd51yf/global_monthly/GeoTIFF/clim/"
+# Website: https://ftp.cpc.ncep.noaa.gov/wd51yf/global_monthly/GeoTIFF/monthly/
+filenames <- getURL(url, ftp.use.epsv = FALSE, dirlistonly = TRUE)
+filenames <- strsplit(filenames, "\n")
+filenames <- unlist(filenames)
+
+for (filename in filenames) {
+  download.file(url = paste(url, filename, sep = ""), destfile = file.path(climatology_evap, filename))
+}
+
+
+# Process NOAA global evaporation dataset 
 ####################################################### READ IN monthly climatology files
-datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-datadir_evap <- "/Volumes/jgephart/BFA Environment 2/Data/Evaporation"
-outdir_evap <- "/Volumes/jgephart/BFA Environment 2/Outputs/Evaporation"
+outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+outdir_evap <- "/Volumes/jgephart/BFA Environment 2/Outputs/Evaporation Outputs"
 
 # Use rotate() to transform coordinate system to have standard x coordinates: xmin = -180 to xmax = 180
 # Convert longitude from 0 - 360 to -180 to 180 (Standard transformation for climate data)
 # https://stackoverflow.com/questions/25730625/how-to-convert-longitude-from-0-360-to-180-180
 
-clim_files <- list.files(file.path(datadir_evap, "Monthly Climatology 1981-2010"))
-clim_raster <- lapply(clim_files, function(i){raster(file.path(datadir_evap, "Monthly Climatology 1981-2010", i))}) # read in with raster() function so that rotate() function works
+clim_files <- list.files(file.path(climatology_evap))
+clim_raster <- lapply(clim_files, function(i){raster(file.path(climatology_evap, i))}) # read in with raster() function so that rotate() function works
 clim_rotate <- lapply(clim_raster, function(i){rotate(i)})
 clim_stars_list <- lapply(clim_rotate, function(i){st_as_stars(i)})
 
@@ -37,8 +50,8 @@ ggplot() +
 
 ggsave(file.path(outdir_evap, "clim_panels.png"), width = 6, height = 4, unit = "in")
 
-# Confirm that month labels in clim_dat are the same as clim_dat_list:
-clim_dat_list <- read_stars(file.path(datadir_evap, "Monthly Climatology 1981-2010", clim_files))
+# Plot each month separately
+clim_dat_list <- read_stars(file.path(climatology_evap, clim_files))
 for (i in 1:length(clim_dat_list)){
   ggplot() +
     geom_stars(data = clim_dat_list[i])
@@ -92,7 +105,6 @@ clim_world_sf <- st_intersection(clim_mean_sf, world_sf)
 
 clim_world_sf <- set_units(clim_world_sf$mean, mm)
 
-# FIX IT - do we want the mean of all pixels or the sum of all pixels weighted by pixel area? Note: pixel's whose centroid are not within the polygon are assigned NA
 # Calculate mean within each country
 clim_by_country <- clim_world_sf %>%
   group_by(admin) %>%
@@ -103,11 +115,13 @@ ggplot(clim_by_country) +
   geom_sf(mapping = aes(fill = mean_evap_mm)) +
   labs(fill = "Country-level evaporation")
 ggsave(file.path(outdir_evap, "clim_summarise_by_country_mean_of_pixels.png"), width = 6, height = 4, unit = "in")
- 
-write.csv(clim_by_country %>% st_set_geometry(NULL), file = file.path(datadir, "clim_summarise_by_country.csv"), quote = FALSE)
+
+write.csv(clim_by_country %>% st_set_geometry(NULL), file = file.path(outdir, "clim_summarise_by_country.csv"), quote = FALSE)
 
 # BAR GRAPH:
 #ggplot(clim_by_country) +
 #  geom_col(mapping = aes(x = reorder(admin, desc(country_level)), y = country_level))
 
 #country_level_clim <- aggregate(clim_world_sf, by = admin, FUN = mean)
+
+
