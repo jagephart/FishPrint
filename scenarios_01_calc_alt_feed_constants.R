@@ -22,6 +22,10 @@ feed_fp <- feed_fp %>%
   mutate(iso3c = ifelse(Country.Region == "Europe" & Input %in% c("Chicken by-product meal", "Chicken by-product oil"),
                         "EUR", iso3c)) 
 
+# DATA DOCUMENTATION: FAO export data should be downloaded from FAOSTAT
+# http://www.fao.org/faostat/en/#data/TP
+# Query terms for downloading: SELECT All countries, Export quantity, All items
+# File can also be provided by corresponding author upon request
 faostat <- read.csv(file.path(datadir, "FAOSTAT_data_12-9-2020.csv"))
 faostat$iso3c <- countrycode(faostat$Area, origin = "country.name", destination = "iso3c")
 
