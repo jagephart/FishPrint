@@ -31,10 +31,10 @@ allocation_method <- "Economic"
 # Load data
 #_______________________________________________________________________________________________________________________#
 # Load full lca data with predicted parameters
-df <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"))
+df <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"))
 
 # Load and join weightings
-prod_weightings <- read.csv(file.path(datadir, "aqua_prod_weightings.csv"))
+prod_weightings <- read.csv(file.path(outdir, "aqua_prod_weightings.csv"))
 
 df <- df %>% 
   left_join(prod_weightings, by = c("clean_sci_name", "taxa")) 
@@ -58,7 +58,7 @@ energy_gwp <- energy_gwp %>%
   ))
 
 # Load and join evaporative loss constants
-evap <- read.csv(file.path(datadir, "20201222_clim_summarise_by_country.csv"))
+evap <- read.csv(file.path(outdir, "clim_summarise_by_country.csv"))
 evap$iso3c <- countrycode(evap$admin, origin = "country.name", destination = "iso3c")
 evap <- evap %>%
   mutate(evap_rate_m3_per_m2 = mean_evap_mm/1000) %>%
@@ -69,7 +69,7 @@ df <- df %>%
   left_join(evap, by = "iso3c")
 
 # Load feed data
-feed_fp <- read.csv(file.path(datadir, "weighted_feed_fp.csv"))
+feed_fp <- read.csv(file.path(outdir, "weighted_feed_fp.csv"))
 # Change names to match df
 feed_fp <- feed_fp %>%
   mutate(feed_type = case_when(
@@ -93,7 +93,7 @@ feed_fp <- feed_fp %>%
 feed_NP <- read.csv(file.path(outdir, "feed_NP_clean.csv"))
 
 # Load and join fish N/P data 
-fish_NP <- read.csv(file.path(datadir, "fish_NP_clean.csv"))
+fish_NP <- read.csv(file.path(outdir, "fish_NP_clean.csv"))
 fish_NP <- fish_NP %>% 
   select(clean_sci_name, N_t_liveweight_t, P_t_liveweight_t)
 
@@ -204,81 +204,37 @@ high_color <- "#C93F3F" # red
 mid_color <- "white"
 
 # For mass allocation insert NA for > 20 and color cell as black
-if (allocation_method == "Mass"){
-  plot_perturbation$value[is.na(plot_perturbation$value)] <- 0
-  plot_perturbation$value[plot_perturbation$value > 20] <- NA 
-  fig_4a <- ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
-    geom_tile() +
-    labs(x = "", y = "") +
-    facet_wrap(~Stressor, nrow = 1, labeller = labeller(Stressor = label_names)) +
-    scale_fill_gradient2(low = low_color,
-                         mid = mid_color,
-                         high = high_color,
-                         midpoint = 0,
-                         na.value = "black") +
-    guides(fill = guide_colourbar(barwidth = 10, barheight = 0.5)) +
-    theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-          axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-          axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
-          axis.title = element_text(size = ceiling(base_size*0.8)), 
-          axis.text.x = element_text(angle = 90, vjust = 0.2, hjust = 1),
-          panel.grid.minor = element_blank(), 
-          panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
-          panel.grid.major.x = element_blank(), 
-          panel.background = element_blank(), panel.border = element_blank(),
-          strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
-          strip.text.x = element_text(vjust = 0, hjust = 0), 
-          strip.text.y = element_text(angle = -90), 
-          legend.text = element_text(size = ceiling(base_size*0.7), family = "sans"), 
-          legend.title = element_blank(), 
-          legend.key = element_rect(fill = "white", colour = NA), 
-          legend.position="bottom",
-          legend.margin=margin(t=-0.5, r=0, b=0, l=0, unit="cm"),
-          plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
-          plot.subtitle = element_text(size = ceiling(base_size*1.05)))
-} else if (allocation_method == "Economic") {
-  fig_4a <- ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
-    geom_tile() +
-    labs(x = "", y = "") +
-    facet_wrap(~Stressor, nrow = 1, labeller = labeller(Stressor = label_names)) +
-    scale_fill_gradient2(low = low_color,
-                         mid = mid_color,
-                         high = high_color,
-                         midpoint = 0) +
-    guides(fill = guide_colourbar(barwidth = 10, barheight = 0.5)) +
-    theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-          axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-          axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
-          axis.title = element_text(size = ceiling(base_size*0.8)), 
-          axis.text.x = element_text(angle = 90, vjust = 0.2, hjust = 1),
-          panel.grid.minor = element_blank(), 
-          panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
-          panel.grid.major.x = element_blank(), 
-          panel.background = element_blank(), panel.border = element_blank(),
-          strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
-          strip.text.x = element_text(vjust = 0, hjust = 0), 
-          strip.text.y = element_text(angle = -90), 
-          legend.text = element_text(size = ceiling(base_size*0.7), family = "sans"), 
-          legend.title = element_blank(), 
-          legend.key = element_rect(fill = "white", colour = NA), 
-          legend.position="bottom",
-          legend.margin=margin(t=-0.5, r=0, b=0, l=0, unit="cm"),
-          plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
-          plot.subtitle = element_text(size = ceiling(base_size*1.05)))
-}
-
-  
-# Run sd perturbation function
-# perturbation_sd <- compare_perturbations_sd(n.sd = -2)
-# 
-# # Reformat to plot as heatmap
-# plot_perturbation <- perturbation_sd %>% 
-#   pivot_longer(cols = fcr_ghg_percent_change:yield_water_percent_change, names_sep = "_", names_to = c("Parameter", "Stressor", "drop1", "drop2")) %>%
-#   select(-contains("drop"))
-# 
-# ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
-#   geom_tile() +
-#   facet_wrap(~Stressor)
+plot_perturbation$value[is.na(plot_perturbation$value)] <- 0
+plot_perturbation$value[plot_perturbation$value > 20] <- NA 
+fig_4a <- ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) +
+  geom_tile() +
+  labs(x = "", y = "") +
+  facet_wrap(~Stressor, nrow = 1, labeller = labeller(Stressor = label_names)) +
+  scale_fill_gradient2(low = low_color,
+                       mid = mid_color,
+                       high = high_color,
+                       midpoint = 0,
+                       na.value = "black") +
+  guides(fill = guide_colourbar(barwidth = 10, barheight = 0.5)) +
+  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
+        axis.title = element_text(size = ceiling(base_size*0.8)), 
+        axis.text.x = element_text(angle = 90, vjust = 0.2, hjust = 1),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(), panel.border = element_blank(),
+        strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0, hjust = 0), 
+        strip.text.y = element_text(angle = -90), 
+        legend.text = element_text(size = ceiling(base_size*0.7), family = "sans"), 
+        legend.title = element_blank(), 
+        legend.key = element_rect(fill = "white", colour = NA), 
+        legend.position="bottom",
+        legend.margin=margin(t=-0.5, r=0, b=0, l=0, unit="cm"),
+        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
 
 #_______________________________________________________________________________________________________________________#
 # Scenario analysis
@@ -324,7 +280,7 @@ stressor_s2a$scenario <- "Replace FMFO with soy"
 # Scenario 2b: Replace FMFO with land change-free soy (currently only replacement soy is land change-free)
 ## Land use change free soy
 feed_fp_s7_file <- paste("feed_fp_scenario_7_", str_to_lower(allocation_method), ".csv", sep = "")
-feed_fp_s7 <- read.csv(file.path(datadir, feed_fp_s7_file))
+feed_fp_s7 <- read.csv(file.path(outdir, feed_fp_s7_file))
 
 stressor_s2b <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
                                      delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
@@ -338,7 +294,7 @@ stressor_s2b$scenario <- "Replace FMFO with deforestation-free soy"
 
 # Scenario 2c: Replace FMFO with fishery by-products
 feed_fp_s2c_file <- paste("feed_fp_scenario_2c_", str_to_lower(allocation_method), ".csv", sep = "")
-feed_fp_s2c <- read.csv(file.path(datadir, feed_fp_s2c_file))
+feed_fp_s2c <- read.csv(file.path(outdir, feed_fp_s2c_file))
 
 stressor_s2c <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
                                      delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
@@ -352,7 +308,7 @@ stressor_s2c$scenario <- "Replace FMFO w/ byproducts"
 
 # Scenario 2d: Replace FMFO with low impact fishery by-products
 feed_fp_s2d_file <- paste("feed_fp_scenario_2d_", str_to_lower(allocation_method), ".csv", sep = "")
-feed_fp_s2d <- read.csv(file.path(datadir, feed_fp_s2d_file))
+feed_fp_s2d <- read.csv(file.path(outdir, feed_fp_s2d_file))
 
 stressor_s2d <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
                                      delta_FCR = 0, delta_soy = 0, delta_crops = 0, 
@@ -395,7 +351,7 @@ stressor_s3$scenario <- "Yield upper 20th"
 
 # Scenario 4: Capture fisheries - catch 1.2 x as much fish with 60% less effort
 #df_capture <- read.csv(file.path(datadir, "20210107_capture_stressors_nonbayes.csv"))
-df_capture <- read.csv(file.path(datadir, "non-bayes-stressors_capture_observation-level_edible-weight.csv"))
+df_capture <- read.csv(file.path(outdir, "non-bayes-stressors_capture_observation-level_edible-weight.csv"))
 
 delta_ghg <- 0.56/1.13 # Confirm with Rob
 
@@ -406,7 +362,7 @@ stressor_s4$scenario <- "13% more catch with 56% of the effort"
 df_capture$scenario <- "capture_baseline"
 
 # Scenario 5: Capture fisheries - Take minimum gear GHG per species and apply to the group
-df_capture_raw <- read.csv(file.path(datadir, "fisheries_fuel_use.csv"))
+df_capture_raw <- read.csv(file.path(outdir, "fisheries_fuel_use.csv"))
 
 stressor_s5 <- df_capture_raw %>%
   # Remove mixed gear and nei observations
@@ -434,7 +390,7 @@ capture_scenarios <- df_capture %>%
 
 # Scenario 6: All by-products sourced from Alaska Pollock
 feed_fp_s6_file <- paste("feed_fp_scenario_6_", str_to_lower(allocation_method), ".csv", sep = "")
-feed_fp_s6 <- read.csv(file.path(datadir, feed_fp_s6_file))
+feed_fp_s6 <- read.csv(file.path(outdir, feed_fp_s6_file))
 
 stressor_s6 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
                                      delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
@@ -448,7 +404,7 @@ stressor_s6$scenario <- "All by-products sourced from low impact fisheries"
 
 # Scenario 7: All soy and crops from non-rainforest depleting sources
 feed_fp_s7_file <- paste("feed_fp_scenario_7_", str_to_lower(allocation_method), ".csv", sep = "")
-feed_fp_s7 <- read.csv(file.path(datadir, feed_fp_s7_file))
+feed_fp_s7 <- read.csv(file.path(outdir, feed_fp_s7_file))
 
 stressor_s7 <- stressor_sensitivity(data_lca = df_taxa, data_feed_stressors = feed_fp, data_feed_NP = feed_NP, data_energy = energy_gwp,
                                     delta_FCR = 0, delta_soy = 0, delta_crops = 0, delta_animal = 0, delta_fmfo = 0,
@@ -495,12 +451,6 @@ scenarios <- stressor_baseline %>%
 
 scenarios$Stressor <- factor(scenarios$Stressor, levels = c("ghg", "land", "water", "N", "P"))
 scenarios$taxa <- factor(scenarios$taxa, levels = taxa_order)
-
-# png("scenarios_facetwrap_20120107.png", height = 11, width = 8.5, units = "in", res = 300)
-# ggplot(scenarios, aes(x = value, y = scenario)) +
-#   geom_bar(stat = "identity") +
-#   facet_grid(rows = vars(taxa), cols = vars(Stressor), scales = "free")
-# dev.off()
 
 scenarios_diff <- scenarios %>%
   filter(scenario != "Baseline") %>%
@@ -660,7 +610,7 @@ dev.off()
 # Identify common features of low stressor systems for 
 #_______________________________________________________________________________________________________________________#
 # df_species <- read.csv(file.path(datadir, "20210107_stressor_species_summary.csv"))
-df_species <- read.csv(file.path(datadir, "non-bayes-stressors_farmed_observation-level_edible-weight.csv"))
+df_species <- read.csv(file.path(outdir, "non-bayes-stressors_farmed_observation-level_edible-weight.csv"))
 df_species <- df_species %>%
   filter(taxa %in% c("salmon", "hypoph_carp", "oth_carp", "catfish", "tilapia", "shrimp")) %>%
   mutate(total_ghg = feed_GHG + onfarm_ghg, total_N = feed_N + onfarm_N, total_P = feed_P + onfarm_P,

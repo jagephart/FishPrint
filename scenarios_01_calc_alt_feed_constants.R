@@ -14,7 +14,7 @@ source("Functions.R")
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
-feed_fp <- read.csv(file.path(datadir, "Feed_impact_factors_20201203.csv"))
+feed_fp <- read.csv(file.path(datadir, "feed_impact_factors.csv"))
 feed_fp$iso3c <- countrycode(feed_fp$Country.Region, origin = "country.name", destination = "iso3c")
 feed_fp$iso3c[is.na(feed_fp$iso3c)] <- "Other"
 
@@ -38,7 +38,7 @@ allocation_method <- "Economic"
 #_________________________________________________________________________________________________________________________________#
 # Load baseline feed data
 #_________________________________________________________________________________________________________________________________#
-feed_fp_baseline <- read.csv(file.path(datadir, "weighted_feed_fp.csv"))
+feed_fp_baseline <- read.csv(file.path(outdir, "weighted_feed_fp.csv"))
 
 #_________________________________________________________________________________________________________________________________#
 # No land use soy and crops - create mass and economic allocation versions of this
@@ -74,7 +74,7 @@ feed_fp_noland <- feed_fp_noland %>%
   select(feed_type, stressor, ave_stressor)
 
 feed_fp_noland_filename <- paste("feed_fp_scenario_7_", str_to_lower(allocation_method), ".csv", sep = "")
-write.csv(feed_fp_noland, file.path(datadir, feed_fp_noland_filename), row.names = FALSE)
+write.csv(feed_fp_noland, file.path(outdir, feed_fp_noland_filename), row.names = FALSE)
 
 #_________________________________________________________________________________________________________________________________#
 # Replace FMFO with fishery by-products - create mass and economic allocation versions of this
@@ -109,7 +109,7 @@ feed_fp_fish_bp <- feed_fp_fish_bp %>%
   select(feed_type, stressor, ave_stressor)
 
 feed_fp_fish_bp_filename <- paste("feed_fp_scenario_2c_", str_to_lower(allocation_method), ".csv", sep = "")
-write.csv(feed_fp_fish_bp, file.path(datadir, feed_fp_fish_bp_filename), row.names = FALSE)
+write.csv(feed_fp_fish_bp, file.path(outdir, feed_fp_fish_bp_filename), row.names = FALSE)
 
 #_________________________________________________________________________________________________________________________________#
 # Replace FMFO with low impact (Alaska Pollock) fishery by-products - create mass and economic allocation versions of this
@@ -155,7 +155,7 @@ feed_fp_fish_low_impact_bp <- feed_fp_fish_low_impact_bp %>%
   select(feed_type, stressor, ave_stressor)
 
 feed_fp_fish_low_impact_bp_filename <- paste("feed_fp_scenario_2d_", str_to_lower(allocation_method), ".csv", sep = "")
-write.csv(feed_fp_fish_low_impact_bp, file.path(datadir, feed_fp_fish_low_impact_bp_filename), row.names = FALSE)
+write.csv(feed_fp_fish_low_impact_bp, file.path(outdir, feed_fp_fish_low_impact_bp_filename), row.names = FALSE)
 
 #_________________________________________________________________________________________________________________________________#
 # Low impact (Alaska Pollock) fishery by-products in FMFO - create mass and economic allocation versions of this
@@ -190,4 +190,4 @@ feed_fp_fmfo_low_impact_bp <- feed_fp_fmfo_low_impact_bp %>%
   select(feed_type, stressor, ave_stressor)
 
 feed_fp_fmfo_low_impact_bp_filename <- paste("feed_fp_scenario_6_", str_to_lower(allocation_method), ".csv", sep = "")
-write.csv(feed_fp_fmfo_low_impact_bp, file.path(datadir, feed_fp_fmfo_low_impact_bp_filename), row.names = FALSE)
+write.csv(feed_fp_fmfo_low_impact_bp, file.path(outdir, feed_fp_fmfo_low_impact_bp_filename), row.names = FALSE)
