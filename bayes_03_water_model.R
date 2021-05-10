@@ -818,5 +818,3 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 rm(fit_no_na) # clear fit_no_na before restarting loop
 
 #} # End Loop by allocation method: for (i in c("Mass", "Gross energy content", "Economic")){
-
-# BEFORE CLEARING WORKSPACE, run 04_plot_fcr_and_feed at least once (outputs will be the same for all models)

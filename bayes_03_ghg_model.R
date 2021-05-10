@@ -782,6 +782,4 @@ rm(fit_no_na) # Clear fit-no-na before restarting loop
 
 #} # End loop by allocation method: for (i in c("Mass", "Gross energy content", "Economic")){
 
-# BEFORE CLEARING WORKSPACE, run 04_plot_fcr_and_feed at least once (outputs will be the same for all models)
-
 

@@ -739,7 +739,3 @@ ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, 
 # NA: TAXA-LEVEL UNWEIGHTED ON-FARM IMPACTS NOT CALCULATED BY THIS MODEL (no taxa-level fish content info to calculate this in the "generated quantities" section)
 
 ######################################################################################################
-# NEXT: Before clearing workspace, use 04_plot_common_outputs.R - plot other intermediate-level calculations (these are universally shared among all models)
-
-
-
