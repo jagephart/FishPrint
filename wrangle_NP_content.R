@@ -400,4 +400,12 @@ fishNutrition$P_t_liveweight_t[fishNutrition$clean_sci_name == "Gracilaria chile
 fishNutrition <- fishNutrition %>%
   select(clean_sci_name, N_t_liveweight_t, P_t_liveweight_t)
 
-write.csv(fishNutrition, file.path(datadir, "fish_NP_clean.csv"), row.names = FALSE)
+write.csv(fishNutrition, file.path(outdir, "fish_NP_clean.csv"), row.names = FALSE)
+
+#################################################################################################################################################
+# CLEAN AND OUTPUT N AND P FEED CONSTANTS (for on-farm model):
+source("Functions.R") 
+feed_NP <- clean_feedNutrition(feedNutrition_data = read.csv(file.path(datadir, "feed_NP_raw.csv"),
+                                                            stringsAsFactors = FALSE))
+
+write.csv(feed_NP, file.path(outdir, "feed_NP_clean.csv"))

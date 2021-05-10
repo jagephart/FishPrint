@@ -106,19 +106,8 @@ df_onfarm_ghg_taxa <- df_onfarm_ghg %>%
 #_______________________________________________________________________________________________________________________#
 # Calculate on-farm N and P
 #_______________________________________________________________________________________________________________________#
-feed_NP <-clean_feedNutrition(feedNutrition_data = 
-                                read.csv(file.path(datadir, "United-States-Canadian-Tables-of-Feed-1982-pages-68-921-with_CrudeProtein.csv"),
-                                         stringsAsFactors = FALSE))
-feed_NP <- feed_NP %>%
-  mutate(feed_type = case_when(
-    (ingredient == "Soy") ~ "soy",
-    (ingredient == "Crop") ~ "crops",
-    (ingredient == "Fishery") ~ "fmfo",
-    (ingredient == "Animal by-products") ~ "animal"
-  )) %>%
-  select(-c("ingredient", "sd")) %>%
-  pivot_wider(names_from = "element", values_from = "value")
 
+feed_NP <- read.csv(file.path(outdir, "feed_NP_clean.csv"))
 fish_NP <- read.csv(file.path(datadir, "fish_NP_clean.csv"))
 
 df_onfarm_NP <- df %>%
@@ -126,8 +115,8 @@ df_onfarm_NP <- df %>%
   pivot_longer(feed_soy:feed_animal, names_to = c("drop", "feed_type"), names_sep = "_", values_to = "feed_proportion") %>%
   select(-drop) %>%
   left_join(feed_NP, by = "feed_type") %>%
-  mutate(feed_N = feed_proportion*(N/100), # Divide by 100 because N and P data is in percent
-         feed_P = feed_proportion*(P/100)) %>%
+  mutate(feed_N = feed_proportion*(N), 
+         feed_P = feed_proportion*(P)) %>%
   select(-c("feed_proportion", "N", "P")) %>%
   ungroup() %>%
   group_by(study_id, clean_sci_name, taxa, Country, iso3c, intensity, system, fcr, prod_weighting) %>% 

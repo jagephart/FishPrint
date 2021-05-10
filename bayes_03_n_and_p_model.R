@@ -44,8 +44,8 @@ feed_element <- "N"
 interval_palette <- c("#FFD5A9", "#FFBD79", "#FFA647") # COMPLEMENTARY COLOR - use orange instead of yellow
 
 # Load Data
-#lca_full_dat <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv"), fileEncoding="UTF-8-BOM")
-lca_full_dat <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"), fileEncoding="UTF-8-BOM")
+#lca_full_dat <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"), fileEncoding="UTF-8-BOM")
 
 # fish_content_dat <- read.csv(file.path(datadir, "fish_NP_clean.csv")) %>%
 #   select(clean_sci_name, !!sym(fish_element))
@@ -90,7 +90,7 @@ set_allocation <- "Mass"
 #set_allocation <- "Economic"
 
 # IMPORTANT - multiply all values by 1000 to convert to kg CO2 per tonne (currently in kg CO2 per kg)
-  fp_dat <- read.csv(file.path(datadir, "weighted_feed_fp.csv")) %>%
+  fp_dat <- read.csv(file.path(outdir, "weighted_feed_fp.csv")) %>%
     filter(Allocation == set_allocation) %>%
     mutate(ave_stressor_per_tonne = ave_stressor * 1000)
   
@@ -109,7 +109,7 @@ set_allocation <- "Mass"
 # Get priors on taxa-level FCR
 # Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
 source("Functions.R")
-priors_csv <- clean_priors("Priors - Nonfeed.csv") %>%
+priors_csv <- clean_priors("Priors - Aquaculture.csv") %>%
   select(contains(c("taxa", "FCR"))) %>%
   arrange(taxa) # Arrange by taxa so that index matches tx in lca_model_dat
 
@@ -164,30 +164,20 @@ fish_content <- lca_model_dat %>%
   pull(!!sym(fish_element))
 
 # FEED CONTENT CONSTANTS (for on-farm model):
-source("Functions.R") 
-feed_NP <-clean_feedNutrition(feedNutrition_data = read.csv(file.path(datadir, "United-States-Canadian-Tables-of-Feed-1982-pages-68-921-with_CrudeProtein.csv"),
-                                                            stringsAsFactors = FALSE)) %>%
-  mutate(feed_type = case_when(
-    (ingredient == "Soy") ~ "soy",
-    (ingredient == "Crop") ~ "crops",
-    (ingredient == "Fishery") ~ "fmfo",
-    (ingredient == "Animal by-products") ~ "animal"
-  )) %>%
-  select(-c("ingredient", "sd")) %>%
-  pivot_wider(names_from = "element", values_from = "value")
+feed_NP <- read.csv(file.path(outdir, "feed_NP_clean.csv"))
 
-# Choose feed element (N or P)
+# Arrange order of constants and pull feed element (N or P)
 set_feed_content_order <- c("soy", "crops", "fmfo", "animal")
 
 # Divide by 100 to get the correct units (N/P feed content data are in percentages)
 feed_content <- feed_NP %>%
   arrange(match(feed_type, set_feed_content_order)) %>%
-  pull(!!sym(feed_element)) / 100
+  pull(!!sym(feed_element))
 
 # WEIGHTS:
 # Get sci-level weightings for generating taxa-level quantities:
 # IMPORTANT arrange by clean_sci_name so that the order matches data
-sci_prod_weights <- read.csv(file.path(datadir, "aqua_prod_weightings.csv")) %>%
+sci_prod_weights <- read.csv(file.path(outdir, "aqua_prod_weightings.csv")) %>%
   arrange(clean_sci_name)
 # Drop sci-names not found in the data
 sci_prod_weights <- sci_prod_weights %>%

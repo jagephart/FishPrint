@@ -639,6 +639,17 @@ clean_feedNutrition <- function(feedNutrition_data){
   out$sd[out$ingredient=="Soy" & out$element == "P"] <- 
     sd(feedNutrition_data$Phosphorus[which(feedNutrition_data$Entry.Number %in% s)],na.rm=TRUE)
   
+  out <- out %>%
+    mutate(feed_type = case_when(
+      (ingredient == "Soy") ~ "soy",
+      (ingredient == "Crop") ~ "crops",
+      (ingredient == "Fishery") ~ "fmfo",
+      (ingredient == "Animal by-products") ~ "animal"
+    )) %>%
+    select(-c("ingredient", "sd")) %>%
+    pivot_wider(names_from = "element", values_from = "value") %>%
+    mutate(N = N/100, P = P/100) # Divide by 100 because N and P data is in percent
+  
   return(out)
 }
 

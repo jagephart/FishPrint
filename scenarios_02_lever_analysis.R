@@ -90,19 +90,7 @@ feed_fp <- feed_fp %>%
   select(feed_type, stressor, ave_stressor)
 
 # Load feed N/P data
-feed_NP <-clean_feedNutrition(feedNutrition_data = 
-                                read.csv(file.path(datadir, "United-States-Canadian-Tables-of-Feed-1982-pages-68-921-with_CrudeProtein.csv"),
-                                         stringsAsFactors = FALSE))
-feed_NP <- feed_NP %>%
-  mutate(feed_type = case_when(
-    (ingredient == "Soy") ~ "soy",
-    (ingredient == "Crop") ~ "crops",
-    (ingredient == "Fishery") ~ "fmfo",
-    (ingredient == "Animal by-products") ~ "animal"
-  )) %>%
-  select(-c("ingredient", "sd")) %>%
-  pivot_wider(names_from = "element", values_from = "value") %>%
-  mutate(N = N/100, P = P/100) # Divide by 100 because N and P data is in percent
+feed_NP <- read.csv(file.path(outdir, "feed_NP_clean.csv"))
 
 # Load and join fish N/P data 
 fish_NP <- read.csv(file.path(datadir, "fish_NP_clean.csv"))
