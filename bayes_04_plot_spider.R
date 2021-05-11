@@ -13,26 +13,20 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # Set filenames:
 # Mass allocation
-c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
-n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-land_results <- "PRIORS/Land/2021-01-20_full-model-posterior_Land Use_Mass-allocation.RData"
-water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Mass-allocation.RData"
-wild_results <- "PRIORS/Wild/2021-01-16_full-model-posterior_Wild-Capture-ghg.RData"
+c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Mass-allocation.RData"
+n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/2021-04-28_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-priors-only/2021-04-28_full-model-posterior_Land Use_Mass-allocation.RData"
+water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Mass-allocation.RData"
+wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wild/2021-04-27_full-model-posterior_Wild-capture-ghg.RData"
 
-# Gross energy allocation (no wild capture results)
-# c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Gross energy content-allocation.RData"
-# n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Gross energy content-allocation.RData"
-# p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Gross energy content-allocation.RData"
-# land_results <- "PRIORS/Land/2021-01-16_full-model-posterior_Land Use_Gross energy content-allocation.RData"
-# water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Gross energy content-allocation.RData"
-
-# Economic allocation (no wild capture results)
-# c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Economic-allocation.RData"
-# n_results <- "PRIORS/Nitrogen/2021-01-20_full-model-posterior_Marine eutrophication_Economic-allocation.RData"
-# p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Economic-allocation.RData"
-# land_results <- "PRIORS/Land/2021-01-16_full-model-posterior_Land Use_Economic-allocation.RData"
-# water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Economic-allocation.RData"
+# Live weight version:
+# c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
+# n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+# p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+# land_results <- "PRIORS/Land/2021-01-20_full-model-posterior_Land Use_Mass-allocation.RData"
+# water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Mass-allocation.RData"
+# wild_results <- "PRIORS/Wild/2021-01-16_full-model-posterior_Wild-Capture-ghg.RData"
 
 ################################################################################################################
 # GHG

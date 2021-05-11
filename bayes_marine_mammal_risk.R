@@ -16,7 +16,7 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # Load data
 mm_risk_raw <- read.csv(file.path(datadir,"marine_mammal_risk.csv"))
-fui <- read.csv(file.path(datadir, "marine_mammal_risk_fui.csv"))
+fui <- read.csv(file.path(datadir, "marine_mammal_fui.csv"))
 
 # Join with fui data and tidy data
 # FREQUENTIST VERSION:

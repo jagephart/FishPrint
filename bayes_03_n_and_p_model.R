@@ -47,9 +47,6 @@ interval_palette <- c("#FFD5A9", "#FFBD79", "#FFA647") # COMPLEMENTARY COLOR - u
 #lca_full_dat <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv"), fileEncoding="UTF-8-BOM")
 lca_full_dat <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"), fileEncoding="UTF-8-BOM")
 
-# fish_content_dat <- read.csv(file.path(datadir, "fish_NP_clean.csv")) %>%
-#   select(clean_sci_name, !!sym(fish_element))
-
 lca_model_dat <- lca_full_dat %>%
   #left_join(fish_content_dat, by = "clean_sci_name") %>%
   select(study_id, iso3c, clean_sci_name, taxa, intensity, system, 
