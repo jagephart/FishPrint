@@ -9,17 +9,17 @@
 rm(list=ls()[!(ls() %in% c("lca_dat_clean_groups", "datadir", "outdir"))])
 
 # Or just reset libraries/directories and read in lca_dat_clean_groups:
-# library(tidyverse)
-# library(rstan)
-# library(data.table)
-# library(countrycode)
-# library(bayesplot) # for mcmc_areas_ridges
-# library(shinystan)
-# library(brms)
-# library(tidybayes)
-# datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
-# outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
-# lca_dat_clean_groups <- read.csv(file.path(outdir, "lca_clean_with_groups.csv"))
+library(tidyverse)
+library(rstan)
+library(data.table)
+library(countrycode)
+library(bayesplot) # for mcmc_areas_ridges
+library(shinystan)
+library(brms)
+library(tidybayes)
+datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
+lca_dat_clean_groups <- read.csv(file.path(outdir, "lca_clean_with_groups.csv"))
 
 ######################################################################################################
 # Section 1: Create feed_model_dat_categories for modeling FCR and feed proportions
@@ -1473,6 +1473,7 @@ yield_dat_merge <- full_yield_dat %>%
 
 ######################################################################################################
 # MERGE:
+
 lca_dat_imputed <- feed_dat_merge %>%
   full_join(fcr_dat_merge, by = intersect(names(feed_dat_merge), names(fcr_dat_merge))) %>%
   full_join(electric_dat_merge, by = intersect(names(.), names(electric_dat_merge))) %>%
@@ -1488,13 +1489,10 @@ lca_dat_imputed <- feed_dat_merge %>%
          feed_fmfo = if_else(fcr==0, true = 0, false = feed_fmfo),
          feed_animal = if_else(fcr==0, true = 0, false = feed_animal))
 
-write.csv(lca_dat_imputed, file.path(outdir, paste("lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv", sep = "")), row.names = FALSE)
 
-
-# OPTION: EDIBLE WEIGHT ADJUSTMENT
-# REMINDER: for plants edible_mean should be 100
-# NOTE: No data imputation required for wild capture model, so edible weight adjustment happens in bayes_03_wild_model.R
-farmed_edible <- read.csv(file.path(datadir, "aquaculture_edible_CFs.csv"))
+# READ in additional data columns needed for analysis:
+datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # Join with other data that also need edible weight adjustment
 # For N and P models: N and P content of seafood products
@@ -1503,13 +1501,29 @@ fish_content_dat <- read.csv(file.path(outdir, "fish_NP_clean.csv"))
 # library(countrycode)
 evap_clim <- read.csv(file.path(outdir, "clim_summarise_by_country.csv")) %>%
   mutate(iso3c = countrycode(admin, origin = "country.name", destination = "iso3c")) %>%
-  select(-X) %>%
+  select(-c(X, admin)) %>%
   drop_na()
 
-lca_dat_edible <- lca_dat_imputed %>%
-  left_join(farmed_edible, by = c("taxa" = "fishprint_taxa")) %>%
+# ADJUST ISO'S
+lca_dat_imputed_new_iso <- lca_dat_imputed %>%
+  mutate(iso3c = case_when(Country == "Scotland" ~ "GBR",
+                           Country == "Germany, Denmark" ~ "DEU",
+                           TRUE ~ iso3c))
+
+# Merge with lca_dat_imputed
+lca_dat_live_weight <- lca_dat_imputed_new_iso %>%
   left_join(fish_content_dat, by = "clean_sci_name") %>%
-  left_join(evap_clim, by = "iso3c") %>%
+  left_join(evap_clim, by = "iso3c")
+
+write.csv(lca_dat_live_weight, file.path(outdir, paste("lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv", sep = "")), row.names = FALSE)
+
+# OPTION: EDIBLE WEIGHT ADJUSTMENT
+# REMINDER: for plants edible_mean should be 100
+# NOTE: No data imputation required for wild capture model, so edible weight adjustment happens in bayes_03_wild_model.R
+farmed_edible <- read.csv(file.path(datadir, "aquaculture_edible_CFs.csv"))
+
+lca_dat_edible <- lca_dat_live_weight %>%
+  left_join(farmed_edible, by = c("taxa" = "fishprint_taxa")) %>%
   # FCR
   mutate(fcr = fcr * 1/(edible_mean/100)) %>%
   # GHG
@@ -1521,9 +1535,8 @@ lca_dat_edible <- lca_dat_imputed %>%
   mutate(Yield_m2_per_t = Yield_m2_per_t * 1/(edible_mean/100)) %>%
   # N and P
   mutate(N_t_liveweight_t = N_t_liveweight_t * 1/(edible_mean/100),
-         P_t_liveweight_t = P_t_liveweight_t * 1/(edible_mean/100)) %>%
-  # Water
-  mutate(mean_evap_mm = mean_evap_mm * 1/(edible_mean/100))
-  
+         P_t_liveweight_t = P_t_liveweight_t * 1/(edible_mean/100))
+# NOTE: No additional adjustments needed for water model (already adjusted Yield)
+
 write.csv(lca_dat_edible, file.path(outdir, paste("lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv", sep = "")), row.names = FALSE)
          
