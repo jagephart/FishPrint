@@ -16,7 +16,7 @@ source("Functions.R")
 
 # Create clean and aggregated (Patrick's and Wenbo's studies) LCI data for publication
 # Data should not be replicated yet (comment out )
-lca_dat_for_si <- clean.lca(LCA_data = lca_dat, replicate_dat = FALSE) # only need to replicate data for analysis
+lca_dat_for_si <- clean.lca(LCA_data = lca_dat, replicate_dat = TRUE) # for SI, we will publish the cleaned, aggregated, and replicated dataset
 
 # Patrick's unpublished India data:
 henriksson_unpub <- lca_dat_for_si %>%
