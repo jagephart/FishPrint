@@ -15,24 +15,23 @@ library(tidybayes)
 # Mac
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
-# Windows
-# datadir <- "K:/BFA Environment 2/Data"
-# outdir <- "K:BFA Environment 2/Outputs"
-
-# Full dataset (not aggregated)
-#lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201222.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
-# New dataset with additional algae studies and fixed references column
-lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20210405.csv")) 
 source("Functions.R")
 
-# Clean LCA data
-lca_dat_clean <- clean.lca(LCA_data = lca_dat)
+# Full raw dataset used in published analysis
+# lca_dat <- read.csv(file.path(datadir, "LCI_compiled_FINAL.csv")) 
+# Clean and replicate LCA data 
+# lca_dat_clean <- clean.lca(LCA_data = lca_dat, replicate_dat = TRUE)
 
-# FOR PUBLICATION, begin with cleaned + aggregated dataset here:
-# lca_dat_clean <- read.csv(file.path(datadir, "LCA_compiled_for_SI.csv"))
+# Cleaned,aggregated, and replicated dataset:
+# DATA DOCUMENTATION: some unpublished data points in the raw dataset were aggregated 
+# ORIGINAL RAW FILE CAN BE PROVIDED: CONTACT THE CORRESPONDING AUTHOR FOR INFORMATION
+lca_dat_clean <- read.csv(file.path(datadir, "LCI_compiled_for_SI.csv")) 
 
 # Rebuild FAO fish production from zip file
-fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
+#fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
+fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2020.1.0.zip")
+# DATA DOCUMENTATION: Zip file can be downloaded from FAO FishStat: http://www.fao.org/fishery/static/Data/GlobalProduction_2020.1.0.zip
+# File can also be provided by corresponding author upon request
 
 # Classify species into taxa groupings
 # Use ISSCAAP grouping (in FAO data) to help with classification
@@ -45,7 +44,7 @@ lca_dat_clean_groups <- add_taxa_group(lca_dat_clean, fishstat_dat) %>%
 sort(unique(lca_dat_clean_groups$taxa))
 
 # Output clean data with groups (later will read this back in to join with model predictions)
-write.csv(lca_dat_clean_groups, file.path(datadir, "lca_clean_with_groups.csv"), row.names = FALSE)
+write.csv(lca_dat_clean_groups, file.path(outdir, "lca_clean_with_groups.csv"), row.names = FALSE)
 
 # Output taxa groupings and sample sizes:
 n_and_composition <- lca_dat_clean_groups %>% 
@@ -105,16 +104,12 @@ prod_weightings <-  prod_weightings %>%
 # Check that species sum to 1
 prod_weightings %>% group_by(taxa_group_name, taxa) %>% summarise(total_weight = sum(prod_weighting))
 
-write.csv(prod_weightings, file.path(datadir, "aqua_prod_weightings.csv"), row.names = FALSE)
-
-# Compare n observations to total production
-sample_summary <- lca_dat %>%
-  filter(Drop_study_flag == "")
+write.csv(prod_weightings, file.path(outdir, "aqua_prod_weightings.csv"), row.names = FALSE)
 
 #________________________________________________________________________________________________________________________________________________________________#
 # Calculate the weighted averages for the feed components
 #________________________________________________________________________________________________________________________________________________________________#
-feed_fp <- read.csv(file.path(datadir, "Feed_impact_factors_20201203.csv"))
+feed_fp <- read.csv(file.path(datadir, "feed_impact_factors.csv"))
 feed_fp$iso3c <- countrycode(feed_fp$Country.Region, origin = "country.name", destination = "iso3c")
 feed_fp$iso3c[is.na(feed_fp$iso3c)] <- "Other"
 
@@ -122,6 +117,10 @@ feed_fp <- feed_fp %>%
   mutate(iso3c = ifelse(Country.Region == "Europe" & Input %in% c("Chicken by-product meal", "Chicken by-product oil"),
                         "EUR", iso3c)) 
 
+# DATA DOCUMENTATION: These data come from FAO and can be downloaded from FAOSTAT
+# http://www.fao.org/faostat/en/#data/TP
+# Query terms for downloading: SELECT All countries, Export quantity, All items
+# File can also be provided by corresponding author upon request
 faostat <- read.csv(file.path(datadir, "FAOSTAT_data_12-9-2020.csv"))
 faostat$iso3c <- countrycode(faostat$Area, origin = "country.name", destination = "iso3c")
 
@@ -155,5 +154,5 @@ weighted_fp <- rbind(weighted_soy, weighted_crop)
 weighted_fp <- rbind(weighted_fp, weighted_livestock)
 weighted_fp <- rbind(weighted_fp, weighted_fish)
 
-write.csv(weighted_fp, file.path(datadir, "weighted_feed_fp.csv"), row.names = FALSE)
+write.csv(weighted_fp, file.path(outdir, "weighted_feed_fp.csv"), row.names = FALSE)
 

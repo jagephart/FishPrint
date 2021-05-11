@@ -18,9 +18,10 @@ source("Functions.R")
 
 # Set data directory
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
+outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # If not loaded, load and clean lca data
-lca <- read.csv(file.path(datadir, "lca_clean_with_groups.csv"))
+lca <- read.csv(file.path(outdir, "lca_clean_with_groups.csv"))
 # Select species in lca database
 lca_species <- lca %>% 
   select(clean_sci_name, Common.Name) %>%
@@ -88,7 +89,7 @@ fishP_viaFat <- function(Water,Fat.total){
 #N and P content of fish in % of DM
 #read Zach's data and make calculations using built functions
 
-fishNutrition <- read.csv(file.path(datadir, "AFCD_live.csv"), stringsAsFactors = FALSE)
+fishNutrition <- read.csv(file.path(datadir, "fish_NP_raw.csv"), stringsAsFactors = FALSE)
 
 #build taxa data 
 fish_Nutrition_genus<-fishNutrition[,c("species","order","family","genus")] %>% 
