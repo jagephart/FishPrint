@@ -23,8 +23,8 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 ##########################################################################################################################
 # OPTION: Choose allocation method (used for all analyses and plotting below)
-#allocation_method <- "Mass"
-allocation_method <- "Economic"
+allocation_method <- "Mass"
+#allocation_method <- "Economic"
 ##########################################################################################################################
 
 #_______________________________________________________________________________________________________________________#
@@ -350,7 +350,6 @@ stressor_s3 <- stressor_s3 %>%
 stressor_s3$scenario <- "Yield upper 20th"
 
 # Scenario 4: Capture fisheries - catch 1.2 x as much fish with 60% less effort
-#df_capture <- read.csv(file.path(datadir, "20210107_capture_stressors_nonbayes.csv"))
 df_capture <- read.csv(file.path(outdir, "non-bayes-stressors_capture_observation-level_edible-weight.csv"))
 
 delta_ghg <- 0.56/1.13 # Confirm with Rob
@@ -362,7 +361,7 @@ stressor_s4$scenario <- "13% more catch with 56% of the effort"
 df_capture$scenario <- "capture_baseline"
 
 # Scenario 5: Capture fisheries - Take minimum gear GHG per species and apply to the group
-df_capture_raw <- read.csv(file.path(outdir, "fisheries_fuel_use.csv"))
+df_capture_raw <- read.csv(file.path(datadir, "fisheries_fuel_use.csv"))
 
 stressor_s5 <- df_capture_raw %>%
   # Remove mixed gear and nei observations
@@ -609,7 +608,6 @@ dev.off()
 #_______________________________________________________________________________________________________________________#
 # Identify common features of low stressor systems for 
 #_______________________________________________________________________________________________________________________#
-# df_species <- read.csv(file.path(datadir, "20210107_stressor_species_summary.csv"))
 df_species <- read.csv(file.path(outdir, "non-bayes-stressors_farmed_observation-level_edible-weight.csv"))
 df_species <- df_species %>%
   filter(taxa %in% c("salmon", "hypoph_carp", "oth_carp", "catfish", "tilapia", "shrimp")) %>%

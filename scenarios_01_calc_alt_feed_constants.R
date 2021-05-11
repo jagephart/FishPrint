@@ -4,7 +4,7 @@
 # Libraries for processing and analyses
 rm(list=ls())
 library(tidyverse)
-library(countrycode) # part of clean.lca
+library(countrycode)
 source("Functions.R")
 
 #_________________________________________________________________________________________________________________________________#

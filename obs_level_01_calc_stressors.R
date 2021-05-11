@@ -224,7 +224,6 @@ df_capture_ghg <- df_capture %>%
   mutate(species_consumption_weighting = (species_weighting*consumption_weighting)/sum(species_weighting*consumption_weighting)) %>%
   summarise(ghg_kg_t = sum(species_ghg_kg_t*species_consumption_weighting))
 
-#write.csv(df_capture_ghg, file.path(datadir, "20210107_capture_stressors_nonbayes.csv"), row.names = FALSE) # original live weight version
 write.csv(df_capture_ghg, file.path(outdir, "non-bayes-stressors_capture_observation-level_edible-weight.csv"), row.names = FALSE)
 
 #_______________________________________________________________________________________________________________________#
@@ -254,7 +253,6 @@ stressor_species_summary <- df %>%
          feed_land, feed_water, "onfarm_ghg" = "onfarm_ghg_kgCO2", "onfarm_N" = "N_emissions_kg_per_t", 
         "onfarm_P" = "P_emissions_kg_per_t", "onfarm_land" = "Yield_m2_per_t.x", "onfarm_water" = "on_farm_water")
 
-#write.csv(stressor_species_summary, file.path(datadir, "20210107_stressor_species_summary.csv"), row.names = FALSE) # original live weight version
 write.csv(stressor_species_summary, file.path(outdir, "non-bayes-stressors_farmed_observation-level_edible-weight.csv"), row.names = FALSE)
 
 #_______________________________________________________________________________________________________________________#
@@ -290,5 +288,4 @@ stressor_taxa_summary <- df_feed_taxa_summary %>%
          prop_onfarm_water = onfarm_water_weighted_stressor/total_water,
          prop_onfarm_land = onfarm_land_weighted_stressor/total_land)
 
-#write.csv(stressor_taxa_summary, file.path(datadir,"20210107_aquaculture_stressors_nonbayes.csv"), row.names = FALSE) # original live weight version
 write.csv(stressor_taxa_summary, file.path(outdir,"non-bayes-stressors_farmed_taxa-level_edible-weight.csv"), row.names = FALSE)
