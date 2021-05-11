@@ -23,9 +23,8 @@ source("Functions.R")
 # lca_dat_clean <- clean.lca(LCA_data = lca_dat, replicate_dat = TRUE)
 
 # Read in cleaned, aggregated, and replicated dataset:
-# DATA DOCUMENTATION: some unpublished data points in the raw dataset were aggregated
-# The aggregated data file below represents 80% of the data points used in the analysis
-# ORIGINAL RAW FILE CAN BE PROVIDED: CONTACT THE CORRESPONDING AUTHOR FOR INFORMATION
+# DATA DOCUMENTATION: 80% of the data points from the original analysis are identical in the aggregated file, the remaining 20% were aggregated as they come from unpublished studies
+# ORIGINAL RAW FILE CAN BE REQUESTED: CONTACT THE CORRESPONDING AUTHOR FOR INFORMATION
 lca_dat_clean <- read.csv(file.path(datadir, "LCI_compiled_for_SI.csv")) 
 
 # Rebuild FAO fish production from zip file
