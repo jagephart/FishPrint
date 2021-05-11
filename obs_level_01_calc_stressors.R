@@ -17,10 +17,10 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # Load lca data
 #_______________________________________________________________________________________________________________________#
 # Load full data with predicted parameters
-#df <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-n-farms.csv"))
-df <- read.csv(file.path(datadir,"2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv")) 
+#df <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-n-farms_live-weights.csv"))
+df <- read.csv(file.path(outdir,"lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv")) 
 
-prod_weightings <- read.csv(file.path(datadir, "aqua_prod_weightings.csv"))
+prod_weightings <- read.csv(file.path(outdir, "aqua_prod_weightings.csv"))
 
 df <- df %>% 
   left_join(prod_weightings, by = c("clean_sci_name", "taxa")) 
@@ -28,7 +28,7 @@ df <- df %>%
 #_______________________________________________________________________________________________________________________#
 # Calculate feed-associated stressors 
 #_______________________________________________________________________________________________________________________#
-feed_fp <- read.csv(file.path(datadir, "weighted_feed_fp.csv"))
+feed_fp <- read.csv(file.path(outdir, "weighted_feed_fp.csv"))
 # Change names to match df
 feed_fp <- feed_fp %>%
   mutate(feed_type = case_when(
@@ -108,7 +108,7 @@ df_onfarm_ghg_taxa <- df_onfarm_ghg %>%
 #_______________________________________________________________________________________________________________________#
 
 feed_NP <- read.csv(file.path(outdir, "feed_NP_clean.csv"))
-fish_NP <- read.csv(file.path(datadir, "fish_NP_clean.csv"))
+fish_NP <- read.csv(file.path(outdir, "fish_NP_clean.csv"))
 
 df_onfarm_NP <- df %>%
   # Calculate N and P from each feed component
@@ -159,7 +159,7 @@ df_onfarm_land_taxa <- df_onfarm_land %>%
 #_______________________________________________________________________________________________________________________#
 # Calculate on-farm water
 #_______________________________________________________________________________________________________________________#
-evap <- read.csv(file.path(datadir, "20201222_clim_summarise_by_country.csv"))
+evap <- read.csv(file.path(outdir, "clim_summarise_by_country.csv"))
 evap$iso3c <- countrycode(evap$admin, origin = "country.name", destination = "iso3c")
 evap <- evap %>%
   mutate(evap_rate_m3_per_m2 = mean_evap_mm/1000) %>%
@@ -225,7 +225,7 @@ df_capture_ghg <- df_capture %>%
   summarise(ghg_kg_t = sum(species_ghg_kg_t*species_consumption_weighting))
 
 #write.csv(df_capture_ghg, file.path(datadir, "20210107_capture_stressors_nonbayes.csv"), row.names = FALSE) # original live weight version
-write.csv(df_capture_ghg, file.path(datadir, "non-bayes-stressors_capture_observation-level_edible-weight.csv"), row.names = FALSE)
+write.csv(df_capture_ghg, file.path(outdir, "non-bayes-stressors_capture_observation-level_edible-weight.csv"), row.names = FALSE)
 
 #_______________________________________________________________________________________________________________________#
 # Summarize all by species
@@ -255,7 +255,7 @@ stressor_species_summary <- df %>%
         "onfarm_P" = "P_emissions_kg_per_t", "onfarm_land" = "Yield_m2_per_t.x", "onfarm_water" = "on_farm_water")
 
 #write.csv(stressor_species_summary, file.path(datadir, "20210107_stressor_species_summary.csv"), row.names = FALSE) # original live weight version
-write.csv(stressor_species_summary, file.path(datadir, "non-bayes-stressors_farmed_observation-level_edible-weight.csv"), row.names = FALSE)
+write.csv(stressor_species_summary, file.path(outdir, "non-bayes-stressors_farmed_observation-level_edible-weight.csv"), row.names = FALSE)
 
 #_______________________________________________________________________________________________________________________#
 # Summarize all by taxa
@@ -291,4 +291,4 @@ stressor_taxa_summary <- df_feed_taxa_summary %>%
          prop_onfarm_land = onfarm_land_weighted_stressor/total_land)
 
 #write.csv(stressor_taxa_summary, file.path(datadir,"20210107_aquaculture_stressors_nonbayes.csv"), row.names = FALSE) # original live weight version
-write.csv(stressor_taxa_summary, file.path(datadir,"non-bayes-stressors_farmed_taxa-level_edible-weight.csv"), row.names = FALSE)
+write.csv(stressor_taxa_summary, file.path(outdir,"non-bayes-stressors_farmed_taxa-level_edible-weight.csv"), row.names = FALSE)

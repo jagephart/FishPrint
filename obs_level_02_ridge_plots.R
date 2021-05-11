@@ -7,9 +7,6 @@ library(ggridges)
 library(cowplot)
 library(egg)
 
-### REMINDER: FOR ALL PLOTS, need to manually choose between geom_density_ridges(DEFAULT) vs geom_density_ridges(scale = 0.9)
-
-
 #_______________________________________________________________________________________________________________________#
 # Read in data
 #_______________________________________________________________________________________________________________________#
@@ -17,15 +14,10 @@ library(egg)
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
-# OLD: live weight
-# stressor_taxa_summary <- read.csv(file.path(datadir,"20210107_aquaculture_stressors_nonbayes.csv"))
-# stressor_species_summary <- read.csv(file.path(datadir, "20210107_stressor_species_summary.csv"))
-# df_capture_ghg <- read.csv(file.path(datadir, "20210107_capture_stressors_nonbayes.csv")) 
-
 # edible weight
-stressor_taxa_summary <- read.csv(file.path(datadir,"non-bayes-stressors_farmed_taxa-level_edible-weight.csv"))
-stressor_species_summary <- read.csv(file.path(datadir, "non-bayes-stressors_farmed_observation-level_edible-weight.csv"))
-df_capture_ghg <- read.csv(file.path(datadir, "non-bayes-stressors_capture_observation-level_edible-weight.csv")) 
+stressor_taxa_summary <- read.csv(file.path(outdir,"non-bayes-stressors_farmed_taxa-level_edible-weight.csv"))
+stressor_species_summary <- read.csv(file.path(outdir, "non-bayes-stressors_farmed_observation-level_edible-weight.csv"))
+df_capture_ghg <- read.csv(file.path(outdir, "non-bayes-stressors_capture_observation-level_edible-weight.csv")) 
 
 #_______________________________________________________________________________________________________________________#
 # Summary plots
@@ -128,6 +120,7 @@ ghg_ridge_intensity <- ggplot(total_stressor_species_summary_plot %>%
                                 filter(stressor == "ghg" & !is.na(intensity)),
        aes(x = total_value, y = full_intensity)) +
   #geom_density_ridges(alpha = 0.7, fill = "#364F6B") +
+  scale_x_continuous(labels = c("0", "1e4", "2e4", "3e4"), breaks = c(0, 10000, 20000, 30000)) +
   geom_density_ridges(alpha = 0.7, fill = "#364F6B", scale = 0.9) +
   labs(title = "GHG", x = units_for_ghg, y = "") +
   theme_ridges() +
@@ -283,23 +276,20 @@ water_ridge_taxa <- ggplot(total_stressor_species_summary_plot %>%
   ridge_plot_theme +
   theme(axis.text.y=element_blank())
 
-#png(file.path(outdir, "ridge-plots_intensity.png"), width = 8, height = 4, units = "in", res = 300)
-#png(file.path(outdir, "scaled-ridge-plots_intensity.png"), width = 8, height = 4, units = "in", res = 300)
-pdf(file = file.path(outdir, "scaled-ridge-plots_intensity.pdf"), width = 8, height = 4) 
+png(file.path(outdir, "scaled-ridge-plots_intensity.png"), width = 8, height = 4, units = "in", res = 300)
+#pdf(file = file.path(outdir, "scaled-ridge-plots_intensity.pdf"), width = 8, height = 4) 
 ggarrange(ghg_ridge_intensity, N_ridge_intensity, P_ridge_intensity,
           land_ridge_intensity, water_ridge_intensity, nrow = 1)
 dev.off()
 
-#png(file.path(outdir, "ridge-plots_system.png"), width = 8, height = 4, units = "in", res = 300)
-#png(file.path(outdir, "scaled-ridge-plots_system.png"), width = 8, height = 4, units = "in", res = 300)
-pdf(file = file.path(outdir, "scaled-ridge-plots_system.pdf"), width = 8, height = 4) 
+png(file.path(outdir, "scaled-ridge-plots_system.png"), width = 8, height = 4, units = "in", res = 300)
+#pdf(file = file.path(outdir, "scaled-ridge-plots_system.pdf"), width = 8, height = 4) 
 ggarrange(ghg_ridge_system, N_ridge_system, P_ridge_system,
           land_ridge_system, water_ridge_system, nrow = 1)
 dev.off()
 
-#png(file.path(outdir, "ridge-plots_taxa.png"), width = 8, height = 4, units = "in", res = 300)
-#png(file.path(outdir, "scaled-ridge-plots_taxa.png"), width = 8, height = 4, units = "in", res = 300)
-pdf(file = file.path(outdir, "scaled-ridge-plots_taxa.pdf"), width = 8, height = 4) 
+png(file.path(outdir, "scaled-ridge-plots_taxa.png"), width = 8, height = 4, units = "in", res = 300)
+#pdf(file = file.path(outdir, "scaled-ridge-plots_taxa.pdf"), width = 8, height = 4) 
 ggarrange(ghg_ridge_taxa, N_ridge_taxa, P_ridge_taxa,
           land_ridge_taxa, water_ridge_taxa, nrow = 1)
 dev.off()
