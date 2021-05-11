@@ -448,6 +448,13 @@ plot_taxa_name_order <- c("seaweeds",
                           "misc marine",
                           "misc diad")
 
+weight_type <- "edible weight"
+units_for_ghg <- bquote(atop('kg'~CO[2]*' t'^-1~phantom(), .(weight_type))) # atop + phantom() to create line break
+units_for_land <- bquote(atop('m'^2*' t'^-1~phantom(), .(weight_type)))
+units_for_nitrogen <- bquote(atop('kg N-eq t'^-1~phantom(), .(weight_type)))
+units_for_phosphorus <- bquote(atop('kg P-eq t'^-1~phantom(), .(weight_type)))
+units_for_water <- bquote(atop('m'^3*' t'^-1~phantom(), .(weight_type)))
+
 # df_plot$taxa <- factor(df_plot$taxa, levels = rev(c("misc_diad", 
 #                                                     "misc_marine", 
 #                                                     "tilapia", 
@@ -471,10 +478,7 @@ ghg_plot <- ggplot(df_plot %>% filter(stressor == "GHG"),
                    aes(x = median, y = plot_taxa_name, fill = source)) + 
   geom_bar(stat = "identity", position = "stack") + 
   scale_fill_manual(values = c("#70468C", "#57D182")) +
-  # scale_y_discrete(labels = rev(c("misc diad", "misc marine", "tilapia", "shrimp", "milkfish",
-  #                                 "catfish", "misc carp", "trout", "salmon",
-  #                                 "silver/bighead", "bivalves", "seaweeds"))) +
-  labs(title = "GHG", x = expression("kg CO"[2]~"t"^"-1"), y = "") +
+  labs(title = "GHG", x = units_for_ghg, y = "") +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
@@ -498,7 +502,7 @@ N_plot <- ggplot(df_plot %>% filter(stressor == "N"),
                  aes(x = median, y = plot_taxa_name, fill = source)) + 
   geom_bar(stat = "identity", position = "stack") + 
   scale_fill_manual(values = c("#70468C", "#57D182")) +
-  labs(title = "Nitrogen", x = expression("kg N-eq t"^"-1"), y = "") +
+  labs(title = "Nitrogen", x = units_for_nitrogen, y = "") +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_blank(),
@@ -522,7 +526,7 @@ P_plot <- ggplot(df_plot %>% filter(stressor == "P"),
                  aes(x = median, y = plot_taxa_name, fill = source)) + 
   geom_bar(stat = "identity", position = "stack") + 
   scale_fill_manual(values = c("#70468C", "#57D182")) +
-  labs(title = "Phosphorus", x = expression("kg P-eq t"^"-1"), y = "") +
+  labs(title = "Phosphorus", x = units_for_phosphorus, y = "") +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_blank(),
@@ -546,7 +550,7 @@ land_plot <- ggplot(df_plot %>% filter(stressor == "Land"),
                     aes(x = median, y = plot_taxa_name, fill = source)) + 
   geom_bar(stat = "identity", position = "stack") + 
   scale_fill_manual(values = c("#70468C", "#57D182")) +
-  labs(title = "Land", x = expression("m"^2~"t"^"-1"), y = "") +
+  labs(title = "Land", x = units_for_land, y = "") +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_blank(),
@@ -570,7 +574,7 @@ water_plot <- ggplot(df_plot %>% filter(stressor == "Water"),
                      aes(x = median, y = plot_taxa_name, fill = source)) + 
   geom_bar(stat = "identity", position = "stack") + 
   scale_fill_manual(values = c("#70468C", "#57D182")) +
-  labs(title = "Water", x = expression("m"^"3"~"t"^"-1"), y = "") +
+  labs(title = "Water", x = units_for_water, y = "") +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_blank(),
