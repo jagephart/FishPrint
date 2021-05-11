@@ -41,7 +41,8 @@ chn_carp_agg <- lca_dat_for_si %>%
   group_by(Source, Country, iso3c, clean_sci_name, Production_system_group, Intensity) %>%
   summarise(across(c(Yield_m2_per_t, Grow_out_period_days, FCR, feed_soy_new, feed_crops_new, feed_fmfo_new, feed_animal_new, Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L), mean, na.rm = TRUE),
             Sample_size_n_farms = sum(Sample_size_n_farms),
-            study_id = min(study_id)) %>%
+            study_id = min(study_id),
+            n_study = n()) %>%
   ungroup() %>%
   arrange(study_id)
 
@@ -52,8 +53,8 @@ lca_dat_for_si_clean <- lca_dat_for_si %>%
   filter(Source != "Henriksson et al. (unpubl. Data)") %>%
   filter(Source != "Zhang & Newton (unpubl. Data)") %>%
   # Add aggregated data back in
-  bind_rows(henriksson_unpub_agg) %>%
-  bind_rows(chn_carp_agg) %>%
+  bind_rows(henriksson_unpub_agg %>% select(-n_study)) %>%
+  bind_rows(chn_carp_agg %>% select(-n_study)) %>%
   mutate(data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = "raw"))
 
 write.csv(lca_dat_for_si_clean, file = file.path(datadir, "LCI_compiled_for_SI.csv"), row.names = FALSE)
