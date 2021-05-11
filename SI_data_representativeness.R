@@ -11,34 +11,12 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 #################################################################
 # FORMAT DATA for journal SI:
 
-# Create new version with cleaned references
-# lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20201222.csv"), fileEncoding="UTF-8-BOM") %>% #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
-#   # Clean up references (Source column)
-#   mutate(Source = str_replace_all(Source, pattern = "-", replacement = " "))
-# write.csv(lca_dat, file.path(datadir, "LCA_compiled_20210405.csv"), row.names = FALSE)
-# Then manually clean references (Remove "a" which all seem unnecessary except for Iribarren 2010)
-# New version with date: 20210405
-
-lca_dat <- read.csv(file.path(datadir, "LCA_compiled_20210405.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
+lca_dat <- read.csv(file.path(datadir, "LCI_compiled_FINAL.csv"), fileEncoding="UTF-8-BOM") #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
 source("Functions.R")
 
-# Create clean and aggregated (Patrick's and Wenbo's studies) LCA data for Zenodo data repository
-# lca_dat_for_si should be able to work with full code starting at bayes_01_process_data_for_analysis starting with the function (add_taxa_group)
-lca_dat_for_si <- clean.lca(LCA_data = lca_dat)
-
-# Aggregate data:
-# Patrick's Indonesia: Turns out this is OK to publish
-# henriksson_indo <- lca_dat_for_si %>%
-#   filter(Source == "Henriksson et al. 2019" & Country == "Indonesia") 
-# 
-# henriksson_indo_agg <- lca_dat_for_si %>%
-#   filter(Source == "Henriksson et al. 2019" & Country == "Indonesia") %>%
-#   group_by(Source, Country, iso3c, clean_sci_name, Production_system_group, Intensity) %>% # NOT grouping by Common.Name, Scientific.Name, Product creates NA's when merging back with full dataset, but don't need these columns for analysis
-#   summarise(across(c(Yield_m2_per_t, Grow_out_period_days, FCR, feed_soy_new, feed_crops_new, feed_fmfo_new, feed_animal_new, Electricity_kwh, Diesel_L, Petrol_L, NaturalGas_L), mean, na.rm = TRUE),
-#             Sample_size_n_farms = sum(Sample_size_n_farms),
-#             study_id = min(study_id)) %>% # just use the study_id for the first row
-#   ungroup() %>%
-#   arrange(study_id)
+# Create clean and aggregated (Patrick's and Wenbo's studies) LCI data for publication
+# Data should not be replicated yet (comment out )
+lca_dat_for_si <- clean.lca(LCA_data = lca_dat, replicate_dat = FALSE) # only need to replicate data for analysis
 
 # Patrick's unpublished India data:
 henriksson_unpub <- lca_dat_for_si %>%
@@ -78,66 +56,7 @@ lca_dat_for_si_clean <- lca_dat_for_si %>%
   bind_rows(chn_carp_agg) %>%
   mutate(data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = "raw"))
 
-write.csv(lca_dat_for_si_clean, file = file.path(datadir, "LCA_compiled_for_SI.csv"), row.names = FALSE)
-
-
-# OLD CODE:
-# lca_dat_clean_for_si <- lca_dat_clean %>%
-#   filter(str_detect(Source, pattern = "unpubl")==FALSE) # Remove unpublished data
-# 
-# write.csv(lca_dat_clean_for_si, file.path(outdir, "data_for_si.csv"))
-
-# OLD CODE:
-# Load Imputed Data
-# lca_full_dat <- read.csv(file.path(datadir, "2021-01-06_lca-dat-imputed-vars_rep-sqrt-n-farms.csv"), fileEncoding="UTF-8-BOM")
-# 
-# # Load Cleaned Data (before imputation) just to get "Source" and "study_id" columns:
-# lca_dat <- read.csv(file.path(datadir, "lca_clean_with_groups.csv"), fileEncoding="UTF-8-BOM") %>% #fileEncoding needed when reading in file from windows computer (suppresses BOM hidden characters)
-#   select(study_id, Source) %>%
-#   mutate(Source = str_trim(Source))
-# 
-# # Join back together to get "Source" column back
-# lca_dat_for_si <- lca_full_dat %>%
-#   #left_join(lca_dat, by = intersect(names(.), names(lca_dat))) %>%
-#   left_join(lca_dat, by = "study_id") %>%
-#   select(c( "Source", !!names(lca_full_dat))) %>%
-#   # remove data replication:
-#   select(-study_id) %>%
-#   unique() 
-#   
-# # data that should be aggregated prior to publishing:
-# # Patrick's Indonesia 
-# henriksson_indo <- lca_dat_for_si %>%
-#   filter(Source == "Henriksson et al. 2019" & Country == "Indonesia") %>%
-#   group_by(Source, clean_sci_name, taxa, intensity, system, Country, iso3c) %>%
-#   summarise(across(is.numeric, mean, na.rm = TRUE)) %>%
-#   ungroup()
-# 
-# # Chinese carp data:
-# chn_carp_dat <- lca_dat_for_si %>%
-#   filter(Source == "Zhang & Newton (unpubl. Data)") %>%
-#   group_by(Source, clean_sci_name, taxa, intensity, system, Country, iso3c) %>%
-#   summarise(across(is.numeric, mean, na.rm = TRUE)) %>%
-#   ungroup()
-# 
-# aggregated_source <- c("Henriksson et al. 2019", "Zhang & Newton \\(unpubl. Data\\)")
-# 
-# lca_dat_for_si_clean <- lca_dat_for_si %>%
-#   # Filter out the raw data that needs to be aggregated
-#   filter((Source == "Henriksson et al. 2019" & Country == "Indonesia")==FALSE) %>%
-#   filter(Source != "Zhang & Newton (unpubl. Data)") %>%
-#   # Add aggregated data back in
-#   bind_rows(henriksson_indo) %>%
-#   bind_rows(chn_carp_dat) %>%
-#   mutate(feed_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = feed_data_type),
-#          fcr_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = fcr_data_type),
-#          electric_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = electric_data_type),
-#          diesel_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = diesel_data_type),
-#          petrol_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = petrol_data_type),
-#          natgas_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = natgas_data_type),
-#          yield_data_type = if_else(Source %in% aggregated_source, true = "aggregated", false = yield_data_type))
-# 
-# write.csv(lca_dat_for_si_clean, file = file.path(outdir, "lca_data_for_si_clean.csv"), row.names = FALSE)
+write.csv(lca_dat_for_si_clean, file = file.path(datadir, "LCI_compiled_for_SI.csv"), row.names = FALSE)
 
 #################################################################
 # PRODUCTION CALCULATIONS:
@@ -145,11 +64,12 @@ write.csv(lca_dat_for_si_clean, file = file.path(datadir, "LCA_compiled_for_SI.c
 # Rebuild FAO fish production from zip file
 #fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
 fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2020.1.0.zip")
+# DATA DOCUMENTATION: Zip file can be downloaded from FAO FishStat: http://www.fao.org/fishery/static/Data/GlobalProduction_2020.1.0.zip
 
 # Match taxa group to ISSCAAP group(s)
-# 2012 - 2018
+# 2012 - 2019
 prod_clean <- fishstat_dat %>% 
-  filter(year > 2012) %>%
+  filter(year > 2011) %>%
   #filter(year > 2013) %>%
   filter(unit == "t") %>%
   filter(source_name_en %in% c("Aquaculture production (marine)", "Aquaculture production (brackishwater)", "Aquaculture production (freshwater)")) %>%
@@ -194,7 +114,7 @@ prod_by_taxa <- prod_clean %>%
 prod_by_taxa %>%
   filter(plot_name != "other_taxa") %>%
   pull(taxa_prod) %>% sum() / sum(prod_by_taxa$taxa_prod)
-# Proportion of global aquaculture production represented in our study: 0.747532
+# Proportion of global aquaculture production represented in our study: 0.7586919
 
 # How much of total production is carps?
 prod_by_taxa %>%
@@ -213,7 +133,7 @@ non_human_isscaap <- c("Pearls, mother-of-pearl, shells", "Corals", "Sponges", "
 # Large pelagic fishes are Tunas, bonitos, billfishes + Misc pelagic fishes
 # Small pelagic fishes are Herrings, sardines, anchovies <- all Clupeidae found here, find number to adjust this
 wild_prod_clean <- fishstat_dat %>% 
-  filter(year > 2012) %>%
+  filter(year > 2011) %>%
   #filter(year > 2013) %>%
   filter(unit == "t") %>%
   filter(source_name_en == "Capture production") %>%
@@ -246,18 +166,8 @@ wild_prod_by_taxa <- wild_prod_clean %>%
 wild_prod_by_taxa %>%
   filter(taxa_group_name != "other_taxa") %>%
   pull(taxa_prod) %>% sum() / sum(wild_prod_by_taxa$taxa_prod)
-# Including non-human isscaap groups:
-# Proportion of global wild capture production represented in our study: 
-# 0.6339886 (filter Osteichthyes, adjust small pelagics) 
-# 0.6622046 (filter Osteichthyes, no adjustment to small pelagics)
-# 0.5234017 (keep Osteichthyes, adjust small pelagics)
-# 0.5541475 (keep Osteichthyes, no adjustment to small pelagics)
-
-# Removing non-human isscaap groups:
-# 0.6445885 (filter Osteichthyes, adjust small pelagics)
-# 0.6724095 (filter Osteichthyes, no adjustment to small pelagics)
-# 0.5306052 (keep Osteichthyes, adjust small pelagics)
-# 0.5612758 (keep Osteichthyes, no adjustment to small pelagics)
+# Removing non-human isscaap groups + filter Osteichthyes + adjust small pelagics):
+# 0.6459381 
 
 # CHECK CODE:
 # wild_study <- wild_prod_by_taxa %>%
@@ -268,7 +178,6 @@ wild_prod_by_taxa %>%
 #   pull(taxa_prod) %>% sum()
 # 
 # wild_study / wild_global
-
 
 # How much of total capture AND aquaculture production do our taxa groupings represent?
 global_total <- prod_by_taxa %>%
@@ -335,7 +244,6 @@ ggsave(filename = file.path(outdir, paste("plot_production_vs_n_farms.tiff", sep
 # CHOOSE n_type: sum of "n_farms" or "n_studies"
 #n_type <- "n_studies"
 
-
 # Clean LCA data
 country_dat <- read.csv(file.path(outdir, "taxa_group_n_and_composition.csv")) %>%
   group_by(taxa_group_name, iso3c) %>%
@@ -377,7 +285,6 @@ ggplot(plot_country_dat_all %>% filter(taxa_group_name != "Aquatic plants") %>% 
 ggsave(filename = file.path(outdir, paste("plot_prod_iso_missing_LCA_data.png", sep = "")), width = 11, height = 3.5)
 ggsave(filename = file.path(outdir, paste("plot_prod_iso_missing_LCA_data.tiff", sep = "")), width = 11, height = 3.5)
 
-
 # LOG-transformed
 ggplot(plot_country_dat_all %>% filter(taxa_group_name != "Aquatic plants") %>% filter(taxa_iso_prod > 50000)) +
   geom_tile(aes(x = iso3c, y = taxa_group_name, fill = log10(taxa_iso_prod))) +
@@ -390,8 +297,6 @@ ggplot(plot_country_dat_all %>% filter(taxa_group_name != "Aquatic plants") %>% 
         axis.text.y = element_text(color = "black"))
 ggsave(filename = file.path(outdir, paste("plot_prod_iso_missing_LCA_data-log.png", sep = "")), width = 11, height = 3.5)
 ggsave(filename = file.path(outdir, paste("plot_prod_iso_missing_LCA_data-log.tiff", sep = "")), width = 11, height = 3.5)
-
-
 
 # Identify which points to label
 # Get top 10 by number of farms
@@ -426,11 +331,6 @@ over_represented <- plot_country_dat %>%
   pull(plot_name_2)
 
 interesting_points <- unique(c(top_n_farms, top_prod, low_n_farms, over_represented))
-  
-
-
-
-#summary(lm(taxa_iso_prod ~ n, data = plot_country_dat))
 
 ggplot(data = plot_country_dat, aes(x = n_farms, y = taxa_iso_prod, size = n_studies)) +
   geom_point() +
@@ -451,7 +351,6 @@ ggplot(data = plot_country_dat, aes(x = n_farms, y = taxa_iso_prod, size = n_stu
 # PRO TIP: adjust image in Plot Window until happy with geom_text_repel, then save manually with "Export"
 ggsave(filename = file.path(outdir, paste("plot_national_production_vs_n_farms.png", sep = "")), width = 11, height = 8.5)
 ggsave(filename = file.path(outdir, paste("plot_national_production_vs_n_farms.tiff", sep = "")), width = 11, height = 8.5)
-
 
  # Which are the three outlier studies
 plot_country_dat %>%
