@@ -3,7 +3,6 @@
 .RData
 .Ruserdata
 *.Rproj
-Data/.
 .DS_Store
 *.png
 *.csv
@@ -11,3 +10,4 @@ Data/.
 *.docx
 Literature/.
 Archived_figures/.
+Data/.
