@@ -5,6 +5,7 @@
 #_______________________________________________________________________________________________________________________#
 library(tidyverse)
 library(countrycode)
+library(ggpubr)
 
 source("Functions.R")
 
@@ -47,7 +48,7 @@ energy_gwp <- energy_gwp %>%
   ))
 
 # Load and join evaporative loss constants
-evap <- read.csv(file.path(datadir, "20201222_clim_summarise_by_country.csv"))
+evap <- read.csv(file.path(outdir, "clim_summarise_by_country.csv"))
 evap$iso3c <- countrycode(evap$admin, origin = "country.name", destination = "iso3c")
 evap <- evap %>%
   mutate(evap_rate_m3_per_m2 = mean_evap_mm/1000) %>%
@@ -58,7 +59,7 @@ df <- df %>%
   left_join(evap, by = "iso3c")
 
 # Load feed data
-feed_fp <- read.csv(file.path(datadir, "weighted_feed_fp.csv"))
+feed_fp <- read.csv(file.path(outdir, "weighted_feed_fp.csv"))
 # Change names to match df
 feed_fp <- feed_fp %>%
   mutate(feed_type = case_when(
@@ -284,45 +285,156 @@ stressor_summary <- stressor_sensitivity(data_lca = df, data_feed_stressors = fe
                                    delta_electricity = 0, delta_diesel = 0, delta_petrol = 0, delta_natgas = 0, delta_yield = 0)
 
 
-stressor_summary_plot <- stressor_summary %>%
+df_plot <- stressor_summary %>%
   select(-c("total_ghg", "total_N", "total_P", "total_land", "total_water")) %>%
   group_by(taxa) %>%
   summarise_all(mean) %>%
   pivot_longer(feed_ghg:onfarm_water, names_sep = "_", 
-               names_to = c("source", "stressor"))
+               names_to = c("source", "stressor")) %>% 
+  mutate(median = value*(1/0.40)) %>% # Convert to edible portion
+  rename("plot_taxa_name" = "taxa")
 
-base_size <- 10
+base_size <- 12
 base_family <- "sans"
 
-png("poultry_stressors.png", width = 89, height = 130, units = "mm", res = 300)
-ggplot(stressor_summary_plot, aes(x = value, y = taxa, fill = source)) + 
-  geom_bar(position="stack", stat="identity") +
-  labs(x = "", y = "", title = "Chicken") +
-  facet_wrap(~stressor, scales = "free", ncol = 1) +
+# GHG plot
+ghg_plot <- ggplot(df_plot %>% filter(stressor == "ghg"), 
+                   aes(x = median, y = plot_taxa_name, fill = source)) + 
+  geom_bar(stat = "identity", position = "stack") + 
+  scale_fill_manual(values = c("#70468C", "#57D182")) +
+  labs(title = "GHG", x = expression("kg CO"[2]~"t"^"-1"), y = "") +
+  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.text = element_text(size = ceiling(base_size*0.7), colour = "black"),
+        axis.title = element_text(size = ceiling(base_size*0.8)), 
+        axis.text.x = element_text(angle = 90),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(), panel.border = element_blank(),
+        strip.background = element_rect(linetype = 1, fill = "white"), 
+        strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), 
+        strip.text.y = element_text(angle = -90), 
+        strip.placement.y = "outside",
+        legend.position="bottom",
+        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+# N plot
+N_plot <- ggplot(df_plot %>% filter(stressor == "N"), 
+                 aes(x = median, y = plot_taxa_name, fill = source)) + 
+  geom_bar(stat = "identity", position = "stack") + 
+  scale_fill_manual(values = c("#70468C", "#57D182")) +
+  labs(title = "Nitrogen", x = expression("kg N-eq t"^"-1"), y = "") +
   theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
         axis.text = element_blank(),
         axis.title = element_text(size = ceiling(base_size*0.8)), 
         axis.text.x = element_text(angle = 90),
         panel.grid.minor = element_blank(), 
-        panel.grid.major.y = element_line(colour = "gray", linetype = "dotted"), 
+        panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank(), 
         panel.background = element_blank(), panel.border = element_blank(),
-        strip.background = element_rect(linetype = 1, fill = "white"), strip.text = element_text(), 
-        strip.text.x = element_text(vjust = 0.5), strip.text.y = element_text(angle = -90), 
-        legend.text = element_text(size = ceiling(base_size*0.9), family = "sans"), 
-        legend.title = element_blank(), 
-        legend.key = element_rect(fill = "white", colour = NA), 
+        strip.background = element_rect(linetype = 1, fill = "white"), 
+        strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), 
+        strip.text.y = element_text(angle = -90), 
+        strip.placement.y = "outside",
         legend.position="bottom",
         plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
         plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+# P plot
+P_plot <- ggplot(df_plot %>% filter(stressor == "P"), 
+                 aes(x = median, y = plot_taxa_name, fill = source)) + 
+  geom_bar(stat = "identity", position = "stack") + 
+  scale_fill_manual(values = c("#70468C", "#57D182")) +
+  labs(title = "Phosphorus", x = expression("kg P-eq t"^"-1"), y = "") +
+  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.text = element_blank(),
+        axis.title = element_text(size = ceiling(base_size*0.8)), 
+        axis.text.x = element_text(angle = 90),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(), panel.border = element_blank(),
+        strip.background = element_rect(linetype = 1, fill = "white"), 
+        strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), 
+        strip.text.y = element_text(angle = -90), 
+        strip.placement.y = "outside",
+        legend.position="bottom",
+        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+# Land plot
+land_plot <- ggplot(df_plot %>% filter(stressor == "land"), 
+                    aes(x = median, y = plot_taxa_name, fill = source)) + 
+  geom_bar(stat = "identity", position = "stack") + 
+  scale_fill_manual(values = c("#70468C", "#57D182")) +
+  labs(title = "Land", x = expression("m"^2~"t"^"-1"), y = "") +
+  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.text = element_blank(),
+        axis.title = element_text(size = ceiling(base_size*0.8)), 
+        axis.text.x = element_text(angle = 90),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(), panel.border = element_blank(),
+        strip.background = element_rect(linetype = 1, fill = "white"), 
+        strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), 
+        strip.text.y = element_text(angle = -90), 
+        strip.placement.y = "outside",
+        legend.position="bottom",
+        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+# Water plot
+water_plot <- ggplot(df_plot %>% filter(stressor == "water"), 
+                     aes(x = median, y = plot_taxa_name, fill = source)) + 
+  geom_bar(stat = "identity", position = "stack") + 
+  scale_fill_manual(values = c("#70468C", "#57D182")) +
+  labs(title = "Water", x = expression("m"^"3"~"t"^"-1"), y = "") +
+  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
+        axis.text = element_blank(),
+        axis.title = element_text(size = ceiling(base_size*0.8)), 
+        axis.text.x = element_text(angle = 90),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank(), 
+        panel.background = element_blank(), panel.border = element_blank(),
+        strip.background = element_rect(linetype = 1, fill = "white"), 
+        strip.text = element_text(), 
+        strip.text.x = element_text(vjust = 0.5), 
+        strip.text.y = element_text(angle = -90), 
+        strip.placement.y = "outside",
+        legend.position="bottom",
+        plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
+        plot.subtitle = element_text(size = ceiling(base_size*1.05)))
+
+png(file.path(outdir, "plot_poultry_stressor_by_source.png"), width = 8.5, height = 2, units = "in", res = 300)
+ggarrange(ghg_plot, N_plot, P_plot, water_plot, land_plot, nrow = 1,
+          common.legend = TRUE, legend = "bottom", align = "h", widths = c(1.1, 0.7, 0.7, 0.7, 0.7))
 dev.off()
+
 
 # Stats for comparison
 stressor_summary_table <- stressor_summary %>%
   select(c("taxa", "total_ghg", "total_N", "total_P", "total_land", "total_water")) %>%
+  mutate(total_ghg = total_ghg*(1/0.4), total_N = total_N*(1/0.4),
+         total_P = total_P*(1/0.4), total_land = total_land*(1/0.4),
+         total_water = total_water*(1/0.4)) %>%
   group_by(taxa) %>%
   summarise_all(list("mean", "min", "max"))
 
+# Summary for Table S6
 summary(stressor_summary %>% 
-          select(c("total_ghg", "total_N", "total_P", "total_land", "total_water")))
+          select(c("total_ghg", "total_N", "total_P", "total_land", "total_water")) %>% 
+          mutate(total_ghg = total_ghg*(1/0.4), total_N = total_N*(1/0.4),
+                 total_P = total_P*(1/0.4), total_land = total_land*(1/0.4),
+                 total_water = total_water*(1/0.4)))
