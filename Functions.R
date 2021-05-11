@@ -3,7 +3,7 @@
 #_____________________________________________________________________________________________________#
 # Clean LCA data
 #_____________________________________________________________________________________________________#
-clean.lca <- function(LCA_data){
+clean.lca <- function(LCA_data, replicate_dat = TRUE){
   # Change columns to numeric where applicable
   LCA_data$Feed_soy_percent <- as.numeric(LCA_data$Feed_soy_percent)
   LCA_data$Feed_othercrops_percent <- as.numeric(LCA_data$Feed_othercrops_percent)
@@ -132,14 +132,18 @@ clean.lca <- function(LCA_data){
            Petrol_L = if_else(is.na(Petrol_L) & (!is.na(Electricity_kwh) | !is.na(Diesel_L) | !is.na(NaturalGas_L)), true = 0, false = Petrol_L),
            NaturalGas_L = if_else(is.na(NaturalGas_L) & (!is.na(Electricity_kwh) | !is.na(Diesel_L) | !is.na(Petrol_L)), true = 0, false = NaturalGas_L))
   
-  # Option 1:
-  # Replicate data by sqrt(n_farms):
-  LCA_data <- LCA_data %>%
-    mutate(Sample_replication = round(sqrt(Sample_size_n_farms)))
-  LCA_data <- as.data.frame(lapply(LCA_data, rep, LCA_data$Sample_replication))
-  
-  # Options 2: Replicate data by "n" farms
-  # LCA_data <- as.data.frame(lapply(LCA_data, rep, LCA_data$Sample_size_n_farms))
+  # REPLICATE DATA TO THE FARM-LEVEL
+  if (replicate_dat == TRUE){
+    # Option 1:
+    # Replicate data by sqrt(n_farms):
+    LCA_data <- LCA_data %>%
+      mutate(Sample_replication = round(sqrt(Sample_size_n_farms)))
+    LCA_data <- as.data.frame(lapply(LCA_data, rep, LCA_data$Sample_replication))
+    
+    # Options 2: Replicate data by "n" farms
+    # LCA_data <- as.data.frame(lapply(LCA_data, rep, LCA_data$Sample_size_n_farms))
+  }
+
   
   # FINAL STEP: Create study_id column, use this in all analyses to bind predictions from multiple models back together
   LCA_data <- LCA_data %>%
@@ -283,7 +287,7 @@ rebuild_fish <- function(path_to_zipfile) {
 #_____________________________________________________________________________________________________#
 clean_priors <- function(priors_dat){
   priors_csv <- read.csv(file.path(datadir, priors_dat)) %>%
-    select(Group.name, Mean.Annual.Yield.t.ha, Ave.FCR, Upper.FCR, Lower.FCR) %>%
+    select(Group.name, Ave.FCR, Upper.FCR, Lower.FCR) %>%
     # Deal with "-" entries
     mutate(across(everything(), str_replace, pattern = "-", replacement = "")) %>%
     # Convert data cols to numeric
@@ -303,16 +307,13 @@ clean_priors <- function(priors_dat){
                             Group.name == "Trouts" ~ "trout",
                             TRUE ~ "not_grouped")) %>%
     group_by(taxa) %>%
-    summarise(Mean.Annual.Yield.t.ha = mean(Mean.Annual.Yield.t.ha, na.rm = TRUE), 
-              Ave.FCR = mean(Ave.FCR, na.rm = TRUE),
+    summarise(Ave.FCR = mean(Ave.FCR, na.rm = TRUE),
               Upper.FCR = mean(Upper.FCR, na.rm = TRUE),
               Lower.FCR = mean(Lower.FCR, na.rm = TRUE)) %>%
     ungroup() %>%
     # Manually add other freshwater fishes to catfish
     filter(taxa != "not_grouped") %>%
-    arrange(taxa) %>%
-    # Convert units for Yield
-    mutate(Mean.Annual.Yield.m2.per.tonne = 1/(Mean.Annual.Yield.t.ha * 1/10000))
+    arrange(taxa) 
   
 }
 
@@ -834,7 +835,7 @@ plot_for_si <- function(name_of_fit, name_of_data, name_of_var, regression_type 
                       axis.title.x = element_text(size = 20),
                       axis.text=element_text(size=20, color = "black"))
   
-  compiled_dat_clean <- read.csv(file.path(datadir, "lca_clean_with_groups.csv"))
+  compiled_dat_clean <- read.csv(file.path(outdir, "lca_clean_with_groups.csv"))
   brms_output <- get(name_of_fit)
   full_dat <- get(name_of_data)
   
