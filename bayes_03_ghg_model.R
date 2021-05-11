@@ -131,7 +131,7 @@ fp_constant <- fp_dat %>%
 # Get priors on taxa-level FCR
 # Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
 source("Functions.R")
-priors_csv <- clean_priors("Priors - Nonfeed.csv") %>%
+priors_csv <- clean_priors("Priors - Aquaculture.csv") %>%
   select(contains(c("taxa", "FCR"))) %>%
   arrange(taxa) # Arrange by taxa so that index matches tx in lca_model_dat
 

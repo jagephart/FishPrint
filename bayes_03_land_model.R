@@ -11,9 +11,8 @@ rm(list = ls())
 
 # Libraries for processing and analyses
 library(tidyverse)
-library(rstan)
 library(data.table)
-library(countrycode) # part of clean.lca
+library(countrycode)
 library(bayesplot) # for mcmc_areas_ridges
 library(shinystan)
 library(brms)
@@ -30,8 +29,8 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # STEP 1: LOAD AND FORMAT DATA
 
 # Load Data
-lca_full_dat <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv"), fileEncoding="UTF-8-BOM")
-lca_full_dat <- read.csv(file.path(datadir, "2021-05-05_lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(datadir, "lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"), fileEncoding="UTF-8-BOM")
 
 # Format data for model:
 lca_model_dat <- lca_full_dat %>%
@@ -73,7 +72,7 @@ lca_model_dat <- lca_full_dat %>%
 # Get priors on taxa-level FCR
 # Can ignore warning: NAs introduced by coercion (inserts NAs for blank cells)
 source("Functions.R")
-priors_csv <- clean_priors("Priors - Nonfeed.csv") %>%
+priors_csv <- clean_priors("Priors - Aquaculture.csv") %>%
   select(contains(c("taxa", "FCR"))) %>%
   arrange(taxa) # Arrange by taxa so that index matches tx in lca_model_dat
 

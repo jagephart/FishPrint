@@ -14,7 +14,7 @@ rm(list = ls())
 library(tidyverse)
 library(rstan)
 library(data.table)
-library(countrycode) # part of clean.lca
+library(countrycode)
 library(bayesplot) # for mcmc_areas_ridges
 library(shinystan)
 library(brms)
