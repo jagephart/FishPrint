@@ -1,7 +1,7 @@
 # Environmental performance of blue foods (Gephart et al. 2021)
 
-## Workflow of data, results, and figures:
-![alt text](https://github.com/jagephart/FishPrint/blob/master/BFA-analysis-diagram_20210521.png)
+## Workflow of R-code to produce all results and figures:
+![alt text](https://github.com/jagephart/FishPrint/blob/master/R-code-workflow.png)
 
 ## Data Documentation
 Option 1: All data is archived in: (add links to Zenodo)  
