@@ -1,53 +1,77 @@
 # Environmental performance of blue foods (Gephart et al. 2021)
 
-## Code for Bayesian analysis:
+## Workflow of data, results, and figures:
 ![alt text](https://github.com/jagephart/FishPrint/blob/master/BFA-analysis-diagram-README.png)
 
-## Code for non-Bayesian analyses:
-
-Figure 3. GHG emissions compared to marine mammal risk.  
-* marine_mammal_risk.R
-------
-Figure 4. Aquaculture stressor invtervention opportunities (using mass allocation)  
-Figure S12. Additional aquaculture scenario results  
-Figure S13. Capture fishery scenario results  
-1. scenario_feed_fps.R
-2. lever_analysis.R
-------
-Figure S2. Representativeness of observation by taxa group  
-Figure S3. Geographic representativeness of data  
-* SI_data_representativeness.R
-------
-Figure S4. Stressor estimates by feed-associated versus on-farm component  
-Figure S5. Stressor estimate distributions by taxa  
-Figure S6. Stressor estimate distributions by production system  
-Figure S7. Stressor estiamte distributions by intensity  
-* SI_ridge_plots.R
-------
-Figure S11. On- and off-farm poultry stressor estimates
-* poultry_stressors.R
-------
-Figure S14. Lever and scenario analysis from Fig 4 (using economic allocation)  
-Figure S15. Additional aquaculture scenario results
-1. scenario_feed_fps_economic.R
-2. lever_analysis_economic.R
-
-## Code for generating model-specific constants (used in both Bayesian and non-Bayesian analyses):
-* clean_fish_NP.R
-* evap_download.R
-* evap_summarize.R
-
 ## Data Documentation
-All data is archived in: (remember to add links to Zenodo)  
+Option 1: All data is archived in: (add links to Zenodo)  
 Filename_1 DOI  
 Filename_2 DOI  
-
-### List of aggregated studies
-* Henriksson in Indonesia
-* Henriksson et al. unpublished
-* Zhang & Newton unpublished
+Option 2: Upload all Data files to GitHub
 
 ### Full citations of all compiled LCI data
-* XXXXX
-* XXXXX
-* XXXXX
+Abdou 2017
+Aitken et al. 2014
+Alvarado Morales et al. 2013
+Aubin 2006
+Aubin 2009
+Aubin et al. 2018
+Avadi 2015
+Ayer 2007
+Ayer 2016
+Besson 2016
+Boissy 2011
+Bosma 2009
+Buchspies 2011
+CajasDeGliniewicz 2016
+Cao 2011
+Chen 2015
+Chinese yearbook 2019
+Dekamin 2015
+dOrbcastel 2009
+Ellingsen 2006
+Feng et al. 2017
+GarciaGarcia 2016
+Gronroos 2006
+Henriksson et al. (unpubl. Data)
+Henriksson et al. 2009
+Henriksson et al. 2015
+Henriksson et al. 2017
+Henriksson et al. 2019
+Hognes 2014
+Huysveld 2013
+Iribarren 2010a
+Iribarren 2010b
+Iribarren 2010c
+Jerbi 2012
+Kluts 2012
+Liu 2016
+Liu et al. 2017
+Lourguioui 2017
+Lourguioui et al. 2017
+Marin et al. 2019
+Medeiros 2017
+Meyhoff Fry 2012
+Mungkung 2005
+National Aquatic Product Technology Extension Station. 2017.
+Newton and Little 2018
+Papatryphon 2003
+Parker 2018
+Pelletier 2009
+Robb et al. 2017
+SamuelFitwi 2013
+SFW (company data)
+Silvenius 2017
+Stewart 1995
+Tamburini et al. 2020
+Thomas et al. 2020
+Tyedmers 2007
+van Oirschot et al. 2017
+Wilfart 2013
+Yacout 2016
+Zhang & Newton (unpubl. Data)
+Ziegler 2013
+
+### List of unpublished studies
+* Henriksson et al. unpublished
+* Zhang & Newton unpublished
