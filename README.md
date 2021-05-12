@@ -10,9 +10,9 @@ Filename_2 DOI
 Option 2: Upload all Data files to GitHub
 
 ### Full citations of all compiled LCI data
-Abdou 2017
-Aitken et al. 2014
-Alvarado Morales et al. 2013
+Abdou 2017  
+Aitken et al. 2014  
+Alvarado Morales et al. 2013  
 Aubin 2006
 Aubin 2009
 Aubin et al. 2018
