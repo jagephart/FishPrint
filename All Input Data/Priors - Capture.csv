@@ -1,0 +1,11 @@
+Group name,Mean FUI,St Dev FUI,Median FUI,1st Qrt FUI,3rd Qrt FUI,10th Pct FUI,90th Pct FUI,,These values are produced by weighting FUI records across all species by the relative use of gear in each species group. 
+Small pelagic fishes,515.9352,1059.632,150,44,510,24,1208,,"So if two species groups have a similar gear breakdown globally, they will have similar priors."
+Large pelagic fishes,634.916,1053.983,314,80,700,27,1532,,"Notice, for example, that the prior for the small pelagics group are higher than what we'd see if looking at species-specific records."
+Other finfish,1576.896,1974.368,902,397,1981,121,3800,,"These predictions are entirely gear based, as if we know nothing about specific- and gear-specific FUI."
+Flatfishes,1859.812,2100.821,1092,536,2361,335,4147,,"There's plenty of records for most groups, but for some the records will consistently be quite different from these estimates (bivalves and small pelagics)."
+Cephalopods,1705.992,1944.391,1000,531,2116,300,3851,,
+Bivalves,1679.106,2040.023,943,438,2100,285,4000,,If you want to get from FUI to GHG making the same assumptions that we made in Parker et al. (2018):
+Shrimps and prawns,1974.822,2161.159,1205,597,2710,358,4400,,1. Multiply FUI by the diesel GHG value (we used 3.3 kg CO2-eq/L but the ecoinvent process is 3.1 kg CO2-eq/L)
+Lobsters and crabs,1901.729,2147.378,1106,513,2606,313,4400,,2. Multiply the result of (1) by 1.33 assuming that fuel accounts for an average of 75% of emissions up to the dock.
+Salmonids,685.8252,954.6981,441,210,760,60,1430,,
+,,,,,,,,,Data source: Parker and Tyedmers (2015)

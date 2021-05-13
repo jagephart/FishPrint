@@ -1,0 +1,23 @@
+Group name,Mean Grow Out Period,Min Grow Out Period,Max Grow Out Period,Grow Out Period Units,Ave FCR,Upper FCR,Lower FCR
+Grass carp,300,150,365,days,1.8,3.2,1.2
+Crucian carp,300,150,365,days,1.4,,
+Common carp,300,150,365,days,1.5,,0
+Silver and bighead carp,300,150,365,days,0,0,0
+"Other Carps, barbels and other cyprinids",300,150,365,days,1.5,,
+Tilapias and other cichlids,200,90,365,days,1.6,2.1,1.2
+Miscellaneous freshwater fishes,210,90,365,days,1.8,2,1.5
+Salmon,600,365,730,days,1.1,1.3,1
+Trouts,365,300,730,days,1.1,1.4,1
+Miscellaneous diadromous fishes,365,300,730,days,,,
+"Tunas, bonitos, billfishes",,,,days,,,
+Milkfish,240,180,365,days,1.5,1.9,1.3
+Other miscellaneous marine fishes,365,180,730,days,1.4,,
+Freshwater crustaceans,240,120,365,days,1.7,4.5,0
+Marine crabs and lobsters,365,180,730,days,,,
+"Shrimps, prawns",105,90,160,days,1.3,2.2,0
+Miscellaneous marine crustaceans,365,180,730,days,,,
+Oysters,720,540,900,days,0,0,0
+Mussels,540,420,720,days,0,0,0
+Other molluscs,547.5,365,730,days,,,
+Aquatic plants,365,365,365,days,0,0,0
+Catfish,210,90,365,days,,,

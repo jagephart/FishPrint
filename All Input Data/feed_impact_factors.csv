@@ -1,0 +1,511 @@
+Input type,Input,Country/Region,Impact category,Units,Allocation,Value,Source,Product information
+Crop,Cassava,Thailand,Freshwater eutrophication,kg P-eq / kg,Mass,0.00012,"Agri-footprint 5, ReCiPe characterization","Cassava root, dried, at farm/TH Mass"
+Crop,Cassava,Thailand,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00012,"Agri-footprint 5, ReCiPe characterization","Cassava root, dried, at farm/TH Energy"
+Crop,Cassava,Thailand,Freshwater eutrophication,kg P-eq / kg,Economic,0.00012,"Agri-footprint 5, ReCiPe characterization","Cassava root, dried, at farm/TH Economic"
+Crop,Cassava,Thailand,Global warming potential,kg CO2-eq / kg,Mass,0.338,"Agri-footprint 5, ReCiPe characterization","Cassava root, dried, at farm/TH Mass"
+Crop,Cassava,Thailand,Global warming potential,kg CO2-eq / kg,Gross energy content,0.338,"Agri-footprint 5, ReCiPe characterization","Cassava root, dried, at farm/TH Energy"
+Crop,Cassava,Thailand,Global warming potential,kg CO2-eq / kg,Economic,0.338,"Agri-footprint 5, ReCiPe characterization","Cassava root, dried, at farm/TH Economic"
+Crop,Cassava,Thailand,Land use,m2a / kg,Mass,1.24,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Cassava root, dried, at farm/TH Mass"
+Crop,Cassava,Thailand,Land use,m2a / kg,Gross energy content,0.124,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Cassava root, dried, at farm/TH Energy"
+Crop,Cassava,Thailand,Land use,m2a / kg,Economic,1.24,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Cassava root, dried, at farm/TH Economic"
+Crop,Cassava,Thailand,Marine eutrophication,kg N-eq / kg,Mass,0.00107,"Agri-footprint 5, ReCiPe characterization","Cassava root, dried, at farm/TH Mass"
+Crop,Cassava,Thailand,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00107,"Agri-footprint 5, ReCiPe characterization","Cassava root, dried, at farm/TH Energy"
+Crop,Cassava,Thailand,Marine eutrophication,kg N-eq / kg,Economic,0.00107,"Agri-footprint 5, ReCiPe characterization","Cassava root, dried, at farm/TH Economic"
+Crop,Cassava,Thailand,Water consumption,m3 / kg,Mass,0.0184,"Agri-footprint 5, ReCiPe characterization","Cassava root, dried, at farm/TH Mass"
+Crop,Cassava,Thailand,Water consumption,m3 / kg,Gross energy content,0.0184,"Agri-footprint 5, ReCiPe characterization","Cassava root, dried, at farm/TH Energy"
+Crop,Cassava,Thailand,Water consumption,m3 / kg,Economic,0.0184,"Agri-footprint 5, ReCiPe characterization","Cassava root, dried, at farm/TH Economic"
+Crop,Corn gluten meal,France,Freshwater eutrophication,kg P-eq / kg,Mass,0.00016,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/FR Mass"
+Crop,Corn gluten meal,United States,Freshwater eutrophication,kg P-eq / kg,Mass,0.00023,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/US Mass"
+Crop,Corn gluten meal,France,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00018,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/FR Energy"
+Crop,Corn gluten meal,United States,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00028,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/US Energy"
+Crop,Corn gluten meal,France,Freshwater eutrophication,kg P-eq / kg,Economic,0.00021,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/FR Economic"
+Crop,Corn gluten meal,United States,Freshwater eutrophication,kg P-eq / kg,Economic,0.00031,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/US Economic"
+Crop,Corn gluten meal,France,Global warming potential,kg CO2-eq / kg,Mass,0.398,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/FR Mass"
+Crop,Corn gluten meal,United States,Global warming potential,kg CO2-eq / kg,Mass,0.611,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/US Mass"
+Crop,Corn gluten meal,France,Global warming potential,kg CO2-eq / kg,Gross energy content,0.432,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/FR Energy"
+Crop,Corn gluten meal,United States,Global warming potential,kg CO2-eq / kg,Gross energy content,0.672,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/US Energy"
+Crop,Corn gluten meal,France,Global warming potential,kg CO2-eq / kg,Economic,0.46,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/FR Economic"
+Crop,Corn gluten meal,United States,Global warming potential,kg CO2-eq / kg,Economic,0.717,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/US Economic"
+Crop,Corn gluten meal,France,Land use,m2a / kg,Mass,1.03,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Maize gluten meal dried, at processing/FR Mass"
+Crop,Corn gluten meal,United States,Land use,m2a / kg,Mass,1.13,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Maize gluten meal dried, at processing/US Mass"
+Crop,Corn gluten meal,France,Land use,m2a / kg,Gross energy content,1.22,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Maize gluten meal dried, at processing/FR Energy"
+Crop,Corn gluten meal,United States,Land use,m2a / kg,Gross energy content,0.133,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Maize gluten meal dried, at processing/US Energy"
+Crop,Corn gluten meal,France,Land use,m2a / kg,Economic,1.38,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Maize gluten meal dried, at processing/FR Economic"
+Crop,Corn gluten meal,United States,Land use,m2a / kg,Economic,1.51,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Maize gluten meal dried, at processing/US Economic"
+Crop,Corn gluten meal,France,Marine eutrophication,kg N-eq / kg,Mass,0.00226,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/FR Mass"
+Crop,Corn gluten meal,United States,Marine eutrophication,kg N-eq / kg,Mass,0.00329,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/US Mass"
+Crop,Corn gluten meal,France,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00267,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/FR Energy"
+Crop,Corn gluten meal,United States,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00389,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/US Energy"
+Crop,Corn gluten meal,France,Marine eutrophication,kg N-eq / kg,Economic,0.00302,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/FR Economic"
+Crop,Corn gluten meal,United States,Marine eutrophication,kg N-eq / kg,Economic,0.0044,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/US Economic"
+Crop,Corn gluten meal,France,Water consumption,m3 / kg,Mass,0.0902,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/FR Mass"
+Crop,Corn gluten meal,United States,Water consumption,m3 / kg,Mass,0.0489,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/US Mass"
+Crop,Corn gluten meal,France,Water consumption,m3 / kg,Gross energy content,0.106,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/FR Energy"
+Crop,Corn gluten meal,United States,Water consumption,m3 / kg,Gross energy content,0.0573,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/US Energy"
+Crop,Corn gluten meal,France,Water consumption,m3 / kg,Economic,0.12,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/FR Economic"
+Crop,Corn gluten meal,United States,Water consumption,m3 / kg,Economic,0.0644,"Agri-footprint 5, ReCiPe characterization","Maize gluten meal dried, at processing/US Economic"
+Crop,Maize,United States,Freshwater eutrophication,kg P-eq / kg,Mass,0.00026,"Agri-footprint 5, ReCiPe characterization","Maize, market mix, at regional storage/US Mass"
+Crop,Maize,United States,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00026,"Agri-footprint 5, ReCiPe characterization","Maize, market mix, at regional storage/US Energy"
+Crop,Maize,United States,Freshwater eutrophication,kg P-eq / kg,Economic,0.00026,"Agri-footprint 5, ReCiPe characterization","Maize, market mix, at regional storage/US Economic"
+Crop,Maize,United States,Global warming potential,kg CO2-eq / kg,Mass,0.278,"Agri-footprint 5, ReCiPe characterization","Maize, market mix, at regional storage/US Mass"
+Crop,Maize,United States,Global warming potential,kg CO2-eq / kg,Gross energy content,0.278,"Agri-footprint 5, ReCiPe characterization","Maize, market mix, at regional storage/US Energy"
+Crop,Maize,United States,Global warming potential,kg CO2-eq / kg,Economic,0.278,"Agri-footprint 5, ReCiPe characterization","Maize, market mix, at regional storage/US Economic"
+Crop,Maize,United States,Land use,m2a / kg,Mass,1.25,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Maize, market mix, at regional storage/US Mass"
+Crop,Maize,United States,Land use,m2a / kg,Gross energy content,1.248,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Maize, market mix, at regional storage/US Energy"
+Crop,Maize,United States,Land use,m2a / kg,Economic,1.25,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Maize, market mix, at regional storage/US Economic"
+Crop,Maize,United States,Marine eutrophication,kg N-eq / kg,Mass,0.00364,"Agri-footprint 5, ReCiPe characterization","Maize, market mix, at regional storage/US Mass"
+Crop,Maize,United States,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00364,"Agri-footprint 5, ReCiPe characterization","Maize, market mix, at regional storage/US Energy"
+Crop,Maize,United States,Marine eutrophication,kg N-eq / kg,Economic,0.00364,"Agri-footprint 5, ReCiPe characterization","Maize, market mix, at regional storage/US Economic"
+Crop,Maize,United States,Water consumption,m3 / kg,Mass,0.0453,"Agri-footprint 5, ReCiPe characterization","Maize, market mix, at regional storage/US Mass"
+Crop,Maize,United States,Water consumption,m3 / kg,Gross energy content,0.0453,"Agri-footprint 5, ReCiPe characterization","Maize, market mix, at regional storage/US Energy"
+Crop,Maize,United States,Water consumption,m3 / kg,Economic,0.0453,"Agri-footprint 5, ReCiPe characterization","Maize, market mix, at regional storage/US Economic"
+Crop,Peanut meal,Argentina,Freshwater eutrophication,kg P-eq / kg,Mass,8.71E-05,"Agri-footprint 5, ReCiPe characterization","Groundnut meal, at processing/AR Mass"
+Crop,Peanut meal,Argentina,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.0000566,"Agri-footprint 5, ReCiPe characterization","Groundnut meal, at processing/AR Energy"
+Crop,Peanut meal,Argentina,Freshwater eutrophication,kg P-eq / kg,Economic,3.25E-05,"Agri-footprint 5, ReCiPe characterization","Groundnut meal, at processing/AR Economic"
+Crop,Peanut meal,Argentina,Global warming potential,kg CO2-eq / kg,Mass,4.81,"Agri-footprint 5, ReCiPe characterization","Groundnut meal, at processing/AR Mass"
+Crop,Peanut meal,Argentina,Global warming potential,kg CO2-eq / kg,Gross energy content,3.13,"Agri-footprint 5, ReCiPe characterization","Groundnut meal, at processing/AR Energy"
+Crop,Peanut meal,Argentina,Global warming potential,kg CO2-eq / kg,Economic,1.8,"Agri-footprint 5, ReCiPe characterization","Groundnut meal, at processing/AR Economic"
+Crop,Peanut meal,Argentina,Land use,m2a / kg,Mass,3.79,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Groundnut meal, at processing/AR Mass"
+Crop,Peanut meal,Argentina,Land use,m2a / kg,Gross energy content,2.47,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Groundnut meal, at processing/AR Energy"
+Crop,Peanut meal,Argentina,Land use,m2a / kg,Economic,1.42,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Groundnut meal, at processing/AR Economic"
+Crop,Peanut meal,Argentina,Marine eutrophication,kg N-eq / kg,Mass,0.00338,"Agri-footprint 5, ReCiPe characterization","Groundnut meal, at processing/AR Mass"
+Crop,Peanut meal,Argentina,Marine eutrophication,kg N-eq / kg,Gross energy content,0.0022,"Agri-footprint 5, ReCiPe characterization","Groundnut meal, at processing/AR Energy"
+Crop,Peanut meal,Argentina,Marine eutrophication,kg N-eq / kg,Economic,0.00126,"Agri-footprint 5, ReCiPe characterization","Groundnut meal, at processing/AR Economic"
+Crop,Peanut meal,Argentina,Water consumption,m3 / kg,Mass,0.012,"Agri-footprint 5, ReCiPe characterization","Groundnut meal, at processing/AR Mass"
+Crop,Peanut meal,Argentina,Water consumption,m3 / kg,Gross energy content,0.00726,"Agri-footprint 5, ReCiPe characterization","Groundnut meal, at processing/AR Energy"
+Crop,Peanut meal,Argentina,Water consumption,m3 / kg,Economic,0.00337,"Agri-footprint 5, ReCiPe characterization","Groundnut meal, at processing/AR Economic"
+Crop,Rapeseed meal,Canada,Freshwater eutrophication,kg P-eq / kg,Mass,0.00043,"Agri-footprint 5, ReCiPe characterization","Rapeseed meal (solvent), at processing/CA Mass"
+Crop,Rapeseed meal,Canada,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00029,"Agri-footprint 5, ReCiPe characterization","Rapeseed meal (solvent), at processing/CA Energy"
+Crop,Rapeseed meal,Canada,Freshwater eutrophication,kg P-eq / kg,Economic,0.00017,"Agri-footprint 5, ReCiPe characterization","Rapeseed meal (solvent), at processing/CA Economic"
+Crop,Rapeseed meal,Canada,Global warming potential,kg CO2-eq / kg,Mass,1.27,"Agri-footprint 5, ReCiPe characterization","Rapeseed meal (solvent), at processing/CA Mass"
+Crop,Rapeseed meal,Canada,Global warming potential,kg CO2-eq / kg,Gross energy content,0.861,"Agri-footprint 5, ReCiPe characterization","Rapeseed meal (solvent), at processing/CA Energy"
+Crop,Rapeseed meal,Canada,Global warming potential,kg CO2-eq / kg,Economic,0.507,"Agri-footprint 5, ReCiPe characterization","Rapeseed meal (solvent), at processing/CA Economic"
+Crop,Rapeseed meal,Canada,Land use,m2a / kg,Mass,4.76,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Rapeseed meal (solvent), at processing/CA Mass"
+Crop,Rapeseed meal,Canada,Land use,m2a / kg,Gross energy content,3.24,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Rapeseed meal (solvent), at processing/CA Energy"
+Crop,Rapeseed meal,Canada,Land use,m2a / kg,Economic,1.9,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Rapeseed meal (solvent), at processing/CA Economic"
+Crop,Rapeseed meal,Canada,Marine eutrophication,kg N-eq / kg,Mass,0.00625,"Agri-footprint 5, ReCiPe characterization","Rapeseed meal (solvent), at processing/CA Mass"
+Crop,Rapeseed meal,Canada,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00425,"Agri-footprint 5, ReCiPe characterization","Rapeseed meal (solvent), at processing/CA Energy"
+Crop,Rapeseed meal,Canada,Marine eutrophication,kg N-eq / kg,Economic,0.0025,"Agri-footprint 5, ReCiPe characterization","Rapeseed meal (solvent), at processing/CA Economic"
+Crop,Rapeseed meal,Canada,Water consumption,m3 / kg,Mass,0.0817,"Agri-footprint 5, ReCiPe characterization","Rapeseed meal (solvent), at processing/CA Mass"
+Crop,Rapeseed meal,Canada,Water consumption,m3 / kg,Gross energy content,0.0556,"Agri-footprint 5, ReCiPe characterization","Rapeseed meal (solvent), at processing/CA Energy"
+Crop,Rapeseed meal,Canada,Water consumption,m3 / kg,Economic,0.0327,"Agri-footprint 5, ReCiPe characterization","Rapeseed meal (solvent), at processing/CA Economic"
+Crop,Rapeseed oil,Canada,Freshwater eutrophication,kg P-eq / kg,Mass,0.00048,"Agri-footprint 5, ReCiPe characterization","Crude rapeseed oil (solvent), at processing/CA Mass"
+Crop,Rapeseed oil,Canada,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00065,"Agri-footprint 5, ReCiPe characterization","Crude rapeseed oil (solvent), at processing/CA Energy"
+Crop,Rapeseed oil,Canada,Freshwater eutrophication,kg P-eq / kg,Economic,0.00079,"Agri-footprint 5, ReCiPe characterization","Crude rapeseed oil (solvent), at processing/CA Economic"
+Crop,Rapeseed oil,Canada,Global warming potential,kg CO2-eq / kg,Mass,1.43,"Agri-footprint 5, ReCiPe characterization","Crude rapeseed oil (solvent), at processing/CA Mass"
+Crop,Rapeseed oil,Canada,Global warming potential,kg CO2-eq / kg,Gross energy content,1.92,"Agri-footprint 5, ReCiPe characterization","Crude rapeseed oil (solvent), at processing/CA Energy"
+Crop,Rapeseed oil,Canada,Global warming potential,kg CO2-eq / kg,Economic,2.35,"Agri-footprint 5, ReCiPe characterization","Crude rapeseed oil (solvent), at processing/CA Economic"
+Crop,Rapeseed oil,Canada,Land use,m2a / kg,Mass,5.38,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Crude rapeseed oil (solvent), at processing/CA Mass"
+Crop,Rapeseed oil,Canada,Land use,m2a / kg,Gross energy content,7.23,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Crude rapeseed oil (solvent), at processing/CA Energy"
+Crop,Rapeseed oil,Canada,Land use,m2a / kg,Economic,8.84,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Crude rapeseed oil (solvent), at processing/CA Economic"
+Crop,Rapeseed oil,Canada,Marine eutrophication,kg N-eq / kg,Mass,0.00706,"Agri-footprint 5, ReCiPe characterization","Crude rapeseed oil (solvent), at processing/CA Mass"
+Crop,Rapeseed oil,Canada,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00948,"Agri-footprint 5, ReCiPe characterization","Crude rapeseed oil (solvent), at processing/CA Energy"
+Crop,Rapeseed oil,Canada,Marine eutrophication,kg N-eq / kg,Economic,0.0116,"Agri-footprint 5, ReCiPe characterization","Crude rapeseed oil (solvent), at processing/CA Economic"
+Crop,Rapeseed oil,Canada,Water consumption,m3 / kg,Mass,0.0923,"Agri-footprint 5, ReCiPe characterization","Crude rapeseed oil (solvent), at processing/CA Mass"
+Crop,Rapeseed oil,Canada,Water consumption,m3 / kg,Gross energy content,0.124,"Agri-footprint 5, ReCiPe characterization","Crude rapeseed oil (solvent), at processing/CA Energy"
+Crop,Rapeseed oil,Canada,Water consumption,m3 / kg,Economic,0.152,"Agri-footprint 5, ReCiPe characterization","Crude rapeseed oil (solvent), at processing/CA Economic"
+Crop,Rice bran,China,Freshwater eutrophication,kg P-eq / kg,Mass,0.00021,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Mass"
+Crop,Rice bran,China,Freshwater eutrophication,kg P-eq / kg,Gross energy content,1.90E-04,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Energy"
+Crop,Rice bran,China,Freshwater eutrophication,kg P-eq / kg,Economic,6.62E-05,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Economic"
+Crop,Rice bran,China,Global warming potential,kg CO2-eq / kg,Mass,1.41,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Mass"
+Crop,Rice bran,China,Global warming potential,kg CO2-eq / kg,Gross energy content,1.28E+00,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Energy"
+Crop,Rice bran,China,Global warming potential,kg CO2-eq / kg,Economic,0.456,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Economic"
+Crop,Rice bran,China,Land use,m2a / kg,Mass,0.893,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Mass"
+Crop,Rice bran,China,Land use,m2a / kg,Gross energy content,8.14E-01,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Energy"
+Crop,Rice bran,China,Land use,m2a / kg,Economic,0.288,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Economic"
+Crop,Rice bran,China,Marine eutrophication,kg N-eq / kg,Mass,0.00284,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Mass"
+Crop,Rice bran,China,Marine eutrophication,kg N-eq / kg,Gross energy content,2.59E-03,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Energy"
+Crop,Rice bran,China,Marine eutrophication,kg N-eq / kg,Economic,0.00091,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Economic"
+Crop,Rice bran,China,Water consumption,m3 / kg,Mass,0.255,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Mass"
+Crop,Rice bran,China,Water consumption,m3 / kg,Gross energy content,2.32E-01,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Energy"
+Crop,Rice bran,China,Water consumption,m3 / kg,Economic,0.082,"Agri-footprint 5, ReCiPe characterization","Rice bran (mixed), at processing/CN Economic"
+Crop,Sunflower meal,Ukraine,Freshwater eutrophication,kg P-eq / kg,Mass,9.07E-05,"Agri-footprint 5, ReCiPe characterization","Sunflower seed meal (solvent), at processing/UA Mass"
+Crop,Sunflower meal,Ukraine,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00011,"Agri-footprint 5, ReCiPe characterization","Sunflower seed meal (solvent), at processing/UA Energy"
+Crop,Sunflower meal,Ukraine,Freshwater eutrophication,kg P-eq / kg,Economic,9.08E-05,"Agri-footprint 5, ReCiPe characterization","Sunflower seed meal (solvent), at processing/UA Economic"
+Crop,Sunflower meal,Ukraine,Global warming potential,kg CO2-eq / kg,Mass,0.302,"Agri-footprint 5, ReCiPe characterization","Sunflower seed meal (solvent), at processing/UA Mass"
+Crop,Sunflower meal,Ukraine,Global warming potential,kg CO2-eq / kg,Gross energy content,0.38,"Agri-footprint 5, ReCiPe characterization","Sunflower seed meal (solvent), at processing/UA Energy"
+Crop,Sunflower meal,Ukraine,Global warming potential,kg CO2-eq / kg,Economic,0.302,"Agri-footprint 5, ReCiPe characterization","Sunflower seed meal (solvent), at processing/UA Economic"
+Crop,Sunflower meal,Ukraine,Land use,m2a / kg,Mass,2.83,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Sunflower seed meal (solvent), at processing/UA Mass"
+Crop,Sunflower meal,Ukraine,Land use,m2a / kg,Gross energy content,3.57,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Sunflower seed meal (solvent), at processing/UA Energy"
+Crop,Sunflower meal,Ukraine,Land use,m2a / kg,Economic,2.83,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Sunflower seed meal (solvent), at processing/UA Economic"
+Crop,Sunflower meal,Ukraine,Marine eutrophication,kg N-eq / kg,Mass,0.00203,"Agri-footprint 5, ReCiPe characterization","Sunflower seed meal (solvent), at processing/UA Mass"
+Crop,Sunflower meal,Ukraine,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00256,"Agri-footprint 5, ReCiPe characterization","Sunflower seed meal (solvent), at processing/UA Energy"
+Crop,Sunflower meal,Ukraine,Marine eutrophication,kg N-eq / kg,Economic,0.00203,"Agri-footprint 5, ReCiPe characterization","Sunflower seed meal (solvent), at processing/UA Economic"
+Crop,Sunflower meal,Ukraine,Water consumption,m3 / kg,Mass,0.00355,"Agri-footprint 5, ReCiPe characterization","Sunflower seed meal (solvent), at processing/UA Mass"
+Crop,Sunflower meal,Ukraine,Water consumption,m3 / kg,Gross energy content,0.00447,"Agri-footprint 5, ReCiPe characterization","Sunflower seed meal (solvent), at processing/UA Energy"
+Crop,Sunflower meal,Ukraine,Water consumption,m3 / kg,Economic,0.00355,"Agri-footprint 5, ReCiPe characterization","Sunflower seed meal (solvent), at processing/UA Economic"
+Crop,Wheat,Canada,Freshwater eutrophication,kg P-eq / kg,Mass,0.00019,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/CA Mass"
+Crop,Wheat,Russia,Freshwater eutrophication,kg P-eq / kg,Mass,0.00012,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/RU Mass"
+Crop,Wheat,United States,Freshwater eutrophication,kg P-eq / kg,Mass,0.00029,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/US Mass"
+Crop,Wheat,Canada,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00019,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/CA Energy"
+Crop,Wheat,Russia,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00012,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/RU Energy"
+Crop,Wheat,United States,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00029,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/US Energy"
+Crop,Wheat,Canada,Freshwater eutrophication,kg P-eq / kg,Economic,0.00019,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/CA Economic"
+Crop,Wheat,Russia,Freshwater eutrophication,kg P-eq / kg,Economic,0.00012,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/RU Economic"
+Crop,Wheat,United States,Freshwater eutrophication,kg P-eq / kg,Economic,0.00029,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/US Economic"
+Crop,Wheat,Canada,Global warming potential,kg CO2-eq / kg,Mass,0.29,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/CA Mass"
+Crop,Wheat,Russia,Global warming potential,kg CO2-eq / kg,Mass,0.252,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/RU Mass"
+Crop,Wheat,United States,Global warming potential,kg CO2-eq / kg,Mass,0.345,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/US Mass"
+Crop,Wheat,Canada,Global warming potential,kg CO2-eq / kg,Gross energy content,0.29,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/CA Energy"
+Crop,Wheat,Russia,Global warming potential,kg CO2-eq / kg,Gross energy content,0.252,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/RU Energy"
+Crop,Wheat,United States,Global warming potential,kg CO2-eq / kg,Gross energy content,0.345,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/US Energy"
+Crop,Wheat,Canada,Global warming potential,kg CO2-eq / kg,Economic,0.29,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/CA Economic"
+Crop,Wheat,Russia,Global warming potential,kg CO2-eq / kg,Economic,0.252,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/RU Economic"
+Crop,Wheat,United States,Global warming potential,kg CO2-eq / kg,Economic,0.345,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/US Economic"
+Crop,Wheat,Canada,Land use,m2a / kg,Mass,2.98,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Wheat grain, at farm/CA Mass"
+Crop,Wheat,Russia,Land use,m2a / kg,Mass,4.32,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Wheat grain, at farm/RU Mass"
+Crop,Wheat,United States,Land use,m2a / kg,Mass,3.19,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Wheat grain, at farm/US Mass"
+Crop,Wheat,Canada,Land use,m2a / kg,Gross energy content,2.98,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Wheat grain, at farm/CA Energy"
+Crop,Wheat,Russia,Land use,m2a / kg,Gross energy content,4.32,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Wheat grain, at farm/RU Energy"
+Crop,Wheat,United States,Land use,m2a / kg,Gross energy content,3.19,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Wheat grain, at farm/US Energy"
+Crop,Wheat,Canada,Land use,m2a / kg,Economic,2.98,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Wheat grain, at farm/CA Economic"
+Crop,Wheat,Russia,Land use,m2a / kg,Economic,4.32,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Wheat grain, at farm/RU Economic"
+Crop,Wheat,United States,Land use,m2a / kg,Economic,3.19,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Wheat grain, at farm/US Economic"
+Crop,Wheat,Canada,Marine eutrophication,kg N-eq / kg,Mass,0.00318,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/CA Mass"
+Crop,Wheat,Russia,Marine eutrophication,kg N-eq / kg,Mass,0.0023,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/RU Mass"
+Crop,Wheat,United States,Marine eutrophication,kg N-eq / kg,Mass,0.00397,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/US Mass"
+Crop,Wheat,Canada,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00318,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/CA Energy"
+Crop,Wheat,Russia,Marine eutrophication,kg N-eq / kg,Gross energy content,0.0023,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/RU Energy"
+Crop,Wheat,United States,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00397,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/US Energy"
+Crop,Wheat,Canada,Marine eutrophication,kg N-eq / kg,Economic,0.00318,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/CA Economic"
+Crop,Wheat,Russia,Marine eutrophication,kg N-eq / kg,Economic,0.0023,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/RU Economic"
+Crop,Wheat,United States,Marine eutrophication,kg N-eq / kg,Economic,0.00397,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/US Economic"
+Crop,Wheat,Canada,Water consumption,m3 / kg,Mass,0.00473,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/CA Mass"
+Crop,Wheat,Russia,Water consumption,m3 / kg,Mass,0.0305,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/RU Mass"
+Crop,Wheat,United States,Water consumption,m3 / kg,Mass,0.0919,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/US Mass"
+Crop,Wheat,Canada,Water consumption,m3 / kg,Gross energy content,0.00473,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/CA Energy"
+Crop,Wheat,Russia,Water consumption,m3 / kg,Gross energy content,0.03,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/RU Energy"
+Crop,Wheat,United States,Water consumption,m3 / kg,Gross energy content,0.0919,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/US Energy"
+Crop,Wheat,Canada,Water consumption,m3 / kg,Economic,0.00473,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/CA Economic"
+Crop,Wheat,Russia,Water consumption,m3 / kg,Economic,0.0305,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/RU Economic"
+Crop,Wheat,United States,Water consumption,m3 / kg,Economic,0.0919,"Agri-footprint 5, ReCiPe characterization","Wheat grain, at farm/US Economic"
+Crop,Wheat bran,Germany,Freshwater eutrophication,kg P-eq / kg,Mass,0.00013,"Agri-footprint 5, ReCiPe characterization","Wheat bran, from wet milling, at processing/DE Mass"
+Crop,Wheat bran,Germany,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00012,"Agri-footprint 5, ReCiPe characterization","Wheat bran, from wet milling, at processing/DE Energy"
+Crop,Wheat bran,Germany,Freshwater eutrophication,kg P-eq / kg,Economic,5.75E-05,"Agri-footprint 5, ReCiPe characterization","Wheat bran, from wet milling, at processing/DE Economic"
+Crop,Wheat bran,Germany,Global warming potential,kg CO2-eq / kg,Mass,0.316,"Agri-footprint 5, ReCiPe characterization","Wheat bran, from wet milling, at processing/DE Mass"
+Crop,Wheat bran,Germany,Global warming potential,kg CO2-eq / kg,Gross energy content,0.411,"Agri-footprint 5, ReCiPe characterization","Wheat bran, from wet milling, at processing/DE Energy"
+Crop,Wheat bran,Germany,Global warming potential,kg CO2-eq / kg,Economic,0.144,"Agri-footprint 5, ReCiPe characterization","Wheat bran, from wet milling, at processing/DE Economic"
+Crop,Wheat bran,Germany,Land use,m2a / kg,Mass,1.35,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Wheat bran, from wet milling, at processing/DE Mass"
+Crop,Wheat bran,Germany,Land use,m2a / kg,Gross energy content,1.29,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Wheat bran, from wet milling, at processing/DE Energy"
+Crop,Wheat bran,Germany,Land use,m2a / kg,Economic,0.615,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Wheat bran, from wet milling, at processing/DE Economic"
+Crop,Wheat bran,Germany,Marine eutrophication,kg N-eq / kg,Mass,0.00311,"Agri-footprint 5, ReCiPe characterization","Wheat bran, from wet milling, at processing/DE Mass"
+Crop,Wheat bran,Germany,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00299,"Agri-footprint 5, ReCiPe characterization","Wheat bran, from wet milling, at processing/DE Energy"
+Crop,Wheat bran,Germany,Marine eutrophication,kg N-eq / kg,Economic,0.00142,"Agri-footprint 5, ReCiPe characterization","Wheat bran, from wet milling, at processing/DE Economic"
+Crop,Wheat bran,Germany,Water consumption,m3 / kg,Mass,0.0286,"Agri-footprint 5, ReCiPe characterization","Wheat bran, from wet milling, at processing/DE Mass"
+Crop,Wheat bran,Germany,Water consumption,m3 / kg,Gross energy content,0.031,"Agri-footprint 5, ReCiPe characterization","Wheat bran, from wet milling, at processing/DE Energy"
+Crop,Wheat bran,Germany,Water consumption,m3 / kg,Economic,0.013,"Agri-footprint 5, ReCiPe characterization","Wheat bran, from wet milling, at processing/DE Economic"
+Fishery,"Fish meal, Atlantic herring",Europe,Freshwater eutrophication,kg P-eq / kg,Mass,1.31E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Freshwater eutrophication,kg P-eq / kg,Gross energy content,9.43E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Freshwater eutrophication,kg P-eq / kg,Economic,9.43E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Global warming potential,kg CO2-eq / kg,Mass,1.57,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Global warming potential,kg CO2-eq / kg,Gross energy content,1.13,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Global warming potential,kg CO2-eq / kg,Economic,1.13,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Land use,m2a / kg,Mass,7.32E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Land use,m2a / kg,Gross energy content,5.29E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Land use,m2a / kg,Economic,5.29E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Marine eutrophication,kg N-eq / kg,Mass,4.47E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Marine eutrophication,kg N-eq / kg,Gross energy content,3.23E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Marine eutrophication,kg N-eq / kg,Economic,3.23E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Water consumption,m3 / kg,Mass,1.90E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Water consumption,m3 / kg,Gross energy content,1.35E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Atlantic herring",Europe,Water consumption,m3 / kg,Economic,1.35E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Freshwater eutrophication,kg P-eq / kg,Mass,2.19E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Freshwater eutrophication,kg P-eq / kg,Gross energy content,2.00E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Freshwater eutrophication,kg P-eq / kg,Economic,2.00E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Global warming potential,kg CO2-eq / kg,Mass,2.63E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Global warming potential,kg CO2-eq / kg,Gross energy content,2.40E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Global warming potential,kg CO2-eq / kg,Economic,2.40E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Land use,m2a / kg,Mass,1.20E-04,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Land use,m2a / kg,Gross energy content,1.10E-04,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Land use,m2a / kg,Economic,1.10E-04,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Marine eutrophication,kg N-eq / kg,Mass,7.08E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Marine eutrophication,kg N-eq / kg,Gross energy content,6.47E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Marine eutrophication,kg N-eq / kg,Economic,6.47E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Water consumption,m3 / kg,Mass,3.16E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Water consumption,m3 / kg,Gross energy content,2.88E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Blue whiting",Europe,Water consumption,m3 / kg,Economic,2.88E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Freshwater eutrophication,kg P-eq / kg,Mass,1.11E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Freshwater eutrophication,kg P-eq / kg,Gross energy content,8.26E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Freshwater eutrophication,kg P-eq / kg,Economic,8.26E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Global warming potential,kg CO2-eq / kg,Mass,1.33E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Global warming potential,kg CO2-eq / kg,Gross energy content,9.89E-01,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Global warming potential,kg CO2-eq / kg,Economic,9.89E-01,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Land use,m2a / kg,Mass,6.40E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Land use,m2a / kg,Gross energy content,4.77E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Land use,m2a / kg,Economic,4.77E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Marine eutrophication,kg N-eq / kg,Mass,4.54E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Marine eutrophication,kg N-eq / kg,Gross energy content,3.38E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Marine eutrophication,kg N-eq / kg,Economic,3.38E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Water consumption,m3 / kg,Mass,1.54E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Water consumption,m3 / kg,Gross energy content,1.14E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Capelin",Iceland,Water consumption,m3 / kg,Economic,1.14E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Freshwater eutrophication,kg P-eq / kg,Mass,5.80E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Freshwater eutrophication,kg P-eq / kg,Gross energy content,3.95E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Freshwater eutrophication,kg P-eq / kg,Economic,3.95E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Global warming potential,kg CO2-eq / kg,Mass,8.10E-01,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Global warming potential,kg CO2-eq / kg,Gross energy content,0.552,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Global warming potential,kg CO2-eq / kg,Economic,0.552,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Land use,m2a / kg,Mass,3.46E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Land use,m2a / kg,Gross energy content,2.36E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Land use,m2a / kg,Economic,2.36E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Marine eutrophication,kg N-eq / kg,Mass,2.81E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Marine eutrophication,kg N-eq / kg,Gross energy content,1.92E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Marine eutrophication,kg N-eq / kg,Economic,1.92E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Water consumption,m3 / kg,Mass,7.94E-03,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Water consumption,m3 / kg,Gross energy content,5.41E-03,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Gulf menhaden",United States,Water consumption,m3 / kg,Economic,5.41E-03,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Freshwater eutrophication,kg P-eq / kg,Mass,5.85E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Freshwater eutrophication,kg P-eq / kg,Gross energy content,4.93E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Freshwater eutrophication,kg P-eq / kg,Economic,4.93E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Global warming potential,kg CO2-eq / kg,Mass,7.80E-01,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Global warming potential,kg CO2-eq / kg,Gross energy content,0.657,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Global warming potential,kg CO2-eq / kg,Economic,0.657,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Land use,m2a / kg,Mass,3.58E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Land use,m2a / kg,Gross energy content,3.02E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Land use,m2a / kg,Economic,3.02E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Marine eutrophication,kg N-eq / kg,Mass,3.40E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Marine eutrophication,kg N-eq / kg,Gross energy content,2.87E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Marine eutrophication,kg N-eq / kg,Economic,2.87E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Water consumption,m3 / kg,Mass,7.76E-03,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Water consumption,m3 / kg,Gross energy content,6.54E-03,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish meal, Peruvian anchovy",Peru,Water consumption,m3 / kg,Economic,6.54E-03,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Freshwater eutrophication,kg P-eq / kg,Mass,1.31E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Freshwater eutrophication,kg P-eq / kg,Gross energy content,1.97E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Freshwater eutrophication,kg P-eq / kg,Economic,1.97E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Global warming potential,kg CO2-eq / kg,Mass,1.57,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Global warming potential,kg CO2-eq / kg,Gross energy content,2.36E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Global warming potential,kg CO2-eq / kg,Economic,2.36E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Land use,m2a / kg,Mass,7.32E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Land use,m2a / kg,Gross energy content,1.10E-04,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Land use,m2a / kg,Economic,1.10E-04,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Marine eutrophication,kg N-eq / kg,Mass,4.47E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Marine eutrophication,kg N-eq / kg,Gross energy content,6.73E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Marine eutrophication,kg N-eq / kg,Economic,6.73E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Water consumption,m3 / kg,Mass,1.90E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Water consumption,m3 / kg,Gross energy content,2.80E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Atlantic herring",Europe,Water consumption,m3 / kg,Economic,2.80E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Freshwater eutrophication,kg P-eq / kg,Mass,1.11E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Freshwater eutrophication,kg P-eq / kg,Gross energy content,1.72E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Freshwater eutrophication,kg P-eq / kg,Economic,1.72E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Global warming potential,kg CO2-eq / kg,Mass,1.33E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Global warming potential,kg CO2-eq / kg,Gross energy content,2.05E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Global warming potential,kg CO2-eq / kg,Economic,2.05E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Land use,m2a / kg,Mass,6.40E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Land use,m2a / kg,Gross energy content,9.89E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Land use,m2a / kg,Economic,9.89E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Marine eutrophication,kg N-eq / kg,Mass,4.54E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Marine eutrophication,kg N-eq / kg,Gross energy content,7.02E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Marine eutrophication,kg N-eq / kg,Economic,7.02E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Water consumption,m3 / kg,Mass,1.54E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Water consumption,m3 / kg,Gross energy content,2.37E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Capelin",Iceland,Water consumption,m3 / kg,Economic,2.37E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Freshwater eutrophication,kg P-eq / kg,Mass,5.80E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Freshwater eutrophication,kg P-eq / kg,Gross energy content,8.22E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Freshwater eutrophication,kg P-eq / kg,Economic,8.22E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Global warming potential,kg CO2-eq / kg,Mass,8.10E-01,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Global warming potential,kg CO2-eq / kg,Gross energy content,1.15,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Global warming potential,kg CO2-eq / kg,Economic,1.15,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Land use,m2a / kg,Mass,3.46E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Land use,m2a / kg,Gross energy content,4.90E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Land use,m2a / kg,Economic,4.90E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Marine eutrophication,kg N-eq / kg,Mass,2.81E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Marine eutrophication,kg N-eq / kg,Gross energy content,3.99E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Marine eutrophication,kg N-eq / kg,Economic,3.99E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Water consumption,m3 / kg,Mass,7.94E-03,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Water consumption,m3 / kg,Gross energy content,1.13E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Gulf menhaden",United States,Water consumption,m3 / kg,Economic,1.13E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Freshwater eutrophication,kg P-eq / kg,Mass,5.85E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Freshwater eutrophication,kg P-eq / kg,Gross energy content,1.02E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Freshwater eutrophication,kg P-eq / kg,Economic,1.02E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Global warming potential,kg CO2-eq / kg,Mass,7.80E-01,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Global warming potential,kg CO2-eq / kg,Gross energy content,1.36E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Global warming potential,kg CO2-eq / kg,Economic,1.36E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Land use,m2a / kg,Mass,3.58E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Land use,m2a / kg,Gross energy content,6.26E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Land use,m2a / kg,Economic,6.26E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Marine eutrophication,kg N-eq / kg,Mass,3.40E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Marine eutrophication,kg N-eq / kg,Gross energy content,5.96E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Marine eutrophication,kg N-eq / kg,Economic,5.96E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Water consumption,m3 / kg,Mass,7.76E-03,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Water consumption,m3 / kg,Gross energy content,1.36E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery,"Fish oil, Peruvian anchovy",Peru,Water consumption,m3 / kg,Economic,1.36E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Freshwater eutrophication,kg P-eq / kg,Mass,1.25E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Freshwater eutrophication,kg P-eq / kg,Gross energy content,1.16E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Freshwater eutrophication,kg P-eq / kg,Economic,5.91E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Global warming potential,kg CO2-eq / kg,Mass,1.7,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Global warming potential,kg CO2-eq / kg,Gross energy content,1.57E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Global warming potential,kg CO2-eq / kg,Economic,0.896,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Land use,m2a / kg,Mass,7.28E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Land use,m2a / kg,Gross energy content,6.72E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Land use,m2a / kg,Economic,3.76E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Marine eutrophication,kg N-eq / kg,Mass,5.32E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Marine eutrophication,kg N-eq / kg,Gross energy content,4.91E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Marine eutrophication,kg N-eq / kg,Economic,3.87E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Water consumption,m3 / kg,Mass,1.75E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Water consumption,m3 / kg,Gross energy content,1.62E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Alaska pollock",United States,Water consumption,m3 / kg,Economic,7.59E-03,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Freshwater eutrophication,kg P-eq / kg,Mass,6.59E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Freshwater eutrophication,kg P-eq / kg,Gross energy content,6.01E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Freshwater eutrophication,kg P-eq / kg,Economic,8.00E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Global warming potential,kg CO2-eq / kg,Mass,7.93E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Global warming potential,kg CO2-eq / kg,Gross energy content,7.32E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Global warming potential,kg CO2-eq / kg,Economic,9.54E-01,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Land use,m2a / kg,Mass,3.50E-04,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Land use,m2a / kg,Gross energy content,3.30E-04,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Land use,m2a / kg,Economic,4.80E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Marine eutrophication,kg N-eq / kg,Mass,1.63E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Marine eutrophication,kg N-eq / kg,Gross energy content,1.50E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Marine eutrophication,kg N-eq / kg,Economic,4.06E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Water consumption,m3 / kg,Mass,9.80E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Water consumption,m3 / kg,Gross energy content,9.05E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Atlantic cod",Europe,Water consumption,m3 / kg,Economic,1.06E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Freshwater eutrophication,kg P-eq / kg,Mass,5.86E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Freshwater eutrophication,kg P-eq / kg,Gross energy content,5.42E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Freshwater eutrophication,kg P-eq / kg,Economic,7.38E-07,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Global warming potential,kg CO2-eq / kg,Mass,7.2,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Global warming potential,kg CO2-eq / kg,Gross energy content,6.52E+00,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Global warming potential,kg CO2-eq / kg,Economic,8.80E-01,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Land use,m2a / kg,Mass,0.00032,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Land use,m2a / kg,Gross energy content,2.90E-04,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Land use,m2a / kg,Economic,4.41E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Marine eutrophication,kg N-eq / kg,Mass,1.46E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Marine eutrophication,kg N-eq / kg,Gross energy content,1.34E-05,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Marine eutrophication,kg N-eq / kg,Economic,3.66E-06,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Water consumption,m3 / kg,Mass,0.0873,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Water consumption,m3 / kg,Gross energy content,8.06E-02,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Fishery by-product,"Fish by-product meal, Skipjack tuna",Global,Water consumption,m3 / kg,Economic,9.79E-03,"FEUD, Cashion et al., Agri-footprint",Rob's modeling
+Livestock,Chicken by-product meal,Europe,Freshwater eutrophication,kg P-eq / kg,Mass,1.36E-03,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product meal,United States,Freshwater eutrophication,kg P-eq / kg,Mass,0.00099,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product meal,Europe,Freshwater eutrophication,kg P-eq / kg,Gross energy content,1.15E-03,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product meal,United States,Freshwater eutrophication,kg P-eq / kg,Gross energy content,1.03E-03,"Agri-footprint 5, Pelletier, 2006",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product meal,Europe,Freshwater eutrophication,kg P-eq / kg,Economic,7.90E-05,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product meal,United States,Freshwater eutrophication,kg P-eq / kg,Economic,6.34E-05,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product meal,Europe,Global warming potential,kg CO2-eq / kg,Mass,9.50E+00,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product meal,United States,Global warming potential,kg CO2-eq / kg,Mass,4.95,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product meal,Europe,Global warming potential,kg CO2-eq / kg,Gross energy content,7.54E+00,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product meal,United States,Global warming potential,kg CO2-eq / kg,Gross energy content,4.80E+00,"Agri-footprint 5, Pelletier, 2006",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product meal,Europe,Global warming potential,kg CO2-eq / kg,Economic,5.14E-01,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product meal,United States,Global warming potential,kg CO2-eq / kg,Economic,3.47E-01,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product meal,Europe,Land use,m2a / kg,Mass,1.29E+01,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product meal,United States,Land use,m2a / kg,Mass,9.27,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product meal,Europe,Land use,m2a / kg,Gross energy content,1.12E+01,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product meal,United States,Land use,m2a / kg,Gross energy content,8.95E+00,"Agri-footprint 5, Pelletier, 2006",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product meal,Europe,Land use,m2a / kg,Economic,8.48E-01,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product meal,United States,Land use,m2a / kg,Economic,5.40E-01,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product meal,Europe,Marine eutrophication,kg N-eq / kg,Mass,1.57E-02,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product meal,United States,Marine eutrophication,kg N-eq / kg,Mass,0.015,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product meal,Europe,Marine eutrophication,kg N-eq / kg,Gross energy content,1.37E-02,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product meal,United States,Marine eutrophication,kg N-eq / kg,Gross energy content,1.56E-02,"Agri-footprint 5, Pelletier, 2006",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product meal,Europe,Marine eutrophication,kg N-eq / kg,Economic,9.30E-04,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product meal,United States,Marine eutrophication,kg N-eq / kg,Economic,9.50E-04,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product meal,Europe,Water consumption,m3 / kg,Mass,4.15E-01,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product meal,United States,Water consumption,m3 / kg,Mass,0.378,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product meal,Europe,Water consumption,m3 / kg,Gross energy content,3.72E-01,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product meal,United States,Water consumption,m3 / kg,Gross energy content,3.89E-01,"Agri-footprint 5, Pelletier, 2006",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product meal,Europe,Water consumption,m3 / kg,Economic,3.59E-02,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product meal,United States,Water consumption,m3 / kg,Economic,3.25E-02,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product oil,Europe,Freshwater eutrophication,kg P-eq / kg,Mass,1.36E-03,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product oil,United States,Freshwater eutrophication,kg P-eq / kg,Mass,0.00099,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product oil,Europe,Freshwater eutrophication,kg P-eq / kg,Gross energy content,2.26E-03,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product oil,United States,Freshwater eutrophication,kg P-eq / kg,Gross energy content,2.02E-03,"Agri-footprint 5, Pelletier, 2006",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product oil,Europe,Freshwater eutrophication,kg P-eq / kg,Economic,0.0002,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product oil,United States,Freshwater eutrophication,kg P-eq / kg,Economic,0.00016,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product oil,Europe,Global warming potential,kg CO2-eq / kg,Mass,9.50E+00,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product oil,United States,Global warming potential,kg CO2-eq / kg,Mass,4.95,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product oil,Europe,Global warming potential,kg CO2-eq / kg,Gross energy content,1.48E+01,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product oil,United States,Global warming potential,kg CO2-eq / kg,Gross energy content,9.42E+00,"Agri-footprint 5, Pelletier, 2006",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product oil,Europe,Global warming potential,kg CO2-eq / kg,Economic,1.32,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product oil,United States,Global warming potential,kg CO2-eq / kg,Economic,0.893,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product oil,Europe,Land use,m2a / kg,Mass,1.29E+01,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product oil,United States,Land use,m2a / kg,Mass,9.27,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product oil,Europe,Land use,m2a / kg,Gross energy content,2.21E+01,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product oil,United States,Land use,m2a / kg,Gross energy content,1.76E+01,"Agri-footprint 5, Pelletier, 2006",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product oil,Europe,Land use,m2a / kg,Economic,2.18,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product oil,United States,Land use,m2a / kg,Economic,1.39,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product oil,Europe,Marine eutrophication,kg N-eq / kg,Mass,1.57E-02,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product oil,United States,Marine eutrophication,kg N-eq / kg,Mass,0.015,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product oil,Europe,Marine eutrophication,kg N-eq / kg,Gross energy content,2.68E-02,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product oil,United States,Marine eutrophication,kg N-eq / kg,Gross energy content,3.07E-02,"Agri-footprint 5, Pelletier, 2006",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product oil,Europe,Marine eutrophication,kg N-eq / kg,Economic,0.00239,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product oil,United States,Marine eutrophication,kg N-eq / kg,Economic,0.00244,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product oil,Europe,Water consumption,m3 / kg,Mass,4.15E-01,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product oil,United States,Water consumption,m3 / kg,Mass,0.378,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Chicken by-product oil,Europe,Water consumption,m3 / kg,Gross energy content,7.31E-01,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product oil,United States,Water consumption,m3 / kg,Gross energy content,7.65E-01,"Agri-footprint 5, Pelletier, 2006",Adapted from Agri-footprint with literature
+Livestock,Chicken by-product oil,Europe,Water consumption,m3 / kg,Economic,0.0922,"Agri-footprint 5, da Silva et al., 2014, Cesari et al., 2017",Rob's modeling
+Livestock,Chicken by-product oil,United States,Water consumption,m3 / kg,Economic,0.0837,"Agri-footprint 5, Pelletier, 2006",Rob's modeling
+Livestock,Pork blood meal,United States,Freshwater eutrophication,kg P-eq / kg,Mass,0.00362,"Agri-footprint 5, Thoma et al., 2015",Rob's modeling
+Livestock,Pork blood meal,United States,Freshwater eutrophication,kg P-eq / kg,Gross energy content,1.46E-03,"Agri-footprint 5, Thoma et al., 2015",Adapted from Agri-footprint with literature
+Livestock,Pork blood meal,United States,Freshwater eutrophication,kg P-eq / kg,Economic,0.00019,"Agri-footprint 5, Thoma et al., 2015",Rob's modeling
+Livestock,Pork blood meal,United States,Global warming potential,kg CO2-eq / kg,Mass,16.2,"Agri-footprint 5, Thoma et al., 2015",Rob's modeling
+Livestock,Pork blood meal,United States,Global warming potential,kg CO2-eq / kg,Gross energy content,6.67E+00,"Agri-footprint 5, Thoma et al., 2015",Adapted from Agri-footprint with literature
+Livestock,Pork blood meal,United States,Global warming potential,kg CO2-eq / kg,Economic,1.27,"Agri-footprint 5, Thoma et al., 2015",Rob's modeling
+Livestock,Pork blood meal,United States,Land use,m2a / kg,Mass,27,"Agri-footprint 5, Thoma et al., 2015",Rob's modeling
+Livestock,Pork blood meal,United States,Land use,m2a / kg,Gross energy content,1.07E+01,"Agri-footprint 5, Thoma et al., 2015",Adapted from Agri-footprint with literature
+Livestock,Pork blood meal,United States,Land use,m2a / kg,Economic,1.35,"Agri-footprint 5, Thoma et al., 2015",Rob's modeling
+Livestock,Pork blood meal,United States,Marine eutrophication,kg N-eq / kg,Mass,0.0491,"Agri-footprint 5, Thoma et al., 2015",Rob's modeling
+Livestock,Pork blood meal,United States,Marine eutrophication,kg N-eq / kg,Gross energy content,2.01E-02,"Agri-footprint 5, Thoma et al., 2015",Adapted from Agri-footprint with literature
+Livestock,Pork blood meal,United States,Marine eutrophication,kg N-eq / kg,Economic,0.00258,"Agri-footprint 5, Thoma et al., 2015",Rob's modeling
+Livestock,Pork blood meal,United States,Water consumption,m3 / kg,Mass,0.859,"Agri-footprint 5, Thoma et al., 2015",Rob's modeling
+Livestock,Pork blood meal,United States,Water consumption,m3 / kg,Gross energy content,3.65E-01,"Agri-footprint 5, Thoma et al., 2015",Adapted from Agri-footprint with literature
+Livestock,Pork blood meal,United States,Water consumption,m3 / kg,Economic,0.0719,"Agri-footprint 5, Thoma et al., 2015",Rob's modeling
+Soy,Soy protein concentrate,Brazil,Freshwater eutrophication,kg P-eq / kg,Mass,0.0008,"Agri-footprint 5, ReCiPe characterization","Soybean protein-concentrate, at processing/BR Mass"
+Soy,Soy protein concentrate,Brazil,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00072,"Agri-footprint 5, ReCiPe characterization","Soybean protein-concentrate, at processing/BR Energy"
+Soy,Soy protein concentrate,Brazil,Freshwater eutrophication,kg P-eq / kg,Economic,0.00088,"Agri-footprint 5, ReCiPe characterization","Soybean protein-concentrate, at processing/BR Economic"
+Soy,Soy protein concentrate,Brazil,Global warming potential,kg CO2-eq / kg,Mass,6.28,"Agri-footprint 5, ReCiPe characterization","Soybean protein-concentrate, at processing/BR Mass"
+Soy,Soy protein concentrate,Brazil,Global warming potential,kg CO2-eq / kg,Gross energy content,5.6,"Agri-footprint 5, ReCiPe characterization","Soybean protein-concentrate, at processing/BR Energy"
+Soy,Soy protein concentrate,Brazil,Global warming potential,kg CO2-eq / kg,Economic,6.9,"Agri-footprint 5, ReCiPe characterization","Soybean protein-concentrate, at processing/BR Economic"
+Soy,Soy protein concentrate,Brazil,Land use,m2a / kg,Mass,3.84,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Soybean protein-concentrate, at processing/BR Mass"
+Soy,Soy protein concentrate,Brazil,Land use,m2a / kg,Gross energy content,3.42,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Soybean protein-concentrate, at processing/BR Energy"
+Soy,Soy protein concentrate,Brazil,Land use,m2a / kg,Economic,4.21,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Soybean protein-concentrate, at processing/BR Economic"
+Soy,Soy protein concentrate,Brazil,Marine eutrophication,kg N-eq / kg,Mass,0.00168,"Agri-footprint 5, ReCiPe characterization","Soybean protein-concentrate, at processing/BR Mass"
+Soy,Soy protein concentrate,Brazil,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00149,"Agri-footprint 5, ReCiPe characterization","Soybean protein-concentrate, at processing/BR Energy"
+Soy,Soy protein concentrate,Brazil,Marine eutrophication,kg N-eq / kg,Economic,0.00184,"Agri-footprint 5, ReCiPe characterization","Soybean protein-concentrate, at processing/BR Economic"
+Soy,Soy protein concentrate,Brazil,Water consumption,m3 / kg,Mass,0.0798,"Agri-footprint 5, ReCiPe characterization","Soybean protein-concentrate, at processing/BR Mass"
+Soy,Soy protein concentrate,Brazil,Water consumption,m3 / kg,Gross energy content,0.0826,"Agri-footprint 5, ReCiPe characterization","Soybean protein-concentrate, at processing/BR Energy"
+Soy,Soy protein concentrate,Brazil,Water consumption,m3 / kg,Economic,0.106,"Agri-footprint 5, ReCiPe characterization","Soybean protein-concentrate, at processing/BR Economic"
+Soy,Soy protein isolate,United States,Freshwater eutrophication,kg P-eq / kg,Mass,0.00023,"Agri-footprint 5, ReCiPe characterization","Soybean protein-isolate, at processing/US Mass"
+Soy,Soy protein isolate,United States,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.0001,"Agri-footprint 5, ReCiPe characterization","Soybean protein-isolate, at processing/US Energy"
+Soy,Soy protein isolate,United States,Freshwater eutrophication,kg P-eq / kg,Economic,0.00032,"Agri-footprint 5, ReCiPe characterization","Soybean protein-isolate, at processing/US Economic"
+Soy,Soy protein isolate,United States,Global warming potential,kg CO2-eq / kg,Mass,0.735,"Agri-footprint 5, ReCiPe characterization","Soybean protein-isolate, at processing/US Mass"
+Soy,Soy protein isolate,United States,Global warming potential,kg CO2-eq / kg,Gross energy content,0.475,"Agri-footprint 5, ReCiPe characterization","Soybean protein-isolate, at processing/US Energy"
+Soy,Soy protein isolate,United States,Global warming potential,kg CO2-eq / kg,Economic,1.01,"Agri-footprint 5, ReCiPe characterization","Soybean protein-isolate, at processing/US Economic"
+Soy,Soy protein isolate,United States,Land use,m2a / kg,Mass,5.22,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Soybean protein-isolate, at processing/US Mass"
+Soy,Soy protein isolate,United States,Land use,m2a / kg,Gross energy content,2.35,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Soybean protein-isolate, at processing/US Energy"
+Soy,Soy protein isolate,United States,Land use,m2a / kg,Economic,7.4,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Soybean protein-isolate, at processing/US Economic"
+Soy,Soy protein isolate,United States,Marine eutrophication,kg N-eq / kg,Mass,0.0026,"Agri-footprint 5, ReCiPe characterization","Soybean protein-isolate, at processing/US Mass"
+Soy,Soy protein isolate,United States,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00117,"Agri-footprint 5, ReCiPe characterization","Soybean protein-isolate, at processing/US Energy"
+Soy,Soy protein isolate,United States,Marine eutrophication,kg N-eq / kg,Economic,0.00369,"Agri-footprint 5, ReCiPe characterization","Soybean protein-isolate, at processing/US Economic"
+Soy,Soy protein isolate,United States,Water consumption,m3 / kg,Mass,0.441,"Agri-footprint 5, ReCiPe characterization","Soybean protein-isolate, at processing/US Mass"
+Soy,Soy protein isolate,United States,Water consumption,m3 / kg,Gross energy content,0.367,"Agri-footprint 5, ReCiPe characterization","Soybean protein-isolate, at processing/US Energy"
+Soy,Soy protein isolate,United States,Water consumption,m3 / kg,Economic,0.522,"Agri-footprint 5, ReCiPe characterization","Soybean protein-isolate, at processing/US Economic"
+Soy,Soybean meal,Brazil,Freshwater eutrophication,kg P-eq / kg,Mass,0.00072,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/BR Mass"
+Soy,Soybean meal,United States,Freshwater eutrophication,kg P-eq / kg,Mass,0.00017,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/US Mass"
+Soy,Soybean meal,Brazil,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.0006,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/BR Energy"
+Soy,Soybean meal,United States,Freshwater eutrophication,kg P-eq / kg,Gross energy content,0.00014,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/US Energy"
+Soy,Soybean meal,Brazil,Freshwater eutrophication,kg P-eq / kg,Economic,0.00056,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/BR Economic"
+Soy,Soybean meal,United States,Freshwater eutrophication,kg P-eq / kg,Economic,0.00013,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/US Economic"
+Soy,Soybean meal,Brazil,Global warming potential,kg CO2-eq / kg,Mass,5.65,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/BR Mass"
+Soy,Soybean meal,United States,Global warming potential,kg CO2-eq / kg,Mass,0.245,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/US Mass"
+Soy,Soybean meal,Brazil,Global warming potential,kg CO2-eq / kg,Gross energy content,4.68,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/BR Energy"
+Soy,Soybean meal,United States,Global warming potential,kg CO2-eq / kg,Gross energy content,0.204,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/US Energy"
+Soy,Soybean meal,Brazil,Global warming potential,kg CO2-eq / kg,Economic,4.44,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/BR Economic"
+Soy,Soybean meal,United States,Global warming potential,kg CO2-eq / kg,Economic,0.193,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/US Economic"
+Soy,Soybean meal,Brazil,Land use,m2a / kg,Mass,3.5,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Soybean meal (solvent), market mix, at regional storage/BR Mass"
+Soy,Soybean meal,United States,Land use,m2a / kg,Mass,3.85,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Soybean meal (solvent), market mix, at regional storage/US Mass"
+Soy,Soybean meal,Brazil,Land use,m2a / kg,Gross energy content,2.9,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Soybean meal (solvent), market mix, at regional storage/BR Energy"
+Soy,Soybean meal,United States,Land use,m2a / kg,Gross energy content,3.19,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Soybean meal (solvent), market mix, at regional storage/US Energy"
+Soy,Soybean meal,Brazil,Land use,m2a / kg,Economic,2.74,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Soybean meal (solvent), market mix, at regional storage/BR Economic"
+Soy,Soybean meal,United States,Land use,m2a / kg,Economic,3.02,"Agri-footprint 5, ReCiPe characterization, corrected land use characterization factors","Soybean meal (solvent), market mix, at regional storage/US Economic"
+Soy,Soybean meal,Brazil,Marine eutrophication,kg N-eq / kg,Mass,0.00153,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/BR Mass"
+Soy,Soybean meal,United States,Marine eutrophication,kg N-eq / kg,Mass,0.00191,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/US Mass"
+Soy,Soybean meal,Brazil,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00126,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/BR Energy"
+Soy,Soybean meal,United States,Marine eutrophication,kg N-eq / kg,Gross energy content,0.00159,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/US Energy"
+Soy,Soybean meal,Brazil,Marine eutrophication,kg N-eq / kg,Economic,0.0012,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/BR Economic"
+Soy,Soybean meal,United States,Marine eutrophication,kg N-eq / kg,Economic,0.0015,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/US Economic"
+Soy,Soybean meal,Brazil,Water consumption,m3 / kg,Mass,0.0156,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/BR Mass"
+Soy,Soybean meal,United States,Water consumption,m3 / kg,Mass,0.065,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/US Mass"
+Soy,Soybean meal,Brazil,Water consumption,m3 / kg,Gross energy content,0.013,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/BR Energy"
+Soy,Soybean meal,United States,Water consumption,m3 / kg,Gross energy content,0.0539,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/US Energy"
+Soy,Soybean meal,Brazil,Water consumption,m3 / kg,Economic,0.0123,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/BR Economic"
+Soy,Soybean meal,United States,Water consumption,m3 / kg,Economic,0.051,"Agri-footprint 5, ReCiPe characterization","Soybean meal (solvent), market mix, at regional storage/US Economic"

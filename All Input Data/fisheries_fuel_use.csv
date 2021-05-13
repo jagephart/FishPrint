@@ -1,0 +1,1092 @@
+﻿species_group,isscaap_group,species,gear,fui,ghg,gear_weighting,species_weighting,consumption_weighting
+Bivalves,"Clams, cockles, arkshells","Clams, etc. nei",Dredges,610,2529.466667,0.245434117,0.099119826,1
+Bivalves,"Clams, cockles, arkshells","Clams, etc. nei",Traps and Lift Nets,1447,6000.226667,0.002058169,0.099119826,1
+Bivalves,"Clams, cockles, arkshells",Japanese carpet shell,"Other, Mixed, or Unknown",419,1737.453333,0.726284698,0.012353469,1
+Bivalves,"Clams, cockles, arkshells",Japanese carpet shell,"Other, Mixed, or Unknown",430,1783.066667,0.726284698,0.012353469,1
+Bivalves,"Clams, cockles, arkshells",Japanese carpet shell,"Other, Mixed, or Unknown",445,1845.266667,0.726284698,0.012353469,1
+Bivalves,"Clams, cockles, arkshells",Ocean quahog,Dredges,71,294.4133333,0.99983932,0.045094691,1
+Bivalves,"Clams, cockles, arkshells",Striped venus,Dredges,619,2566.786667,0.896530839,0.052384785,1
+Bivalves,"Clams, cockles, arkshells",Striped venus,Dredges,658,2728.506667,0.896530839,0.052384785,1
+Bivalves,"Clams, cockles, arkshells",Striped venus,Dredges,835,3462.466667,0.896530839,0.052384785,1
+Bivalves,"Clams, cockles, arkshells",Striped venus,Dredges,892,3698.826667,0.896530839,0.052384785,1
+Bivalves,"Clams, cockles, arkshells",Striped venus,Dredges,898,3723.706667,0.896530839,0.052384785,1
+Bivalves,"Clams, cockles, arkshells",Striped venus,Dredges,960,3980.8,0.896530839,0.052384785,1
+Bivalves,"Clams, cockles, arkshells",Striped venus,Dredges,1294,5365.786667,0.896530839,0.052384785,1
+Bivalves,Mussels,Blue mussel,Dredges,15,62.2,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,15,62.2,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,15,62.2,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,16,66.34666667,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,18,74.64,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,19,78.78666667,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,20,82.93333333,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,20,82.93333333,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,22,91.22666667,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,24,99.52,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,33,136.84,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,34,140.9866667,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,38,157.5733333,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,Dredges,41,170.0133333,0.144763503,0.027656205,1
+Bivalves,Mussels,Blue mussel,"Other, Mixed, or Unknown",13,53.90666667,0.698279334,0.027656205,1
+Bivalves,"Scallops, pectens",American sea scallop,Dredges,339,1405.72,0.71921717,0.126703522,1
+Bivalves,"Scallops, pectens",American sea scallop,Dredges,358,1484.506667,0.71921717,0.126703522,1
+Bivalves,"Scallops, pectens",American sea scallop,Dredges,361,1496.946667,0.71921717,0.126703522,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,529,2193.586667,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,625,2591.666667,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,639,2649.72,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,729,3022.92,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,747,3097.56,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,810,3358.8,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,831,3445.88,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,850,3524.666667,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,891,3694.68,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,895,3711.266667,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,953,3951.773333,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,1051,4358.146667,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,Dredges,1822,7555.226667,0.24839629,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,"Other, Mixed, or Unknown",463,1919.906667,0.53199162,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,"Other, Mixed, or Unknown",484,2006.986667,0.53199162,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,"Other, Mixed, or Unknown",704,2919.253333,0.53199162,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,"Other, Mixed, or Unknown",723,2998.04,0.53199162,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,"Other, Mixed, or Unknown",944,3914.453333,0.53199162,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,"Other, Mixed, or Unknown",1466,6079.013333,0.53199162,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,"Other, Mixed, or Unknown",1538,6377.573333,0.53199162,0.029126703,1
+Bivalves,"Scallops, pectens",Great Atlantic scallop,"Other, Mixed, or Unknown",1564,6485.386667,0.53199162,0.029126703,1
+Bivalves,"Scallops, pectens",Iceland scallop,Dredges,293,1214.973333,0.188895226,0.001111087,1
+Bivalves,"Scallops, pectens",Iceland scallop,Dredges,339,1405.72,0.188895226,0.001111087,1
+Bivalves,"Scallops, pectens",Iceland scallop,Dredges,374,1550.853333,0.188895226,0.001111087,1
+Bivalves,"Scallops, pectens",Iceland scallop,Dredges,381,1579.88,0.188895226,0.001111087,1
+Bivalves,"Scallops, pectens",Iceland scallop,Dredges,388,1608.906667,0.188895226,0.001111087,1
+Bivalves,"Scallops, pectens",Iceland scallop,Dredges,434,1799.653333,0.188895226,0.001111087,1
+Bivalves,"Scallops, pectens",Iceland scallop,Dredges,459,1903.32,0.188895226,0.001111087,1
+Bivalves,"Scallops, pectens",Iceland scallop,Dredges,509,2110.653333,0.188895226,0.001111087,1
+Bivalves,"Scallops, pectens",Queen scallop,Midwater Trawls,1787,7410.093333,0,0.012522186,1
+Bivalves,"Scallops, pectens",Scallops nei,Bottom Trawls,1405,5826.066667,0.687414019,0.159092823,1
+Bivalves,"Scallops, pectens",Scallops nei,Dredges,347,1438.893333,0.000959571,0.159092823,1
+Cephalopods,"Squids, cuttlefishes, octopuses",Arrow squids,Bottom Trawls,533,2210.173333,0.497061689,0.00697305,1
+Cephalopods,"Squids, cuttlefishes, octopuses",Common octopus,Bottom Trawls,1546,6410.746667,0.134222317,0.012269483,1
+Cephalopods,"Squids, cuttlefishes, octopuses",Cuttlefishes,Bottom Trawls,1205,4996.733333,0.669383432,0.083265816,1
+Cephalopods,"Squids, cuttlefishes, octopuses",Squids,Bottom Trawls,211,874.9466667,0.566050467,0.13251826,1
+Cephalopods,"Squids, cuttlefishes, octopuses",Squids,Bottom Trawls,238,986.9066667,0.566050467,0.13251826,1
+Cephalopods,"Squids, cuttlefishes, octopuses",Squids,Bottom Trawls,249,1032.52,0.566050467,0.13251826,1
+Cephalopods,"Squids, cuttlefishes, octopuses",Squids,Bottom Trawls,313,1297.906667,0.566050467,0.13251826,1
+Cephalopods,"Squids, cuttlefishes, octopuses",Wellington flying squid,Midwater Trawls,406,1683.546667,0,0.000745302,1
+Finfish,Miscellaneous marine fishes,Alfonsinos,Midwater Trawls,779,3230.253333,0.02435988,,1
+Finfish,Miscellaneous marine fishes,Armored searobins or armored gurnards,Midwater Trawls,959,3976.653333,1.57E-05,,1
+Finfish,Miscellaneous marine fishes,Banded yellowfish,Midwater Trawls,172,713.2266667,0,,1
+Finfish,Miscellaneous marine fishes,Barracudas,Bottom Trawls,277,1148.626667,0.131004659,,1
+Finfish,Miscellaneous marine fishes,Barracudas,Midwater Trawls,298,1235.706667,0.059282835,,1
+Finfish,Miscellaneous marine fishes,Marine fishes nei,Midwater Trawls,402,1666.96,0.053075815,,1
+Finfish,Miscellaneous marine fishes,Marine fishes nei,Midwater Trawls,2028,8409.44,0.053075815,,1
+Finfish,Miscellaneous marine fishes,Marine fishes nei,"Other, Mixed, or Unknown",1396,5788.746667,0.152406019,,1
+Finfish,Miscellaneous marine fishes,Marine fishes nei,"Other, Mixed, or Unknown",1903,7891.106667,0.152406019,,1
+Finfish,Miscellaneous marine fishes,Marine fishes nei,"Other, Mixed, or Unknown",5221,21649.74667,0.152406019,,1
+Finfish,Miscellaneous marine fishes,Porcupinefishes (burrfishes),Midwater Trawls,708,2935.84,3.62E-07,,1
+Finfish,Miscellaneous marine fishes,Sand lances,Bottom Trawls,65,269.5333333,0.991426255,,0
+Finfish,Miscellaneous marine fishes,Sand lances,Midwater Trawls,111,460.28,2.27E-06,,0
+Finfish,Miscellaneous marine fishes,Sand lances,Midwater Trawls,152,630.2933333,2.27E-06,,0
+Finfish,Miscellaneous marine fishes,Sand lances,Midwater Trawls,173,717.3733333,2.27E-06,,0
+Flatfishes,"Flounders, halibuts, soles",Amer. plaice(=Long rough dab),Bottom Trawls,957,3968.36,0.399066663,0.004899285,1
+Flatfishes,"Flounders, halibuts, soles",Amer. plaice(=Long rough dab),Bottom Trawls,2319,9616.12,0.399066663,0.004899285,1
+Flatfishes,"Flounders, halibuts, soles",Amer. plaice(=Long rough dab),Gillnets and Entangling Nets,492,2040.16,0.043072222,0.004899285,1
+Flatfishes,"Flounders, halibuts, soles",Amer. plaice(=Long rough dab),Long lines,570,2363.6,0.019111481,0.004899285,1
+Flatfishes,"Flounders, halibuts, soles",Amer. plaice(=Long rough dab),Surrounding Nets,380,1575.733333,0.005758499,0.004899285,1
+Flatfishes,"Flounders, halibuts, soles",American flounders,Bottom Trawls,957,3968.36,0.231676506,0.004020648,1
+Flatfishes,"Flounders, halibuts, soles",American flounders,Gillnets and Entangling Nets,492,2040.16,0.435888587,0.004020648,1
+Flatfishes,"Flounders, halibuts, soles",American flounders,Long lines,570,2363.6,0.003442167,0.004020648,1
+Flatfishes,"Flounders, halibuts, soles",Brill,"Other, Mixed, or Unknown",2529,10486.92,0.062712577,0.002365254,1
+Flatfishes,"Flounders, halibuts, soles",Common sole,Bottom Trawls,717,2973.16,0.718207925,0.028936916,1
+Flatfishes,"Flounders, halibuts, soles",Common sole,Bottom Trawls,2116,8774.346667,0.718207925,0.028936916,1
+Flatfishes,"Flounders, halibuts, soles",Common sole,Bottom Trawls,2767,11473.82667,0.718207925,0.028936916,1
+Flatfishes,"Flounders, halibuts, soles",Common sole,Bottom Trawls,2808,11643.84,0.718207925,0.028936916,1
+Flatfishes,"Flounders, halibuts, soles",Common sole,Bottom Trawls,2903,12037.77333,0.718207925,0.028936916,1
+Flatfishes,"Flounders, halibuts, soles",Common sole,Bottom Trawls,2998,12431.70667,0.718207925,0.028936916,1
+Flatfishes,"Flounders, halibuts, soles",Common sole,Bottom Trawls,3429,14218.92,0.718207925,0.028936916,1
+Flatfishes,"Flounders, halibuts, soles",Common sole,Bottom Trawls,3876,16072.48,0.718207925,0.028936916,1
+Flatfishes,"Flounders, halibuts, soles",Common sole,Gillnets and Entangling Nets,598,2479.706667,0.143705392,0.028936916,1
+Flatfishes,"Flounders, halibuts, soles",Dover sole,"Other, Mixed, or Unknown",2882,11950.69333,0.023999103,0.006494359,1
+Flatfishes,"Flounders, halibuts, soles",European flounder,"Other, Mixed, or Unknown",397,1646.226667,0.641001329,0.020944901,1
+Flatfishes,"Flounders, halibuts, soles",European flounder,"Other, Mixed, or Unknown",535,2218.466667,0.641001329,0.020944901,1
+Flatfishes,"Flounders, halibuts, soles",European flounder,"Other, Mixed, or Unknown",811,3362.946667,0.641001329,0.020944901,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,2317,9607.826667,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,2361,9790.28,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,2606,10806.21333,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,2716,11262.34667,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,2746,11386.74667,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,2805,11631.4,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,2855,11838.73333,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3003,12452.44,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3007,12469.02667,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3023,12535.37333,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3124,12954.18667,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3193,13240.30667,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3249,13472.52,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3290,13642.53333,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3308,13717.17333,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3330,13808.4,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3336,13833.28,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3392,14065.49333,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3642,15102.16,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,3668,15209.97333,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,Bottom Trawls,4062,16843.76,0.714460976,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,"Other, Mixed, or Unknown",362,1501.093333,0.119290639,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,"Other, Mixed, or Unknown",366,1517.68,0.119290639,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,"Other, Mixed, or Unknown",462,1915.76,0.119290639,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,"Other, Mixed, or Unknown",496,2056.746667,0.119290639,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,"Other, Mixed, or Unknown",574,2380.186667,0.119290639,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,"Other, Mixed, or Unknown",865,3586.866667,0.119290639,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,"Other, Mixed, or Unknown",1100,4561.333333,0.119290639,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,"Other, Mixed, or Unknown",1134,4702.32,0.119290639,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,"Other, Mixed, or Unknown",1326,5498.48,0.119290639,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,"Other, Mixed, or Unknown",1481,6141.213333,0.119290639,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,"Other, Mixed, or Unknown",1499,6215.853333,0.119290639,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",European plaice,"Other, Mixed, or Unknown",2165,8977.533333,0.119290639,0.082127036,1
+Flatfishes,"Flounders, halibuts, soles",Flatfishes nei,Bottom Trawls,370,1534.266667,0.341059246,0.08940004,1
+Flatfishes,"Flounders, halibuts, soles",Flatfishes nei,Bottom Trawls,549,2276.52,0.341059246,0.08940004,1
+Flatfishes,"Flounders, halibuts, soles",Flatfishes nei,Gillnets and Entangling Nets,445,1845.266667,0.09051952,0.08940004,1
+Flatfishes,"Flounders, halibuts, soles",Flatfishes nei,Gillnets and Entangling Nets,513,2127.24,0.09051952,0.08940004,1
+Flatfishes,"Flounders, halibuts, soles",Flatfishes nei,Gillnets and Entangling Nets,547,2268.226667,0.09051952,0.08940004,1
+Flatfishes,"Flounders, halibuts, soles",Flatfishes nei,Midwater Trawls,918,3806.64,0.008726642,0.08940004,1
+Flatfishes,"Flounders, halibuts, soles",Flatfishes nei,Surrounding Nets,502,2081.626667,0.001829149,0.08940004,1
+Flatfishes,"Flounders, halibuts, soles",Flatfishes nei,Surrounding Nets,687,2848.76,0.001829149,0.08940004,1
+Flatfishes,"Flounders, halibuts, soles",Flatfishes nei,Surrounding Nets,694,2877.786667,0.001829149,0.08940004,1
+Flatfishes,"Flounders, halibuts, soles",Flatfishes nei,Surrounding Nets,1208,5009.173333,0.001829149,0.08940004,1
+Flatfishes,"Flounders, halibuts, soles",Flatfishes nei,Surrounding Nets,1276,5291.146667,0.001829149,0.08940004,1
+Flatfishes,"Flounders, halibuts, soles",Flatfishes nei,Surrounding Nets,1309,5427.986667,0.001829149,0.08940004,1
+Flatfishes,"Flounders, halibuts, soles","Flounders, halibuts, soles",Bottom Trawls,1646,6825.413333,0.527821664,,1
+Flatfishes,"Flounders, halibuts, soles",Greenland halibut,"Other, Mixed, or Unknown",506,2098.213333,0.202641854,0.102090036,1
+Flatfishes,"Flounders, halibuts, soles",Lemon sole,"Other, Mixed, or Unknown",1094,4536.453333,0.156627685,0.007880217,1
+Flatfishes,"Flounders, halibuts, soles",Megrim,Midwater Trawls,2475,10263,0.000274231,0.002650026,1
+Flatfishes,"Flounders, halibuts, soles",New Zealand sole,Midwater Trawls,1480,6137.066667,0.009110536,,1
+Flatfishes,"Flounders, halibuts, soles",Sand flounder,Midwater Trawls,982,4072.026667,0.009110536,,1
+Flatfishes,"Flounders, halibuts, soles",Southern lemon sole,Midwater Trawls,964,3997.386667,0.009110536,,1
+Flatfishes,"Flounders, halibuts, soles",Summer flounder,Bottom Trawls,1338,5548.24,0.424398279,0.007910049,1
+Flatfishes,"Flounders, halibuts, soles",Summer flounder,Gillnets and Entangling Nets,566,2347.013333,0.006645917,0.007910049,1
+Flatfishes,"Flounders, halibuts, soles",Turbot,"Other, Mixed, or Unknown",2447,10146.89333,0.526899025,0.011543999,1
+Flatfishes,"Flounders, halibuts, soles",Witch flounder,"Other, Mixed, or Unknown",1118,4635.973333,0.354985901,0.007938761,1
+Gadiformes,"Cods, hakes, haddocks",Alaska pollock(=Walleye poll.),Bottom Trawls,65,269.5333333,0.042047821,0.431866355,1
+Gadiformes,"Cods, hakes, haddocks",Alaska pollock(=Walleye poll.),Bottom Trawls,85,352.4666667,0.042047821,0.431866355,1
+Gadiformes,"Cods, hakes, haddocks",Alaska pollock(=Walleye poll.),Midwater Trawls,36,149.28,0.897025386,0.431866355,1
+Gadiformes,"Cods, hakes, haddocks",Alaska pollock(=Walleye poll.),Midwater Trawls,62,257.0933333,0.897025386,0.431866355,1
+Gadiformes,"Cods, hakes, haddocks",Alaska pollock(=Walleye poll.),Midwater Trawls,69,286.12,0.897025386,0.431866355,1
+Gadiformes,"Cods, hakes, haddocks",Alaska pollock(=Walleye poll.),Midwater Trawls,69,286.12,0.897025386,0.431866355,1
+Gadiformes,"Cods, hakes, haddocks",Alaska pollock(=Walleye poll.),Midwater Trawls,72,298.56,0.897025386,0.431866355,1
+Gadiformes,"Cods, hakes, haddocks",Alaska pollock(=Walleye poll.),Midwater Trawls,72,298.56,0.897025386,0.431866355,1
+Gadiformes,"Cods, hakes, haddocks",Alaska pollock(=Walleye poll.),Midwater Trawls,73,302.7066667,0.897025386,0.431866355,1
+Gadiformes,"Cods, hakes, haddocks",Alaska pollock(=Walleye poll.),Midwater Trawls,73,302.7066667,0.897025386,0.431866355,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,240,995.2,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,250,1036.666667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,260,1078.133333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,265,1098.866667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,285,1181.8,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,285,1181.8,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,315,1306.2,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,329,1364.253333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,335,1389.133333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,351,1455.48,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,358,1484.506667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,375,1555,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,377,1563.293333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,395,1637.933333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,398,1650.373333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,399,1654.52,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,407,1687.693333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,409,1695.986667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,413,1712.573333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,426,1766.48,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,430,1783.066667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,441,1828.68,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,465,1928.2,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,468,1940.64,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,485,2011.133333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,490,2031.866667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,491,2036.013333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,495,2052.6,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,501,2077.48,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,512,2123.093333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,526,2181.146667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,532,2206.026667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,559,2317.986667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,619,2566.786667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,630,2612.4,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,631,2616.546667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,635,2633.133333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,640,2653.866667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,700,2902.666667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,710,2944.133333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,761,3155.613333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,800,3317.333333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,830,3441.733333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,910,3773.466667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,963,3993.24,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,1025,4250.333333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,1213,5029.906667,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,1400,5805.333333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,1410,5846.8,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,1562,6477.093333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,1820,7546.933333,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,2139,8869.72,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Bottom Trawls,2724,11295.52,0.214487564,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,297,1231.56,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,300,1244,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,330,1368.4,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,340,1409.866667,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,376,1559.146667,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,380,1575.733333,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,394,1633.786667,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,395,1637.933333,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,423,1754.04,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,430,1783.066667,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,434,1799.653333,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,441,1828.68,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,469,1944.786667,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,483,2002.84,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,493,2044.306667,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,501,2077.48,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,504,2089.92,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,505,2094.066667,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,517,2143.826667,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,537,2226.76,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,545,2259.933333,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,550,2280.666667,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,598,2479.706667,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,647,2682.893333,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,651,2699.48,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,766,3176.346667,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,1008,4179.84,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,1043,4324.973333,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,1169,4847.453333,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,1188,4926.24,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,1191,4938.68,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,1430,5929.733333,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,1431,5933.88,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Gillnets and Entangling Nets,1532,6352.693333,0.127137461,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,382,1584.026667,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,570,2363.6,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,572,2371.893333,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,620,2570.933333,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,651,2699.48,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,656,2720.213333,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,682,2828.026667,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,701,2906.813333,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,715,2964.866667,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,802,3325.626667,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,814,3375.386667,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,815,3379.533333,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,835,3462.466667,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,864,3582.72,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,892,3698.826667,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,946,3922.746667,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,948,3931.04,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Hooks and Lines,1117,4631.826667,0.047140775,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,125,518.3333333,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,396,1642.08,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,489,2027.72,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,538,2230.906667,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,622,2579.226667,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,638,2645.573333,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,655,2716.066667,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,659,2732.653333,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,702,2910.96,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,723,2998.04,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,773,3205.373333,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,779,3230.253333,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,798,3309.04,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,836,3466.613333,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,840,3483.2,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,859,3561.986667,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,874,3624.186667,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,957,3968.36,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Long lines,1073,4449.373333,0.115881951,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",222,920.56,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",244,1011.786667,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",248,1028.373333,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",274,1136.186667,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",281,1165.213333,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",295,1223.266667,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",298,1235.706667,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",299,1239.853333,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",300,1244,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",324,1343.52,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",344,1426.453333,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",378,1567.44,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",381,1579.88,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",395,1637.933333,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",403,1671.106667,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",407,1687.693333,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",412,1708.426667,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",413,1712.573333,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",436,1807.946667,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",462,1915.76,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",533,2210.173333,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",549,2276.52,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",589,2442.386667,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",693,2873.64,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",693,2873.64,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",791,3280.013333,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",914,3790.053333,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",1032,4279.36,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",1136,4710.613333,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,"Other, Mixed, or Unknown",1302,5398.96,0.41416999,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Surrounding Nets,230,953.7333333,0.079275692,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Surrounding Nets,478,1982.106667,0.079275692,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Surrounding Nets,510,2114.8,0.079275692,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Surrounding Nets,515,2135.533333,0.079275692,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Surrounding Nets,528,2189.44,0.079275692,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Surrounding Nets,544,2255.786667,0.079275692,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Surrounding Nets,551,2284.813333,0.079275692,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Surrounding Nets,639,2649.72,0.079275692,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Surrounding Nets,657,2724.36,0.079275692,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Atlantic cod,Surrounding Nets,659,2732.653333,0.079275692,0.141822152,1
+Gadiformes,"Cods, hakes, haddocks",Blue grenadier,Bottom Trawls,275,1140.333333,0.747663633,0.01650074,1
+Gadiformes,"Cods, hakes, haddocks",Blue grenadier,Bottom Trawls,353,1463.773333,0.747663633,0.01650074,1
+Gadiformes,"Cods, hakes, haddocks",Blue grenadier,Bottom Trawls,720,2985.6,0.747663633,0.01650074,1
+Gadiformes,"Cods, hakes, haddocks",Blue grenadier,Bottom Trawls,784,3250.986667,0.747663633,0.01650074,1
+Gadiformes,"Cods, hakes, haddocks",Blue grenadier,Bottom Trawls,812,3367.093333,0.747663633,0.01650074,1
+Gadiformes,"Cods, hakes, haddocks",Blue grenadier,Bottom Trawls,901,3736.146667,0.747663633,0.01650074,1
+Gadiformes,"Cods, hakes, haddocks",Blue grenadier,Bottom Trawls,966,4005.68,0.747663633,0.01650074,1
+Gadiformes,"Cods, hakes, haddocks",Blue grenadier,Bottom Trawls,973,4034.706667,0.747663633,0.01650074,1
+Gadiformes,"Cods, hakes, haddocks",Blue grenadier,Bottom Trawls,1028,4262.773333,0.747663633,0.01650074,1
+Gadiformes,"Cods, hakes, haddocks",Blue grenadier,Bottom Trawls,1095,4540.6,0.747663633,0.01650074,1
+Gadiformes,"Cods, hakes, haddocks",Blue grenadier,Bottom Trawls,1128,4677.44,0.747663633,0.01650074,1
+Gadiformes,"Cods, hakes, haddocks",Blue grenadier,Bottom Trawls,1242,5150.16,0.747663633,0.01650074,1
+Gadiformes,"Cods, hakes, haddocks",Blue ling,"Other, Mixed, or Unknown",376,1559.146667,0.052512568,0.000930312,1
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Bottom Trawls,914,3790.053333,0.035349457,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Midwater Trawls,45,186.6,0.724883792,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Midwater Trawls,59,244.6533333,0.724883792,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Midwater Trawls,63,261.24,0.724883792,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Midwater Trawls,64,265.3866667,0.724883792,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Midwater Trawls,67,277.8266667,0.724883792,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Midwater Trawls,73,302.7066667,0.724883792,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Midwater Trawls,84,348.32,0.724883792,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Midwater Trawls,92,381.4933333,0.724883792,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Midwater Trawls,101,418.8133333,0.724883792,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Midwater Trawls,108,447.84,0.724883792,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Midwater Trawls,126,522.48,0.724883792,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Midwater Trawls,150,622,0.724883792,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),"Other, Mixed, or Unknown",39,161.72,0.190089454,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),"Other, Mixed, or Unknown",106,439.5466667,0.190089454,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),"Other, Mixed, or Unknown",212,879.0933333,0.190089454,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",Blue whiting(=Poutassou),Surrounding Nets,85,352.4666667,0.03344173,0.06221275,0.075
+Gadiformes,"Cods, hakes, haddocks",European hake,Bottom Trawls,381,1579.88,0.604704178,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,Bottom Trawls,1929,7998.92,0.604704178,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,Bottom Trawls,1941,8048.68,0.604704178,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,Bottom Trawls,2208,9155.84,0.604704178,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,Bottom Trawls,4103,17013.77333,0.604704178,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,Bottom Trawls,4283,17760.17333,0.604704178,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,Gillnets and Entangling Nets,536,2222.613333,0.098796275,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,Gillnets and Entangling Nets,831,3445.88,0.098796275,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,Gillnets and Entangling Nets,1366,5664.346667,0.098796275,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,Gillnets and Entangling Nets,1388,5755.573333,0.098796275,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,Hooks and Lines,823,3412.706667,0.012412013,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,Hooks and Lines,4238,17573.57333,0.012412013,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,Long lines,1535,6365.133333,0.125240688,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,"Other, Mixed, or Unknown",341,1414.013333,0.063000177,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,"Other, Mixed, or Unknown",587,2434.093333,0.063000177,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,"Other, Mixed, or Unknown",1668,6916.64,0.063000177,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,"Other, Mixed, or Unknown",1719,7128.12,0.063000177,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",European hake,"Other, Mixed, or Unknown",1889,7833.053333,0.063000177,0.013662828,1
+Gadiformes,"Cods, hakes, haddocks",Greater forkbeard,"Other, Mixed, or Unknown",388,1608.906667,0.617365822,0.00024184,1
+Gadiformes,"Cods, hakes, haddocks","Grenadiers, rattails nei",Midwater Trawls,863,3578.573333,9.58E-07,0.007469045,1
+Gadiformes,"Cods, hakes, haddocks",Haddock,Bottom Trawls,458,1899.173333,0.319351918,0.043084412,1
+Gadiformes,"Cods, hakes, haddocks",Haddock,Bottom Trawls,495,2052.6,0.319351918,0.043084412,1
+Gadiformes,"Cods, hakes, haddocks",Haddock,Bottom Trawls,963,3993.24,0.319351918,0.043084412,1
+Gadiformes,"Cods, hakes, haddocks",Haddock,Gillnets and Entangling Nets,297,1231.56,0.025228542,0.043084412,1
+Gadiformes,"Cods, hakes, haddocks",Haddock,Long lines,396,1642.08,0.163461313,0.043084412,1
+Gadiformes,"Cods, hakes, haddocks",Haddock,"Other, Mixed, or Unknown",471,1953.08,0.344064931,0.043084412,1
+Gadiformes,"Cods, hakes, haddocks",Haddock,"Other, Mixed, or Unknown",625,2591.666667,0.344064931,0.043084412,1
+Gadiformes,"Cods, hakes, haddocks",Haddock,"Other, Mixed, or Unknown",952,3947.626667,0.344064931,0.043084412,1
+Gadiformes,"Cods, hakes, haddocks",Haddock,"Other, Mixed, or Unknown",1150,4768.666667,0.344064931,0.043084412,1
+Gadiformes,"Cods, hakes, haddocks",Haddock,"Other, Mixed, or Unknown",1236,5125.28,0.344064931,0.043084412,1
+Gadiformes,"Cods, hakes, haddocks",Haddock,"Other, Mixed, or Unknown",1400,5805.333333,0.344064931,0.043084412,1
+Gadiformes,"Cods, hakes, haddocks",Haddock,Surrounding Nets,290,1202.533333,0.11077084,0.043084412,1
+Gadiformes,"Cods, hakes, haddocks",Ling,Bottom Trawls,363,1505.24,0.18374252,0.00483056,1
+Gadiformes,"Cods, hakes, haddocks",Ling,Midwater Trawls,593,2458.973333,1.12E-05,0.00483056,1
+Gadiformes,"Cods, hakes, haddocks",Ling,"Other, Mixed, or Unknown",365,1513.533333,0.069424179,0.00483056,1
+Gadiformes,"Cods, hakes, haddocks",Norway pout,"Other, Mixed, or Unknown",118,489.3066667,0.008080718,0.006707809,1
+Gadiformes,"Cods, hakes, haddocks",Pacific cod,Long lines,410,1700.133333,0.008150872,0.051683156,1
+Gadiformes,"Cods, hakes, haddocks",Pollack,Bottom Trawls,963,3993.24,0.423479293,0.00096692,1
+Gadiformes,"Cods, hakes, haddocks",Pollack,Gillnets and Entangling Nets,297,1231.56,0.077792588,0.00096692,1
+Gadiformes,"Cods, hakes, haddocks",Pollack,Long lines,396,1642.08,0.088684213,0.00096692,1
+Gadiformes,"Cods, hakes, haddocks",Pollack,"Other, Mixed, or Unknown",306,1268.88,0.289215072,0.00096692,1
+Gadiformes,"Cods, hakes, haddocks",Red codling,Midwater Trawls,302,1252.293333,0,0.0007711,1
+Gadiformes,"Cods, hakes, haddocks",Red hake,Bottom Trawls,631,2616.546667,0.449001334,0.000126092,1
+Gadiformes,"Cods, hakes, haddocks",Roughhead grenadier,"Other, Mixed, or Unknown",447,1853.56,0.351040829,0.000235641,1
+Gadiformes,"Cods, hakes, haddocks",Roundnose grenadier,"Other, Mixed, or Unknown",494,2048.453333,0.682209588,0.000499383,1
+Gadiformes,"Cods, hakes, haddocks",Saithe(=Pollock),Bottom Trawls,419,1737.453333,0.503739384,0.039071207,1
+Gadiformes,"Cods, hakes, haddocks",Saithe(=Pollock),Bottom Trawls,434,1799.653333,0.503739384,0.039071207,1
+Gadiformes,"Cods, hakes, haddocks",Saithe(=Pollock),Bottom Trawls,438,1816.24,0.503739384,0.039071207,1
+Gadiformes,"Cods, hakes, haddocks",Saithe(=Pollock),Bottom Trawls,450,1866,0.503739384,0.039071207,1
+Gadiformes,"Cods, hakes, haddocks",Saithe(=Pollock),Bottom Trawls,453,1878.44,0.503739384,0.039071207,1
+Gadiformes,"Cods, hakes, haddocks",Saithe(=Pollock),Bottom Trawls,472,1957.226667,0.503739384,0.039071207,1
+Gadiformes,"Cods, hakes, haddocks",Saithe(=Pollock),"Other, Mixed, or Unknown",435,1803.8,0.137614827,0.039071207,1
+Gadiformes,"Cods, hakes, haddocks",Saithe(=Pollock),"Other, Mixed, or Unknown",1330,5515.066667,0.137614827,0.039071207,1
+Gadiformes,"Cods, hakes, haddocks",Saithe(=Pollock),"Other, Mixed, or Unknown",1520,6302.933333,0.137614827,0.039071207,1
+Gadiformes,"Cods, hakes, haddocks",Saithe(=Pollock),"Other, Mixed, or Unknown",1578,6543.44,0.137614827,0.039071207,1
+Gadiformes,"Cods, hakes, haddocks",Saithe(=Pollock),"Other, Mixed, or Unknown",1789,7418.386667,0.137614827,0.039071207,1
+Gadiformes,"Cods, hakes, haddocks",Saithe(=Pollock),Surrounding Nets,290,1202.533333,0.179479125,0.039071207,1
+Gadiformes,"Cods, hakes, haddocks",Silver hake,Bottom Trawls,152,630.2933333,0.60196827,0.001912173,1
+Gadiformes,"Cods, hakes, haddocks",Silver hake,Bottom Trawls,454,1882.586667,0.60196827,0.001912173,1
+Gadiformes,"Cods, hakes, haddocks",Silver hake,Bottom Trawls,631,2616.546667,0.60196827,0.001912173,1
+Gadiformes,"Cods, hakes, haddocks",Southern blue whiting,Midwater Trawls,207,858.36,0.133998802,0.01340066,1
+Gadiformes,"Cods, hakes, haddocks",Southern blue whiting,Midwater Trawls,270,1119.6,0.133998802,0.01340066,1
+Gadiformes,"Cods, hakes, haddocks",Southern hake,Midwater Trawls,221,916.4133333,0,0.003520364,1
+Gadiformes,"Cods, hakes, haddocks",White hake,Bottom Trawls,963,3993.24,0.44142542,0.000482727,1
+Gadiformes,"Cods, hakes, haddocks",White hake,Gillnets and Entangling Nets,297,1231.56,0.154648866,0.000482727,1
+Gadiformes,"Cods, hakes, haddocks",White hake,Long lines,396,1642.08,0.038708238,0.000482727,1
+Gadiformes,"Cods, hakes, haddocks",Whiting,"Other, Mixed, or Unknown",471,1953.08,0.104421848,0.007561662,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Atlantic wolffish,"Other, Mixed, or Unknown",400,1658.666667,0.223458653,0.00422693,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Beaked redfish,"Other, Mixed, or Unknown",565,2342.866667,0.534819675,0.018615964,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Black oreo,Midwater Trawls,207,858.36,0,4.70E-06,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Blackthroat seaperch,Surrounding Nets,777,3221.96,0,0.000750154,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Blackthroat seaperch,Surrounding Nets,800,3317.333333,0,0.000750154,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Blackthroat seaperch,Surrounding Nets,804,3333.92,0,0.000750154,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Blue moki,Midwater Trawls,522,2164.56,0.029447583,,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Bluenose warehou,Surrounding Nets,265,1098.866667,0,0.000691355,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Bluenose warehou,Surrounding Nets,314,1302.053333,0,0.000691355,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Bluenose warehou,Surrounding Nets,343,1422.306667,0,0.000691355,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Bluenose warehou,Surrounding Nets,357,1480.36,0,0.000691355,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Bluenose warehou,Surrounding Nets,387,1604.76,0,0.000691355,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Bluenose warehou,Surrounding Nets,398,1650.373333,0,0.000691355,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Bluenose warehou,Surrounding Nets,429,1778.92,0,0.000691355,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Bluenose warehou,Surrounding Nets,495,2052.6,0,0.000691355,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Bluenose warehou,Surrounding Nets,496,2056.746667,0,0.000691355,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Common warehou,Midwater Trawls,240,995.2,0,0.001106976,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Conger eel,Midwater Trawls,489,2027.72,0.029447583,,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",European conger,Hooks and Lines,1178,4884.773333,0.179662677,0.011713976,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",European conger,Hooks and Lines,1399,5801.186667,0.179662677,0.011713976,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",European conger,Hooks and Lines,1635,6779.8,0.179662677,0.011713976,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",European conger,Hooks and Lines,2092,8674.826667,0.179662677,0.011713976,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Giant stargazer,Midwater Trawls,276,1144.48,0,0.001093977,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,Bottom Trawls,236,978.6133333,0.856628562,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,Bottom Trawls,267,1107.16,0.856628562,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,Bottom Trawls,284,1177.653333,0.856628562,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,Bottom Trawls,313,1297.906667,0.856628562,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,Bottom Trawls,334,1384.986667,0.856628562,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,Bottom Trawls,426,1766.48,0.856628562,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,Bottom Trawls,442,1832.826667,0.856628562,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,Bottom Trawls,505,2094.066667,0.856628562,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,Bottom Trawls,508,2106.506667,0.856628562,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,Bottom Trawls,519,2152.12,0.856628562,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,Bottom Trawls,560,2322.133333,0.856628562,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,Midwater Trawls,413,1712.573333,0.000790751,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Golden redfish,"Other, Mixed, or Unknown",435,1803.8,0.018953712,0.017039919,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Hapuku wreckfish,Midwater Trawls,593,2458.973333,9.10E-07,0.000138137,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",John dory,Midwater Trawls,1062,4403.76,0.000958953,0.008070782,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Bottom Trawls,389,1613.053333,0.563600421,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Bottom Trawls,479,1986.253333,0.563600421,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Bottom Trawls,536,2222.613333,0.563600421,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Bottom Trawls,992,4113.493333,0.563600421,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Bottom Trawls,1011,4192.28,0.563600421,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Bottom Trawls,1106,4586.213333,0.563600421,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Hooks and Lines,1593,6605.64,0.017292527,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Hooks and Lines,1691,7012.013333,0.017292527,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Hooks and Lines,1981,8214.546667,0.017292527,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Long lines,2596,10764.74667,0.1397114,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Long lines,2649,10984.52,0.1397114,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Long lines,2747,11390.89333,0.1397114,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,"Other, Mixed, or Unknown",426,1766.48,0.081471296,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,"Other, Mixed, or Unknown",559,2317.986667,0.081471296,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,"Other, Mixed, or Unknown",570,2363.6,0.081471296,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,"Other, Mixed, or Unknown",800,3317.333333,0.081471296,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,"Other, Mixed, or Unknown",894,3707.12,0.081471296,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,"Other, Mixed, or Unknown",917,3802.493333,0.081471296,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Surrounding Nets,389,1613.053333,0.066980537,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Surrounding Nets,483,2002.84,0.066980537,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Largehead hairtail,Surrounding Nets,532,2206.026667,0.066980537,0.43641765,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Lumpfish(=Lumpsucker),"Other, Mixed, or Unknown",118,489.3066667,0.022024691,0.005046684,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Monkfishes,Bottom Trawls,985,4084.466667,0.161753764,0.00974541,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Monkfishes,Dredges,445,1845.266667,0.017888176,0.00974541,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Monkfishes,Gillnets and Entangling Nets,315,1306.2,0.537348678,0.00974541,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Monkfishes,Gillnets and Entangling Nets,677,2807.293333,0.537348678,0.00974541,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Northern wolffish,"Other, Mixed, or Unknown",388,1608.906667,0.999732045,0.002189049,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Orange roughy,Bottom Trawls,587,2434.093333,0.863741917,0.003031565,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Orange roughy,Midwater Trawls,443,1836.973333,0,0.003031565,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Orange roughy,Midwater Trawls,683,2832.173333,0,0.003031565,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Orange roughy,Midwater Trawls,867,3595.16,0,0.003031565,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Orange roughy,Midwater Trawls,883,3661.506667,0,0.003031565,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Orange roughy,Midwater Trawls,960,3980.8,0,0.003031565,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Orange roughy,Midwater Trawls,1012,4196.426667,0,0.003031565,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Orange roughy,Midwater Trawls,1080,4478.4,0,0.003031565,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Oreo dories nei,Midwater Trawls,306,1268.88,0,0.004744852,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Pink cusk-eel,Surrounding Nets,434,1799.653333,0,0.012466232,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Pink cusk-eel,Surrounding Nets,497,2060.893333,0,0.012466232,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Porae,Midwater Trawls,242,1003.493333,0,0.002223932,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Rubyfish,Midwater Trawls,367,1521.826667,0,0.000182363,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Silver gemfish,Midwater Trawls,238,986.9066667,0,0.000116124,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Silver warehou,Midwater Trawls,231,957.88,0,0.003337407,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Spotted stargazer,Midwater Trawls,519,2152.12,0.029447583,,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Spotted wolffish,"Other, Mixed, or Unknown",365,1513.533333,0.949101549,0.002563844,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",Tarakihi,Midwater Trawls,446,1849.413333,0,0.000203255,1
+"Jacks, mullets, sauries","Jacks, mullets, sauries",White warehou,Midwater Trawls,599,2483.853333,0,0.000593194,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Albacore,Hooks and Lines,1107,4590.36,0.722968838,0.007736384,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Albacore,Hooks and Lines,1485,6157.8,0.722968838,0.007736384,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Albacore,Long lines,302,1252.293333,0.040327765,0.007736384,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Albacore,Long lines,884,3665.653333,0.040327765,0.007736384,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Albacore,Long lines,903,3744.44,0.040327765,0.007736384,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Albacore,Long lines,1135,4706.466667,0.040327765,0.007736384,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Albacore,Midwater Trawls,1649,6837.853333,0,0.007736384,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Albacore,"Other, Mixed, or Unknown",862,3574.426667,0.123212643,0.007736384,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Albacore,"Other, Mixed, or Unknown",915,3794.2,0.123212643,0.007736384,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Albacore,"Other, Mixed, or Unknown",1657,6871.026667,0.123212643,0.007736384,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Atlantic bluefin tuna,Hooks and Lines,1080,4478.4,0.093579438,0.001984477,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Atlantic bluefin tuna,Hooks and Lines,1136,4710.613333,0.093579438,0.001984477,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Bigeye tuna,Long lines,1176,4876.48,0.022882833,0.004937624,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Bigeye tuna,Long lines,2024,8392.853333,0.022882833,0.004937624,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Mackerels,Surrounding Nets,149,617.8533333,0.847827184,0.16715087,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Mackerels,Surrounding Nets,162,671.76,0.847827184,0.16715087,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Skipjack tuna,Surrounding Nets,195,808.6,0.080572415,0.039492078,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Skipjack tuna,Surrounding Nets,354,1467.92,0.080572415,0.039492078,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Skipjack tuna,Surrounding Nets,373,1546.706667,0.080572415,0.039492078,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Skipjack tuna,Surrounding Nets,442,1832.826667,0.080572415,0.039492078,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Skipjack tuna,Surrounding Nets,454,1882.586667,0.080572415,0.039492078,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Skipjack tuna,Surrounding Nets,527,2185.293333,0.080572415,0.039492078,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Skipjack tuna,Surrounding Nets,797,3304.893333,0.080572415,0.039492078,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Skipjack tuna,Surrounding Nets,868,3599.306667,0.080572415,0.039492078,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Swordfish,Hooks and Lines,570,2363.6,0.419116189,0.005170513,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Swordfish,Hooks and Lines,1344,5573.12,0.419116189,0.005170513,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Swordfish,Hooks and Lines,1388,5755.573333,0.419116189,0.005170513,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Swordfish,Hooks and Lines,1611,6680.28,0.419116189,0.005170513,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Swordfish,Hooks and Lines,1695,7028.6,0.419116189,0.005170513,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Swordfish,Hooks and Lines,1867,7741.826667,0.419116189,0.005170513,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Swordfish,Hooks and Lines,2043,8471.64,0.419116189,0.005170513,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Swordfish,Hooks and Lines,2705,11216.73333,0.419116189,0.005170513,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Swordfish,Hooks and Lines,3478,14422.10667,0.419116189,0.005170513,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Swordfish,Long lines,1740,7215.2,0.010269603,0.005170513,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Swordfish,Long lines,2678,11104.77333,0.010269603,0.005170513,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Tuna,Long lines,106,439.5466667,0.000290789,0.003394255,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Tuna,Long lines,4985,20671.13333,0.000290789,0.003394255,1
+Large pelagic fishes,"Tunas, bonitos, billfishes","Tunas, bonitos, billfishes",Gillnets and Entangling Nets,683,2832.173333,0.035983029,0.018805507,1
+Large pelagic fishes,"Tunas, bonitos, billfishes","Tunas, bonitos, billfishes",Long lines,1986,8235.28,0.003522865,0.018805507,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,937,3885.426667,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,994,4121.786667,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,1012,4196.426667,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,1027,4258.626667,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,1030,4271.066667,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,1216,5042.346667,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,1394,5780.453333,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,1420,5888.266667,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,1526,6327.813333,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,1583,6564.173333,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,1624,6734.186667,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,1642,6808.826667,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,1826,7571.813333,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,1884,7812.32,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,2024,8392.853333,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,2199,9118.52,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,2425,10055.66667,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,2476,10267.14667,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Long lines,3300,13684,0.021054384,0.070650942,1
+Large pelagic fishes,"Tunas, bonitos, billfishes",Yellowfin tuna,Surrounding Nets,433,1795.506667,0.058551958,0.070650942,1
+Lobsters,"Lobsters, spiny-rock lobsters",American lobster,Traps and Lift Nets,991,4109.346667,0.978935532,0.073485218,1
+Lobsters,"Lobsters, spiny-rock lobsters",American lobster,Traps and Lift Nets,1026,4254.48,0.978935532,0.073485218,1
+Lobsters,"Lobsters, spiny-rock lobsters",European lobster,"Other, Mixed, or Unknown",306,1268.88,0.706647367,0.002621861,1
+Lobsters,"Lobsters, spiny-rock lobsters","Lobsters, spiny-rock lobsters",Midwater Trawls,2169,8994.12,1.40E-05,,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,1010,4188.133333,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,1010,4188.133333,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,1018,4221.306667,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,1038,4304.24,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,1092,4528.16,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,1190,4934.533333,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,1222,5067.226667,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,3400,14098.66667,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,3400,14098.66667,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,3500,14513.33333,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,3700,15342.66667,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,4000,16586.66667,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,4000,16586.66667,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,4119,17080.12,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,5200,21562.66667,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,5500,22806.66667,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,5600,23221.33333,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,6200,25709.33333,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,6500,26953.33333,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,6700,27782.66667,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,6900,28612,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,8700,36076,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,9500,39393.33333,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,10100,41881.33333,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,11200,46442.66667,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,12800,53077.33333,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,13100,54321.33333,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Bottom Trawls,17300,71737.33333,0.792576523,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,"Other, Mixed, or Unknown",879,3644.92,0.070173816,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,"Other, Mixed, or Unknown",1177,4880.626667,0.070173816,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,"Other, Mixed, or Unknown",1224,5075.52,0.070173816,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Norway lobster,Traps and Lift Nets,2156,8940.213333,0.105160509,0.028606147,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,1329,5510.92,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,1722,7140.56,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,2333,9674.173333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,2388,9902.24,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,2436,10101.28,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,2438,10109.57333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,2482,10292.02667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,2518,10441.30667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,2519,10445.45333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,2575,10677.66667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,2607,10810.36,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,2707,11225.02667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,2710,11237.46667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,2889,11979.72,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,3058,12680.50667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,3067,12717.82667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,3096,12838.08,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,3219,13348.12,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,3330,13808.4,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,3373,13986.70667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,3557,14749.69333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,3572,14811.89333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,3631,15056.54667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,3695,15321.93333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,4077,16905.96,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,4106,17026.21333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,4362,18087.76,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,4532,18792.69333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,4731,19617.88,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,5052,20948.96,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,5422,22483.22667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,5453,22611.77333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,5672,23519.89333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,5815,24112.86667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,5899,24461.18667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,5970,24755.6,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,6016,24946.34667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,6271,26003.74667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,6896,28595.41333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,7187,29802.09333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,8336,34566.61333,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,8379,34744.92,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,9097,37722.22667,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,9294,38539.12,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Red rock lobster,Traps and Lift Nets,9474,39285.52,0.767321156,0.002806002,1
+Lobsters,"Lobsters, spiny-rock lobsters",Spiny lobsters nei,Midwater Trawls,1165,4830.866667,8.98E-06,0.020596219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,846,3508.08,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,941,3902.013333,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,1071,4441.08,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,1082,4486.693333,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,1115,4623.533333,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,1137,4714.76,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,1145,4747.933333,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,1161,4814.28,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,1225,5079.666667,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,1229,5096.253333,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,1247,5170.893333,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,1252,5191.626667,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,1296,5374.08,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Blue swimming crab,Traps and Lift Nets,1614,6692.72,0.107624659,0.148542219,1
+Lobsters,"Sea-spiders, crabs",Edible crab,Hooks and Lines,47,194.8933333,0.000137105,0.021615413,1
+Lobsters,"Sea-spiders, crabs",Edible crab,Hooks and Lines,2015,8355.533333,0.000137105,0.021615413,1
+Lobsters,"Sea-spiders, crabs",Edible crab,"Other, Mixed, or Unknown",153,634.44,0.055523318,0.021615413,1
+Lobsters,"Sea-spiders, crabs",Edible crab,Traps and Lift Nets,334,1384.986667,0.092373349,0.021615413,1
+Lobsters,"Sea-spiders, crabs",Edible crab,Traps and Lift Nets,508,2106.506667,0.092373349,0.021615413,1
+Lobsters,"Sea-spiders, crabs",Edible crab,Traps and Lift Nets,527,2185.293333,0.092373349,0.021615413,1
+Lobsters,"Sea-spiders, crabs",Edible crab,Traps and Lift Nets,537,2226.76,0.092373349,0.021615413,1
+Lobsters,"Sea-spiders, crabs",Edible crab,Traps and Lift Nets,719,2981.453333,0.092373349,0.021615413,1
+Lobsters,"Sea-spiders, crabs",Edible crab,Traps and Lift Nets,833,3454.173333,0.092373349,0.021615413,1
+Lobsters,"Sea-spiders, crabs",Edible crab,Traps and Lift Nets,1056,4378.88,0.092373349,0.021615413,1
+Lobsters,"Sea-spiders, crabs",Queen crab,Traps and Lift Nets,331,1372.546667,0.66859214,0.050986482,1
+Lobsters,"Sea-spiders, crabs","Swimming crabs, etc. nei","Other, Mixed, or Unknown",1038,4304.24,0.409737309,0.031728558,1
+Lobsters,"Sea-spiders, crabs","Swimming crabs, etc. nei","Other, Mixed, or Unknown",1087,4507.426667,0.409737309,0.031728558,1
+Lobsters,"Sea-spiders, crabs","Swimming crabs, etc. nei","Other, Mixed, or Unknown",1136,4710.613333,0.409737309,0.031728558,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Argentine croaker,"Other, Mixed, or Unknown",410,1700.133333,0.001812103,0.001608317,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Australian salmon,Midwater Trawls,1495,6199.266667,2.69E-07,0.000260156,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Australian salmon,Surrounding Nets,62,257.0933333,0.281033451,0.000260156,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Australian salmon,Surrounding Nets,65,269.5333333,0.281033451,0.000260156,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Black seabass,Bottom Trawls,1457,6041.693333,0.098452869,0.000260135,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Black seabass,Gillnets and Entangling Nets,311,1289.613333,0.001840076,0.000260135,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Black seabass,Traps and Lift Nets,921,3819.08,0.169460324,0.000260135,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Bogue,"Other, Mixed, or Unknown",669,2774.12,0.187916904,0.005290267,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Bogue,"Other, Mixed, or Unknown",1155,4789.4,0.187916904,0.005290267,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Bogue,"Other, Mixed, or Unknown",9774,40529.52,0.187916904,0.005290267,1
+"Redfishes, basses, congers","Redfishes, basses, congers","Cardinalfishes, etc. nei",Midwater Trawls,584,2421.653333,0,0.004055561,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Flathead grey mullet,Hooks and Lines,549,2276.52,0.010740804,0.015841352,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Flatheads nei,Surrounding Nets,254,1053.253333,0.014557597,0.007084765,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Flatheads nei,Surrounding Nets,283,1173.506667,0.014557597,0.007084765,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Flatheads nei,Surrounding Nets,287,1190.093333,0.014557597,0.007084765,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Flatheads nei,Surrounding Nets,380,1575.733333,0.014557597,0.007084765,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Flatheads nei,Surrounding Nets,482,1998.693333,0.014557597,0.007084765,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Lesser sand-eel,Midwater Trawls,95,393.9333333,0.005161078,,0
+"Redfishes, basses, congers","Redfishes, basses, congers",New Zealand blue cod,Midwater Trawls,1402,5813.626667,0,0.000254031,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Ocean pout,Bottom Trawls,631,2616.546667,0.000803242,2.18E-07,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Redfishes,Bottom Trawls,963,3993.24,0.655634822,0.005184896,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Redfishes,Gillnets and Entangling Nets,297,1231.56,0.064046618,0.005184896,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Redfishes,Long lines,396,1642.08,0.028249766,0.005184896,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Sand eel,Midwater Trawls,55,228.0666667,0.005161078,,0
+"Redfishes, basses, congers","Redfishes, basses, congers",Sand eel,Midwater Trawls,83,344.1733333,0.005161078,,0
+"Redfishes, basses, congers","Redfishes, basses, congers",Sand eel,Midwater Trawls,179,742.2533333,0.005161078,,0
+"Redfishes, basses, congers","Redfishes, basses, congers",Sand eel,Midwater Trawls,204,845.92,0.005161078,,0
+"Redfishes, basses, congers","Redfishes, basses, congers",Sand eel,Midwater Trawls,243,1007.64,0.005161078,,0
+"Redfishes, basses, congers","Redfishes, basses, congers",Scup,Bottom Trawls,579,2400.92,0.239299876,0.000862806,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Seabreams (Pagrus spp),Bottom Trawls,1319,5469.453333,0.229251616,0.001889622,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Small sandeel,Surrounding Nets,59,244.6533333,0.140551044,,0
+"Redfishes, basses, congers","Redfishes, basses, congers",Small sandeel,Surrounding Nets,119,493.4533333,0.140551044,,0
+"Redfishes, basses, congers","Redfishes, basses, congers","Snappers, jobfishes nei",Bottom Trawls,665,2757.533333,0.148546606,0.010625316,1
+"Redfishes, basses, congers","Redfishes, basses, congers","Snappers, jobfishes nei",Midwater Trawls,522,2164.56,0.001437224,0.010625316,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Threadfin breams,Bottom Trawls,671,2782.413333,0.418981187,0.050921731,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Threadfin breams,Bottom Trawls,754,3126.586667,0.418981187,0.050921731,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Threadfin breams,Bottom Trawls,874,3624.186667,0.418981187,0.050921731,1
+"Redfishes, basses, congers","Redfishes, basses, congers",Velvet leatherjacket,Midwater Trawls,232,962.0266667,0,5.32E-05,1
+Salmonids,"Salmons, trouts, smelts",Coho(=Silver) salmon,Hooks and Lines,735,3047.8,0.132937143,0.034249824,1
+Salmonids,"Salmons, trouts, smelts",Pink(=Humpback) salmon,Surrounding Nets,56,232.2133333,0.13088866,0.4229128,1
+Salmonids,"Salmons, trouts, smelts",Pink(=Humpback) salmon,Surrounding Nets,304,1260.586667,0.13088866,0.4229128,1
+Salmonids,"Salmons, trouts, smelts",Sockeye(=Red) salmon,Gillnets and Entangling Nets,785,3255.133333,0.429080533,0.12266092,1
+Salmonids,"Salmons, trouts, smelts",Sockeye(=Red) salmon,Gillnets and Entangling Nets,986,4088.613333,0.429080533,0.12266092,1
+Salmonids,"Salmons, trouts, smelts",Sockeye(=Red) salmon,Hooks and Lines,935,3877.133333,0.276235765,0.12266092,1
+Salmonids,"Salmons, trouts, smelts",Sockeye(=Red) salmon,Surrounding Nets,513,2127.24,0.274162546,0.12266092,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,1300,5390.666667,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,1351,5602.146667,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,1624,6734.186667,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,1662,6891.76,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,2338,9694.906667,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,2382,9877.36,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,2559,10611.32,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,2602,10789.62667,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,2680,11113.06667,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,2804,11627.25333,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,3029,12560.25333,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,3118,12929.30667,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,3282,13609.36,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,3307,13713.02667,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,3503,14525.77333,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,3571,14807.74667,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Banana prawn,Bottom Trawls,3580,14845.06667,0.469798326,0.020776477,1
+Shrimps,"Shrimps, prawns",Brown tiger prawn,Bottom Trawls,4057,16823.02667,0.735134598,,1
+Shrimps,"Shrimps, prawns",Brown tiger prawn,Bottom Trawls,4664,19340.05333,0.735134598,,1
+Shrimps,"Shrimps, prawns",Brown tiger prawn,Bottom Trawls,5114,21206.05333,0.735134598,,1
+Shrimps,"Shrimps, prawns",Common shrimp,Bottom Trawls,597,2475.56,0.984864976,0.032613175,1
+Shrimps,"Shrimps, prawns",Common shrimp,Bottom Trawls,750,3110,0.984864976,0.032613175,1
+Shrimps,"Shrimps, prawns",Common shrimp,Bottom Trawls,861,3570.28,0.984864976,0.032613175,1
+Shrimps,"Shrimps, prawns",Common shrimp,Bottom Trawls,921,3819.08,0.984864976,0.032613175,1
+Shrimps,"Shrimps, prawns",Common shrimp,Bottom Trawls,958,3972.506667,0.984864976,0.032613175,1
+Shrimps,"Shrimps, prawns",Common shrimp,Bottom Trawls,1002,4154.96,0.984864976,0.032613175,1
+Shrimps,"Shrimps, prawns",Common shrimp,Bottom Trawls,1118,4635.973333,0.984864976,0.032613175,1
+Shrimps,"Shrimps, prawns",Common shrimp,Bottom Trawls,1312,5440.426667,0.984864976,0.032613175,1
+Shrimps,"Shrimps, prawns",Common shrimp,Bottom Trawls,1768,7331.306667,0.984864976,0.032613175,1
+Shrimps,"Shrimps, prawns",Eastern king prawn,Bottom Trawls,4147,17196.22667,0.735134598,,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,3871,16051.74667,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,4000,16586.66667,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,4021,16673.74667,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,4506,18684.88,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,4748,19688.37333,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,4841,20074.01333,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,4897,20306.22667,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,5015,20795.53333,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,5440,22557.86667,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,5446,22582.74667,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,5626,23329.14667,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,5683,23565.50667,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,5721,23723.08,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,6044,25062.45333,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,6225,25813,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Endeavour shrimp,Bottom Trawls,7965,33028.2,1,5.07E-05,1
+Shrimps,"Shrimps, prawns",Green tiger prawn,Bottom Trawls,6920,28694.93333,0.484798447,0.008069131,1
+Shrimps,"Shrimps, prawns",Green tiger prawn,Bottom Trawls,7091,29404.01333,0.484798447,0.008069131,1
+Shrimps,"Shrimps, prawns",Green tiger prawn,Bottom Trawls,8006,33198.21333,0.484798447,0.008069131,1
+Shrimps,"Shrimps, prawns",Green tiger prawn,Bottom Trawls,8413,34885.90667,0.484798447,0.008069131,1
+Shrimps,"Shrimps, prawns",Green tiger prawn,Bottom Trawls,9239,38311.05333,0.484798447,0.008069131,1
+Shrimps,"Shrimps, prawns",Green tiger prawn,Bottom Trawls,9900,41052,0.484798447,0.008069131,1
+Shrimps,"Shrimps, prawns",Green tiger prawn,Bottom Trawls,10131,42009.88,0.484798447,0.008069131,1
+Shrimps,"Shrimps, prawns",Green tiger prawn,Bottom Trawls,10158,42121.84,0.484798447,0.008069131,1
+Shrimps,"Shrimps, prawns",Green tiger prawn,Bottom Trawls,10886,45140.61333,0.484798447,0.008069131,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,531,2201.88,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,625,2591.666667,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,724,3002.186667,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,738,3060.24,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,742,3076.826667,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,761,3155.613333,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,827,3429.293333,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,893,3702.973333,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,902,3740.293333,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,942,3906.16,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,944,3914.453333,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,980,4063.733333,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,982,4072.026667,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,996,4130.08,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1000,4146.666667,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1003,4159.106667,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1118,4635.973333,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1165,4830.866667,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1176,4876.48,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1267,5253.826667,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1309,5427.986667,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1354,5614.586667,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1416,5871.68,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1440,5971.2,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1500,6220,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1530,6344.4,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,1602,6642.96,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,Bottom Trawls,2342,9711.493333,0.911920942,0.096789724,1
+Shrimps,"Shrimps, prawns",Northern prawn,"Other, Mixed, or Unknown",1224,5075.52,0.002407523,0.096789724,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,1300,5390.666667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,1300,5390.666667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,1300,5390.666667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,1400,5805.333333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,1500,6220,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,1500,6220,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,1500,6220,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,1600,6634.666667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,1700,7049.333333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,1800,7464,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,1800,7464,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,1800,7464,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2100,8708,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2100,8708,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2100,8708,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2200,9122.666667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2300,9537.333333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2300,9537.333333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2300,9537.333333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2500,10366.66667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2500,10366.66667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2800,11610.66667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2800,11610.66667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2800,11610.66667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,2900,12025.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3000,12440,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3000,12440,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3000,12440,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3100,12854.66667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3100,12854.66667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3200,13269.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3200,13269.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3200,13269.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3400,14098.66667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3400,14098.66667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3500,14513.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3500,14513.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3500,14513.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3500,14513.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3600,14928,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3600,14928,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3600,14928,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3700,15342.66667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3700,15342.66667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3700,15342.66667,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3800,15757.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,3900,16172,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,4200,17416,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,4400,18245.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,4400,18245.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,4400,18245.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,4700,19489.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,5400,22392,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Pandalus shrimps nei,Bottom Trawls,7100,29441.33333,0.922339763,0.001806255,1
+Shrimps,"Shrimps, prawns",Penaeus shrimps nei,Bottom Trawls,1810,7505.466667,0.477455269,0.038359624,1
+Shrimps,"Shrimps, prawns",Penaeus shrimps nei,Bottom Trawls,1979,8206.253333,0.477455269,0.038359624,1
+Shrimps,"Shrimps, prawns",Penaeus shrimps nei,Bottom Trawls,2111,8753.613333,0.477455269,0.038359624,1
+Shrimps,"Shrimps, prawns",Penaeus shrimps nei,Bottom Trawls,2262,9379.76,0.477455269,0.038359624,1
+Shrimps,"Shrimps, prawns",Shrimps,Midwater Trawls,1035,4291.8,0,0.011894898,1
+Shrimps,"Shrimps, prawns","Shrimps, prawns",Bottom Trawls,549,2276.52,0.735134598,,1
+Shrimps,"Shrimps, prawns","Shrimps, prawns",Bottom Trawls,4209,17453.32,0.735134598,,1
+Shrimps,"Shrimps, prawns","Shrimps, prawns",Bottom Trawls,4328,17946.77333,0.735134598,,1
+Shrimps,"Shrimps, prawns","Shrimps, prawns",Bottom Trawls,4416,18311.68,0.735134598,,1
+Shrimps,"Shrimps, prawns","Shrimps, prawns",Bottom Trawls,4456,18477.54667,0.735134598,,1
+Shrimps,"Shrimps, prawns","Shrimps, prawns",Bottom Trawls,4650,19282,0.735134598,,1
+Shrimps,"Shrimps, prawns","Shrimps, prawns",Bottom Trawls,5099,21143.85333,0.735134598,,1
+Shrimps,"Shrimps, prawns","Shrimps, prawns",Bottom Trawls,5605,23242.06667,0.735134598,,1
+Shrimps,"Shrimps, prawns","Shrimps, prawns",Bottom Trawls,6433,26675.50667,0.735134598,,1
+Shrimps,"Shrimps, prawns","Shrimps, prawns",Bottom Trawls,7073,29329.37333,0.735134598,,1
+Shrimps,"Shrimps, prawns","Shrimps, prawns",Bottom Trawls,7787,32290.09333,0.735134598,,1
+Shrimps,"Shrimps, prawns","Shrimps, prawns",Midwater Trawls,132,547.36,0.000109484,,1
+Shrimps,"Shrimps, prawns",Southern pink shrimp,Bottom Trawls,2600,10781.33333,0.406876747,0.004538102,1
+Shrimps,"Shrimps, prawns",Southern pink shrimp,Gillnets and Entangling Nets,630,2612.4,0.147230838,0.004538102,1
+Shrimps,"Shrimps, prawns",Southern pink shrimp,Midwater Trawls,0,0,0,0.004538102,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1173,4864.04,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1266,5249.68,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1435,5950.466667,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1473,6108.04,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1485,6157.8,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1591,6597.346667,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1594,6609.786667,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1597,6622.226667,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1644,6817.12,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1694,7024.453333,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1843,7642.306667,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1853,7683.773333,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1866,7737.68,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1974,8185.52,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,1996,8276.746667,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,2016,8359.68,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,2065,8562.866667,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,2261,9375.613333,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,2667,11059.16,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,2687,11142.09333,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,2792,11577.49333,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,2798,11602.37333,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,2979,12352.92,0.52826701,0.005212912,1
+Shrimps,"Shrimps, prawns",Western king prawn,Bottom Trawls,3462,14355.76,0.52826701,0.005212912,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Anchoveta(=Peruvian anchovy),Surrounding Nets,10,41.46666667,0.961642849,0.293556281,0.05
+Small pelagic fishes,"Herrings, sardines, anchovies",Anchoveta(=Peruvian anchovy),Surrounding Nets,17,70.49333333,0.961642849,0.293556281,0.05
+Small pelagic fishes,"Herrings, sardines, anchovies",Anchoveta(=Peruvian anchovy),Surrounding Nets,17,70.49333333,0.961642849,0.293556281,0.05
+Small pelagic fishes,"Herrings, sardines, anchovies",Anchoveta(=Peruvian anchovy),Surrounding Nets,18,74.64,0.961642849,0.293556281,0.05
+Small pelagic fishes,"Herrings, sardines, anchovies",Anchoveta(=Peruvian anchovy),Surrounding Nets,18,74.64,0.961642849,0.293556281,0.05
+Small pelagic fishes,"Herrings, sardines, anchovies",Anchoveta(=Peruvian anchovy),Surrounding Nets,19,78.78666667,0.961642849,0.293556281,0.05
+Small pelagic fishes,"Herrings, sardines, anchovies",Anchoveta(=Peruvian anchovy),Surrounding Nets,19,78.78666667,0.961642849,0.293556281,0.05
+Small pelagic fishes,"Herrings, sardines, anchovies",Anchoveta(=Peruvian anchovy),Surrounding Nets,20,82.93333333,0.961642849,0.293556281,0.05
+Small pelagic fishes,"Herrings, sardines, anchovies","Anchovies, etc. nei",Surrounding Nets,69,286.12,0.683327222,0.044611926,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Bottom Trawls,91,377.3466667,0.019638622,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Bottom Trawls,377,1563.293333,0.019638622,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Midwater Trawls,75,311,0.411427588,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Midwater Trawls,78,323.44,0.411427588,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Midwater Trawls,82,340.0266667,0.411427588,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Midwater Trawls,86,356.6133333,0.411427588,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Midwater Trawls,102,422.96,0.411427588,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Midwater Trawls,102,422.96,0.411427588,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Midwater Trawls,104,431.2533333,0.411427588,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Midwater Trawls,108,447.84,0.411427588,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Midwater Trawls,110,456.1333333,0.411427588,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Midwater Trawls,118,489.3066667,0.411427588,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Midwater Trawls,147,609.56,0.411427588,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Mobile Seine,133,551.5066667,0,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Mobile Seine,159,659.32,0,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",98,406.3733333,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",103,427.1066667,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",106,439.5466667,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",118,489.3066667,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",123,510.04,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",124,514.1866667,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",132,547.36,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",137,568.0933333,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",143,592.9733333,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",145,601.2666667,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",171,709.08,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",178,738.1066667,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",179,742.2533333,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",241,999.3466667,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",248,1028.373333,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",269,1115.453333,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",290,1202.533333,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",373,1546.706667,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",483,2002.84,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,"Other, Mixed, or Unknown",500,2073.333333,0.119921091,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,8,33.17333333,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,20,82.93333333,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,21,87.08,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,22,91.22666667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,25,103.6666667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,30,124.4,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,31,128.5466667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,32,132.6933333,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,42,174.16,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,44,182.4533333,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,45,186.6,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,49,203.1866667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,52,215.6266667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,52,215.6266667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,60,248.8,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,60,248.8,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,61,252.9466667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,64,265.3866667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,66,273.68,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,76,315.1466667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,76,315.1466667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,78,323.44,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,78,323.44,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,79,327.5866667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,90,373.2,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,92,381.4933333,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,96,398.08,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,112,464.4266667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,112,464.4266667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,114,472.72,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,115,476.8666667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,126,522.48,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,153,634.44,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Surrounding Nets,298,1235.706667,0.42230697,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic herring,Traps and Lift Nets,559,2317.986667,0.004468571,0.086283778,0.7
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic menhaden,Surrounding Nets,20,82.93333333,0.894167985,0.010524371,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic menhaden,Surrounding Nets,28,116.1066667,0.894167985,0.010524371,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic menhaden,Surrounding Nets,28,116.1066667,0.894167985,0.010524371,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic menhaden,Surrounding Nets,29,120.2533333,0.894167985,0.010524371,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic menhaden,Surrounding Nets,31,128.5466667,0.894167985,0.010524371,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic menhaden,Surrounding Nets,31,128.5466667,0.894167985,0.010524371,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic menhaden,Surrounding Nets,32,132.6933333,0.894167985,0.010524371,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic menhaden,Surrounding Nets,32,132.6933333,0.894167985,0.010524371,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic menhaden,Surrounding Nets,36,149.28,0.894167985,0.010524371,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic menhaden,Surrounding Nets,38,157.5733333,0.894167985,0.010524371,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Atlantic menhaden,Surrounding Nets,42,174.16,0.894167985,0.010524371,0
+Small pelagic fishes,"Herrings, sardines, anchovies",European anchovy,Midwater Trawls,565,2342.866667,0.207393982,0.046048158,0.1
+Small pelagic fishes,"Herrings, sardines, anchovies",European anchovy,"Other, Mixed, or Unknown",455,1886.733333,0.02288412,0.046048158,0.1
+Small pelagic fishes,"Herrings, sardines, anchovies",European anchovy,"Other, Mixed, or Unknown",506,2098.213333,0.02288412,0.046048158,0.1
+Small pelagic fishes,"Herrings, sardines, anchovies",European anchovy,"Other, Mixed, or Unknown",517,2143.826667,0.02288412,0.046048158,0.1
+Small pelagic fishes,"Herrings, sardines, anchovies",European anchovy,"Other, Mixed, or Unknown",556,2305.546667,0.02288412,0.046048158,0.1
+Small pelagic fishes,"Herrings, sardines, anchovies",European anchovy,"Other, Mixed, or Unknown",560,2322.133333,0.02288412,0.046048158,0.1
+Small pelagic fishes,"Herrings, sardines, anchovies",European anchovy,"Other, Mixed, or Unknown",596,2471.413333,0.02288412,0.046048158,0.1
+Small pelagic fishes,"Herrings, sardines, anchovies",European anchovy,Surrounding Nets,70,290.2666667,0.726612889,0.046048158,0.1
+Small pelagic fishes,"Herrings, sardines, anchovies",European anchovy,Surrounding Nets,506,2098.213333,0.726612889,0.046048158,0.1
+Small pelagic fishes,"Herrings, sardines, anchovies",European pilchard(=Sardine),Gillnets and Entangling Nets,602,2496.293333,0.02372754,0.059313654,0.5
+Small pelagic fishes,"Herrings, sardines, anchovies",European pilchard(=Sardine),Surrounding Nets,90,373.2,0.244185478,0.059313654,0.5
+Small pelagic fishes,"Herrings, sardines, anchovies",European pilchard(=Sardine),Surrounding Nets,90,373.2,0.244185478,0.059313654,0.5
+Small pelagic fishes,"Herrings, sardines, anchovies",European pilchard(=Sardine),Surrounding Nets,91,377.3466667,0.244185478,0.059313654,0.5
+Small pelagic fishes,"Herrings, sardines, anchovies",European pilchard(=Sardine),Surrounding Nets,100,414.6666667,0.244185478,0.059313654,0.5
+Small pelagic fishes,"Herrings, sardines, anchovies",European pilchard(=Sardine),Surrounding Nets,100,414.6666667,0.244185478,0.059313654,0.5
+Small pelagic fishes,"Herrings, sardines, anchovies",European pilchard(=Sardine),Surrounding Nets,110,456.1333333,0.244185478,0.059313654,0.5
+Small pelagic fishes,"Herrings, sardines, anchovies",European pilchard(=Sardine),Surrounding Nets,118,489.3066667,0.244185478,0.059313654,0.5
+Small pelagic fishes,"Herrings, sardines, anchovies",European pilchard(=Sardine),Surrounding Nets,130,539.0666667,0.244185478,0.059313654,0.5
+Small pelagic fishes,"Herrings, sardines, anchovies",European pilchard(=Sardine),Surrounding Nets,140,580.5333333,0.244185478,0.059313654,0.5
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,Midwater Trawls,168,696.64,0.71288553,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,Midwater Trawls,215,891.5333333,0.71288553,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,Midwater Trawls,263,1090.573333,0.71288553,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,Midwater Trawls,268,1111.306667,0.71288553,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,Midwater Trawls,273,1132.04,0.71288553,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,Midwater Trawls,301,1248.146667,0.71288553,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,Midwater Trawls,379,1571.586667,0.71288553,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",94,389.7866667,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",113,468.5733333,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",142,588.8266667,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",163,675.9066667,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",168,696.64,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",173,717.3733333,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",221,916.4133333,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",224,928.8533333,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",233,966.1733333,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",287,1190.093333,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",399,1654.52,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",490,2031.866667,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",533,2210.173333,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",549,2276.52,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",588,2438.24,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",594,2463.12,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",701,2906.813333,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",805,3338.066667,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",897,3719.56,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",European sprat,"Other, Mixed, or Unknown",969,4018.12,0.170666495,0.027265146,0.3
+Small pelagic fishes,"Herrings, sardines, anchovies",Gulf menhaden,Surrounding Nets,34,140.9866667,0.998152847,0.023300361,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Gulf menhaden,Surrounding Nets,34,140.9866667,0.998152847,0.023300361,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Gulf menhaden,Surrounding Nets,36,149.28,0.998152847,0.023300361,0
+Small pelagic fishes,"Herrings, sardines, anchovies",Gulf menhaden,Surrounding Nets,44,182.4533333,0.998152847,0.023300361,0
+Small pelagic fishes,"Herrings, sardines, anchovies","Herrings, sardines, anchovies",Surrounding Nets,104,431.2533333,0.644556576,,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Indian oil sardine,Surrounding Nets,84,348.32,0.169572283,0.033534009,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Indian oil sardine,Surrounding Nets,121,501.7466667,0.169572283,0.033534009,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Indian oil sardine,Surrounding Nets,125,518.3333333,0.169572283,0.033534009,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Indian oil sardine,Surrounding Nets,125,518.3333333,0.169572283,0.033534009,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Indian oil sardine,Surrounding Nets,142,588.8266667,0.169572283,0.033534009,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Indian oil sardine,Surrounding Nets,150,622,0.169572283,0.033534009,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Indian oil sardine,Surrounding Nets,150,622,0.169572283,0.033534009,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Indian oil sardine,Surrounding Nets,162,671.76,0.169572283,0.033534009,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Japanese anchovy,"Other, Mixed, or Unknown",355,1472.066667,0.066881124,0.057977641,0.1
+Small pelagic fishes,"Herrings, sardines, anchovies",Japanese anchovy,"Other, Mixed, or Unknown",392,1625.493333,0.066881124,0.057977641,0.1
+Small pelagic fishes,"Herrings, sardines, anchovies",Japanese anchovy,"Other, Mixed, or Unknown",404,1675.253333,0.066881124,0.057977641,0.1
+Small pelagic fishes,"Herrings, sardines, anchovies",Pacific herring,Surrounding Nets,115,476.8666667,0.024121165,0.023880246,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Pacific herring,Surrounding Nets,160,663.4666667,0.024121165,0.023880246,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Round sardinella,"Other, Mixed, or Unknown",316,1310.346667,0.170481607,0.018363965,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Round sardinella,"Other, Mixed, or Unknown",368,1525.973333,0.170481607,0.018363965,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Sardinella,Surrounding Nets,16,66.34666667,0.501857826,0.059090937,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Sardinella,Surrounding Nets,21,87.08,0.501857826,0.059090937,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Sardinella,Surrounding Nets,26,107.8133333,0.501857826,0.059090937,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Sardinella,Surrounding Nets,36,149.28,0.501857826,0.059090937,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Sardinella,Surrounding Nets,39,161.72,0.501857826,0.059090937,1
+Small pelagic fishes,"Herrings, sardines, anchovies",Sardinella,Surrounding Nets,46,190.7466667,0.501857826,0.059090937,1
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,29,120.2533333,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,42,174.16,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,42,174.16,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,65,269.5333333,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,84,348.32,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,87,360.76,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,93,385.64,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,96,398.08,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,99,410.52,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,100,414.6666667,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,112,464.4266667,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,113,468.5733333,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,119,493.4533333,0.83751201,0.050489001,0.75
+Small pelagic fishes,"Herrings, sardines, anchovies",South American pilchard,Surrounding Nets,217,899.8266667,0.83751201,0.050489001,0.75
