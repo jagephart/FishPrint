@@ -1,6 +1,6 @@
 # Environmental performance of blue foods (Gephart et al. 2021)
 
-## Workflow of R-code to produce all results and figures:
+## Workflow of R-code to produce all results and figures (Click to enlarge):
 ![alt text](https://github.com/jagephart/FishPrint/blob/master/R-code-workflow-for-README.png)
 
 ## Data Documentation
