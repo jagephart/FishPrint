@@ -1,3 +1,4 @@
+# Author: Kelvin Gorospe
 # Create spiderplot to compare aquaculture taxa across environmental impacts
 
 rm(list=ls())

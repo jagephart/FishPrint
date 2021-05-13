@@ -1,3 +1,4 @@
+# Author: Jessica Gephart and Kelvin Gorospe
 # Bayesian analysis of marine mammal risk
 rm(list=ls())
 library(tidyverse)

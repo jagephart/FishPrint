@@ -1,3 +1,4 @@
+# Author: Kelvin Gorospe
 # PLOT FIGURE 1 (AND OTHER SI FIGURES)
 # Load model outputs individually, save to plot_grid, and create multi-panel plot
 # Remove y-axis labels for panels B, C, and F

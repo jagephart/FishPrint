@@ -1,3 +1,4 @@
+# Author: Kelvin Gorospe
 # Get Bayesian sci and taxa-level means of on-farm (non-feed) and off-farm (feed) LAND impacts 
 
 ###################### REMINDER FOR LAND: 

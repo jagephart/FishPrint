@@ -1,3 +1,4 @@
+# Author: Kelvin Gorospe
 # Calculate greenhouse gas footprint for wild caught fisheries
 
 rm(list = ls())

@@ -1,3 +1,4 @@
+# Author: Kelvin Gorospe
 # Get Bayesian sci and taxa-level means of on-farm (non-feed) and off-farm (feed) NITROGEN and PHOSPHORUS impacts 
 
 ###################### REMINDER FOR NITROGEN and PHOSPHORUS: 

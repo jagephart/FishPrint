@@ -1,3 +1,4 @@
+# Author: Kelvin Gorospe
 # Get convergence diagnostics
 
 rm(list=ls())

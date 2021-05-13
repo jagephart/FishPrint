@@ -1,4 +1,4 @@
-# Kelvin Gorospe
+# Author: Kelvin Gorospe
 # Download NOAA global evaporation dataset for evaporative water loss model 
 
 rm(list=ls())

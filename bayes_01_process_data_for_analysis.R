@@ -1,3 +1,4 @@
+# Author: Kelvin Gorospe
 # Clean compiled LCA data needed for all models
 
 rm(list = ls())
