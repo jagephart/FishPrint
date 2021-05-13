@@ -11,6 +11,7 @@ rm(list = ls())
 
 # Libraries for processing and analyses
 library(tidyverse)
+library(rstan)
 library(data.table)
 library(countrycode)
 library(bayesplot) # for mcmc_areas_ridges
@@ -29,7 +30,7 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # STEP 1: LOAD AND FORMAT DATA
 
 # Load Data
-lca_full_dat <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv"), fileEncoding="UTF-8-BOM")
+#lca_full_dat <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv"), fileEncoding="UTF-8-BOM")
 lca_full_dat <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"), fileEncoding="UTF-8-BOM")
 
 # Format data for model:
@@ -152,8 +153,8 @@ slice_where_tx <- c(0, slice_where_tx)
 
 # Choose allocation method
 #set_allocation <- "Mass"
-set_allocation <- "Gross energy content"
-#set_allocation <- "Economic"
+#set_allocation <- "Gross energy content"
+set_allocation <- "Economic"
 
 fp_dat <- read.csv(file.path(outdir, "weighted_feed_fp.csv")) %>%
   filter(Allocation == set_allocation) %>%

@@ -13,6 +13,9 @@ library(ggplot2)
 library(ggpubr)
 
 #_______________________________________________________________________________________________________________________#
+# Combine tables for on and off farm stressors
+#_______________________________________________________________________________________________________________________#
+#_______________________________________________________________________________________________________________________#
 # Load main results files and merge (Priors + Mass allocation + Edible Weight)
 #_______________________________________________________________________________________________________________________#
 
@@ -70,14 +73,14 @@ tmp <- tmp %>%
 df <- df %>%
   bind_rows(tmp) 
 
-tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/summary_Land Use_Mass-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only-Rerun/summary_Land Use_Mass-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>%
   mutate(source = "on-farm", stressor = "Land", weight = "edible", allocation = "mass") %>%
   select(taxa, full_taxa_name, stressor, source, "median" = "on_farm", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
 df <- df %>%
   bind_rows(tmp) 
 
-tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/summary_Land Use_Mass-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only-Rerun/summary_Land Use_Mass-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>%
   mutate(source = "off-farm", stressor = "Land", weight = "edible", allocation = "mass") %>%
   select(taxa, full_taxa_name, stressor, source, "median" = "off_farm", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
@@ -315,14 +318,14 @@ tmp <- tmp %>%
 df_economic_edible <- df_economic_edible %>%
   bind_rows(tmp) 
 
-tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/summary_Land Use_Economic-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only-Rerun/summary_Land Use_Economic-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>%
   mutate(source = "on-farm", stressor = "Land", weight = "edible", allocation = "economic") %>%
   select(taxa, full_taxa_name, stressor, source, "median" = "on_farm", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
 df_economic_edible <- df_economic_edible %>%
   bind_rows(tmp) 
 
-tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/summary_Land Use_Economic-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only-Rerun/summary_Land Use_Economic-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>%
   mutate(source = "off-farm", stressor = "Land", weight = "edible", allocation = "economic") %>%
   select(taxa, full_taxa_name, stressor, source, "median" = "off_farm", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
@@ -403,7 +406,6 @@ tmp <- tmp %>%
 df_economic_live <- df_economic_live %>%
   bind_rows(tmp) 
 
-
 #_______________________________________________________________________________________________________________________#
 # Write out results tables
 #_______________________________________________________________________________________________________________________#
@@ -419,8 +421,173 @@ df_all <- df %>%
   mutate(full_taxa_name = if_else(taxa == "hypoph_carp", true = "silver/bighead", false = full_taxa_name)) %>% # Fix full taxa name for hypoph/carp
   bind_rows(df_capture)
 
-write.csv(df_all, file.path(outdir, "SI_stressor_results.csv"), row.names = FALSE)
+write.csv(df_all, file.path(outdir, "SI_stressor_results_on_off_farm.csv"), row.names = FALSE)
 
+#_______________________________________________________________________________________________________________________#
+# Combine tables for total stressors (i.e., on + off farm)
+#_______________________________________________________________________________________________________________________#
+#_______________________________________________________________________________________________________________________#
+# Load main results files and merge (Priors + Mass allocation + Edible Weight)
+#_______________________________________________________________________________________________________________________#
+
+df_total <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/summary_Global warming potential_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+df_total <- df_total %>%
+  mutate(source = "total on- and off-farm", stressor = "GHG", weight = "edible", allocation = "mass") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/summary_Marine eutrophication_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "N", weight = "edible", allocation = "mass") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total <- df_total %>%
+  bind_rows(tmp) 
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/summary_Freshwater eutrophication_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "P", weight = "edible", allocation = "mass") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total <- df_total %>%
+  bind_rows(tmp) 
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/summary_Water consumption_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "Water", weight = "edible", allocation = "mass") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total <- df_total %>%
+  bind_rows(tmp) 
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only-Rerun/summary_Land Use_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "Land", weight = "edible", allocation = "mass") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total <- df_total %>%
+  bind_rows(tmp) 
+
+#_______________________________________________________________________________________________________________________#
+# Load SI results files and merge 
+# Priors + Mass allocation + Live Weight
+#_______________________________________________________________________________________________________________________#
+
+df_total_mass_live <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/GHG/summary_Global warming potential_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+df_total_mass_live <- df_total_mass_live %>%
+  mutate(source = "total on- and off-farm", stressor = "GHG", weight = "live", allocation = "mass") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Nitrogen/summary_Marine eutrophication_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "N", weight = "live", allocation = "mass") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total_mass_live <- df_total_mass_live %>%
+  bind_rows(tmp) 
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Phosphorus/summary_Freshwater eutrophication_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "P", weight = "live", allocation = "mass") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total_mass_live <- df_total_mass_live %>%
+  bind_rows(tmp) 
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Water/summary_Water consumption_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "Water", weight = "live", allocation = "mass") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total_mass_live <- df_total_mass_live %>%
+  bind_rows(tmp) 
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Land-FCR-Priors-Only/summary_Land Use_Mass-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "Land", weight = "live", allocation = "mass") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total_mass_live <- df_total_mass_live %>%
+  bind_rows(tmp) 
+
+#_______________________________________________________________________________________________________________________#
+# Load SI results files and merge 
+# Priors + Economic allocation + Edible Weight
+#_______________________________________________________________________________________________________________________#
+
+df_total_economic_edible <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/summary_Global warming potential_Economic-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+df_total_economic_edible <- df_total_economic_edible %>%
+  mutate(source = "total on- and off-farm", stressor = "GHG", weight = "edible", allocation = "economic") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/summary_Marine eutrophication_Economic-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "N", weight = "edible", allocation = "economic") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total_economic_edible <- df_total_economic_edible %>%
+  bind_rows(tmp) 
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/summary_Freshwater eutrophication_Economic-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "P", weight = "edible", allocation = "economic") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total_economic_edible <- df_total_economic_edible %>%
+  bind_rows(tmp) 
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/summary_Water consumption_Economic-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "Water", weight = "edible", allocation = "economic") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total_economic_edible <- df_total_economic_edible %>%
+  bind_rows(tmp) 
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only-Rerun/summary_Land Use_Economic-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "Land", weight = "edible", allocation = "economic") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total_economic_edible <- df_total_economic_edible %>%
+  bind_rows(tmp) 
+
+#_______________________________________________________________________________________________________________________#
+# Load SI results files and merge 
+# Priors + Economic allocation + Live Weight
+#_______________________________________________________________________________________________________________________#
+
+df_total_economic_live <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/GHG/summary_Global warming potential_Economic-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+df_total_economic_live <- df_total_economic_live %>%
+  mutate(source = "total on- and off-farm", stressor = "GHG", weight = "live", allocation = "economic") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Nitrogen/summary_Marine eutrophication_Economic-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "N", weight = "live", allocation = "economic") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total_economic_live <- df_total_economic_live %>%
+  bind_rows(tmp) 
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Phosphorus/summary_Freshwater eutrophication_Economic-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "P", weight = "live", allocation = "economic") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total_economic_live <- df_total_economic_live %>%
+  bind_rows(tmp) 
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Water/summary_Water consumption_Economic-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "Water", weight = "live", allocation = "economic") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total_economic_live <- df_total_economic_live %>%
+  bind_rows(tmp) 
+
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Land-FCR-Priors-Only/summary_Land Use_Economic-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv"))
+tmp <- tmp %>%
+  mutate(source = "total on- and off-farm", stressor = "Land", weight = "live", allocation = "economic") %>%
+  select(taxa, full_taxa_name, stressor, source, "median" = "total_stressor", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
+df_total_economic_live <- df_total_economic_live %>%
+  bind_rows(tmp) 
+
+#_______________________________________________________________________________________________________________________#
+# Write out results for total on- and off-farm stressors
+#_______________________________________________________________________________________________________________________#
+
+df_total_all <- df_total %>%
+  bind_rows(df_total_mass_live, df_total_economic_edible, df_total_economic_live) %>%
+  mutate(production = "aquaculture") %>%
+  mutate(full_taxa_name = if_else(taxa == "hypoph_carp", true = "silver/bighead", false = full_taxa_name)) %>% # Fix full taxa name for hypoph/carp
+  bind_rows(df_capture) # capture stressor source is designated as "all"
+
+write.csv(df_total_all, file.path(outdir, "SI_stressor_results_total.csv"), row.names = FALSE)
 
 #_______________________________________________________________________________________________________________________#
 # Stacked bar of impact by source
