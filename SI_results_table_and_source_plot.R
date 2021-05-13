@@ -87,104 +87,17 @@ tmp <- tmp %>%
 df <- df %>%
   bind_rows(tmp) 
 
-df_total <- df %>% 
-  group_by(taxa, full_taxa_name, stressor) %>% 
-  summarise(total = sum(median))
-#_______________________________________________________________________________________________________________________#
-# Summarize patterns for paper text
-#_______________________________________________________________________________________________________________________#
+# Capture fishery results (edible weight)
+df_capture_edible <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wild/summary_WILD-GHG-TAXA-LEVEL-WEIGHTED.csv"))
 
-# Lowest taxa across stressors
-df_total %>% 
-  group_by(stressor) %>%
-  slice_min(total, n = 4)
-
-df_total %>% 
-  group_by(stressor) %>%
-  slice_max(total, n = 3)
-
-# Stressor correlations 
-tmp <- df_total %>% 
-  pivot_wider(names_from = stressor, values_from = total)
-cor(tmp[,3:7])
-
-# Percent of on- versus off-farm 
-source_percent <- df %>%
-  select(taxa, full_taxa_name, stressor, source, median) %>%
-  pivot_wider(names_from = source, values_from = median) %>%
-  mutate(total = `on-farm` + `off-farm`) %>%
-  mutate(percent_onfarm = 100*(`on-farm`/total),
-         percent_offfarm = 100*(`off-farm`/total))
-
-# GHG results
-source_percent %>% 
-  filter(stressor == "GHG") %>%
-  arrange(percent_onfarm)
-
-source_percent %>% 
-  filter(stressor == "GHG") %>%
-  arrange(`on-farm`)
-
-source_percent %>% 
-  filter(stressor == "GHG") %>%
-  arrange(total)
-
-# Land results
-source_percent %>% 
-  filter(stressor == "Land") %>%
-  arrange(`on-farm`)
-
-source_percent %>% 
-  filter(stressor == "Land") %>%
-  arrange(`off-farm`)
-
-source_percent %>% 
-  filter(stressor == "Land") %>%
-  arrange(percent_offfarm)
-
-source_percent %>% 
-  filter(stressor == "Land") %>%
-  arrange(desc(total))
-
-# Water results
-source_percent %>% 
-  filter(stressor == "Water") %>%
-  arrange(percent_offfarm)
-
-source_percent %>% 
-  filter(stressor == "Water") %>%
-  arrange(`off-farm`)
-
-source_percent %>% 
-  filter(stressor == "Water") %>%
-  arrange(total)
-
-# N and P results
-source_percent %>% 
-  filter(stressor == "N") %>%
-  arrange(percent_offfarm)
-
-source_percent %>% 
-  filter(stressor == "P") %>%
-  arrange(percent_offfarm)
-
-source_percent %>% 
-  filter(stressor == "N") %>%
-  arrange(desc(total))
-
-source_percent %>% 
-  filter(stressor == "P") %>%
-  arrange(desc(total))
-
-# Capture fishery results
-df_capture <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wild/summary_WILD-GHG-TAXA-LEVEL-WEIGHTED.csv"))
-
-df_capture <- df_capture %>%
+df_capture_edible <- df_capture_edible %>%
   filter(.width == 0.95)
 
-df_total %>% 
-  filter(stressor == "GHG") %>%
-  arrange(total)
+df_capture_edible <- df_capture_edible %>% 
+  mutate(stressor = "GHG", full_taxa_name = taxa) %>%
+  mutate(source = "all", production = "capture", weight = "edible", allocation = "mass") %>%
+  select(production, taxa, full_taxa_name, stressor, source,  "median" = "total_stressor", 
+         "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
 
 #_______________________________________________________________________________________________________________________#
 # Load SI results files and merge 
@@ -258,6 +171,18 @@ tmp <- tmp %>%
   select(taxa, full_taxa_name, stressor, source, "median" = "off_farm", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
 df_mass_live <- df_mass_live %>%
   bind_rows(tmp) 
+
+# Capture fishery results (live weight)
+df_capture_live <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Wild/summary_WILD-GHG-TAXA-LEVEL-WEIGHTED.csv"))
+
+df_capture_live <- df_capture_live %>%
+  filter(.width == 0.95)
+
+df_capture_live <- df_capture_live %>% 
+  mutate(stressor = "GHG", full_taxa_name = taxa) %>%
+  mutate(source = "all", production = "capture", weight = "live", allocation = "mass") %>%
+  select(production, taxa, full_taxa_name, stressor, source,  "median" = "total_stressor", 
+         "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
 
 #_______________________________________________________________________________________________________________________#
 # Load SI results files and merge 
@@ -409,17 +334,13 @@ df_economic_live <- df_economic_live %>%
 #_______________________________________________________________________________________________________________________#
 # Write out results tables
 #_______________________________________________________________________________________________________________________#
-df_capture <- df_capture %>% 
-  mutate(stressor = "GHG", full_taxa_name = taxa) %>%
-  mutate(source = "all", production = "capture", weight = "live", allocation = "mass") %>%
-  select(production, taxa, full_taxa_name, stressor, source,  "median" = "total_stressor", 
-         "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
   
 df_all <- df %>%
   bind_rows(df_mass_live, df_economic_edible, df_economic_live) %>%
   mutate(production = "aquaculture") %>%
   mutate(full_taxa_name = if_else(taxa == "hypoph_carp", true = "silver/bighead", false = full_taxa_name)) %>% # Fix full taxa name for hypoph/carp
-  bind_rows(df_capture)
+  bind_rows(df_capture_edible) %>%
+  bind_rows(df_capture_live)
 
 write.csv(df_all, file.path(outdir, "SI_stressor_results_on_off_farm.csv"), row.names = FALSE)
 
@@ -578,16 +499,108 @@ df_total_economic_live <- df_total_economic_live %>%
   bind_rows(tmp) 
 
 #_______________________________________________________________________________________________________________________#
-# Write out results for total on- and off-farm stressors
+# Write out results for total stressors
 #_______________________________________________________________________________________________________________________#
 
 df_total_all <- df_total %>%
   bind_rows(df_total_mass_live, df_total_economic_edible, df_total_economic_live) %>%
   mutate(production = "aquaculture") %>%
   mutate(full_taxa_name = if_else(taxa == "hypoph_carp", true = "silver/bighead", false = full_taxa_name)) %>% # Fix full taxa name for hypoph/carp
-  bind_rows(df_capture) # capture stressor source is designated as "all"
+  bind_rows(df_capture_live) %>% # capture stressor source is designated as "all"
+  bind_rows(df_capture_edible)
 
 write.csv(df_total_all, file.path(outdir, "SI_stressor_results_total.csv"), row.names = FALSE)
+
+#_______________________________________________________________________________________________________________________#
+# Summarize patterns for paper text
+#_______________________________________________________________________________________________________________________#
+
+# Instead of summarizing df to get TOTALS, use totals read directly from CSV files above
+# df_total <- df %>% 
+#   group_by(taxa, full_taxa_name, stressor) %>% 
+#   summarise(total = sum(median))
+
+# Lowest taxa across stressors
+df_total %>% 
+  group_by(stressor) %>%
+  slice_min(total, n = 4)
+
+df_total %>% 
+  group_by(stressor) %>%
+  slice_max(total, n = 3)
+
+# Stressor correlations 
+tmp <- df_total %>% 
+  pivot_wider(names_from = stressor, values_from = total)
+cor(tmp[,3:7])
+
+# Percent of on- versus off-farm 
+source_percent <- df %>%
+  select(taxa, full_taxa_name, stressor, source, median) %>%
+  pivot_wider(names_from = source, values_from = median) %>%
+  mutate(total = `on-farm` + `off-farm`) %>%
+  mutate(percent_onfarm = 100*(`on-farm`/total),
+         percent_offfarm = 100*(`off-farm`/total))
+
+# GHG results
+source_percent %>% 
+  filter(stressor == "GHG") %>%
+  arrange(percent_onfarm)
+
+source_percent %>% 
+  filter(stressor == "GHG") %>%
+  arrange(`on-farm`)
+
+source_percent %>% 
+  filter(stressor == "GHG") %>%
+  arrange(total)
+
+# Land results
+source_percent %>% 
+  filter(stressor == "Land") %>%
+  arrange(`on-farm`)
+
+source_percent %>% 
+  filter(stressor == "Land") %>%
+  arrange(`off-farm`)
+
+source_percent %>% 
+  filter(stressor == "Land") %>%
+  arrange(percent_offfarm)
+
+source_percent %>% 
+  filter(stressor == "Land") %>%
+  arrange(desc(total))
+
+# Water results
+source_percent %>% 
+  filter(stressor == "Water") %>%
+  arrange(percent_offfarm)
+
+source_percent %>% 
+  filter(stressor == "Water") %>%
+  arrange(`off-farm`)
+
+source_percent %>% 
+  filter(stressor == "Water") %>%
+  arrange(total)
+
+# N and P results
+source_percent %>% 
+  filter(stressor == "N") %>%
+  arrange(percent_offfarm)
+
+source_percent %>% 
+  filter(stressor == "P") %>%
+  arrange(percent_offfarm)
+
+source_percent %>% 
+  filter(stressor == "N") %>%
+  arrange(desc(total))
+
+source_percent %>% 
+  filter(stressor == "P") %>%
+  arrange(desc(total))
 
 #_______________________________________________________________________________________________________________________#
 # Stacked bar of impact by source
