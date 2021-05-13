@@ -4,4 +4,4 @@
 ![alt text](https://github.com/jagephart/FishPrint/blob/master/R-code-workflow-for-README.png)
 
 ## Data Documentation
-The folder "All Input Data" contains all files needed to reproduce all results and figures as outlined in the workflow above.
+The folder "All Input Data" contains all the data files needed to reproduce the results and figures as outlined in the workflow above.
