@@ -4,6 +4,7 @@
 rm(list=ls())
 library(tidyverse)
 library(countrycode)
+library(ggpubr) # for stat_cor
 source("Functions.R") # for rebuild_fish
 
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
@@ -64,8 +65,7 @@ write.csv(lca_dat_for_si_clean, file = file.path(datadir, "LCI_compiled_for_SI.c
 # PRODUCTION CALCULATIONS:
 
 # Rebuild FAO fish production from zip file
-#fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
-fishstat_dat <- rebuild_fish("/Volumes/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2020.1.0.zip")
+fishstat_dat <- rebuild_fish("/Volumes/Dept/CAS/jgephart/FishStatR/Data/Production-Global/ZippedFiles/GlobalProduction_2019.1.0.zip")
 # DATA DOCUMENTATION: Zip file can be downloaded from FAO FishStat: http://www.fao.org/fishery/static/Data/GlobalProduction_2020.1.0.zip
 
 # Match taxa group to ISSCAAP group(s)
@@ -223,6 +223,7 @@ plot_dat <- prod_by_taxa %>%
       
 library(ggrepel)
 ggplot(data = plot_dat, aes(x = n_farms, y = taxa_prod, size = n_studies)) +
+  stat_cor(method = "pearson") +
   geom_point() + 
   geom_text_repel(aes(label=plot_name), box.padding = unit(0.5, "lines"), size = 4) +
   #scale_size_discrete(name = "Number of Studies") +
@@ -335,6 +336,7 @@ over_represented <- plot_country_dat %>%
 interesting_points <- unique(c(top_n_farms, top_prod, low_n_farms, over_represented))
 
 ggplot(data = plot_country_dat, aes(x = n_farms, y = taxa_iso_prod, size = n_studies)) +
+  stat_cor(method = "pearson") +
   geom_point() +
   #geom_jitter() + 
   geom_text_repel(data = . %>% mutate(label = if_else(plot_name_2 %in% interesting_points, true = plot_name_2, false = "")), 
@@ -350,7 +352,7 @@ ggplot(data = plot_country_dat, aes(x = n_farms, y = taxa_iso_prod, size = n_stu
   theme(legend.position=c(0.90, 0.25),
         legend.background = element_rect(linetype = 1, size = 0.5, colour = 1)) +
   plot_theme 
-# PRO TIP: adjust image in Plot Window until happy with geom_text_repel, then save manually with "Export"
+# TIP: adjust image in Plot Window until happy with geom_text_repel, then save manually with "Export"
 ggsave(filename = file.path(outdir, paste("plot_national_production_vs_n_farms.png", sep = "")), width = 11, height = 8.5)
 ggsave(filename = file.path(outdir, paste("plot_national_production_vs_n_farms.tiff", sep = "")), width = 11, height = 8.5)
 
