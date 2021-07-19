@@ -220,7 +220,7 @@ base_family <- "sans"
 
 cols <- c("#57D182", "#FFD947", "#FFA647", "#70468C")
 
-
+# NOTE: this conforms to Nature figure specs (89 mm for one-column width)
 #png("Fig3.png", width = 89, height = 89, units = "mm", res = 300)
 ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index, colour = factor(gear))) +
   geom_point() +

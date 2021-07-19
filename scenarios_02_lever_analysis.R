@@ -504,6 +504,7 @@ margin_theme <- theme(plot.margin = unit(c(0, 0, 0, -3), "mm"),
                                  axis.text.y = element_text(margin = unit(c(0, 0, 0, -3), "mm")))
 
 fig_4_file <- paste("plot_Figure-4_", str_to_lower(allocation_method), sep = "")
+# NOTE: this conforms to Nature figure specs (89 mm for one-column width)
 png(file = file.path(outdir, paste(fig_4_file, ".png", sep = "")), width = 89, height = 189, units = "mm", res = 300)
 #pdf(file = file.path(outdir, paste(fig_4_file, ".pdf", sep = "")), width = 3.5, height = 7.44) # convert 89 x 189 mm to inches
 # Adjust spacing between and around plots

@@ -572,9 +572,10 @@ p_right <- plot_grid(p_nitrogen + theme(axis.text.y=element_blank()),
                      p_phosphorus + theme(axis.text.y=element_blank()), 
                      p_water_facet, 
                      p_land + theme(axis.text.y=element_blank()), ncol = 2, nrow = 2, align = "h", axis = "b", labels = c("b", "c", "e", "f"), rel_widths = c(1.3, 1))
-#plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
-#ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm") # manually change filename after save
-#ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")  # manually change filename after save
+# NOTE: this conforms to Nature figure specs (equivalent to 183mm for two-column width)
+plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
+ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm") # manually change filename after save
+ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")  # manually change filename after save
 
 # For PDF
 # pdf(file = file.path(outdir, "plot_Figure-X.pdf"), width = 7.2, height = 3.5) # equivalent to 183 x 90 mm (Nature figure specs)
