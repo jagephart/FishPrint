@@ -6,6 +6,7 @@ library(ggplot2)
 library(ggthemes)
 library(rstan)
 library(ggrepel)
+library(scales) ## for scales_x_continuous(labels = comma) # add comma for thousands separator
 #library(shinystan)
 library(brms)
 library(tidybayes)
@@ -128,7 +129,9 @@ mm_plot_theme <- list(theme(title = element_text(size = 6),
                             legend.text = element_text(size = 6, color = "black"),
                             legend.position = "bottom",
                             legend.box.margin=margin(-10,-10,-10,-10)))
-units_for_plot = bquote('kg'~CO[2]*' t'^-1)
+# FIX IT - specify edible vs live weight?
+weight_type <- 'live weight'
+units_for_plot = bquote('kg'~CO[2]*'-eq t'^-1~.(weight_type))
 
 
 # ggplot(mm_risk_ghg) +
@@ -181,8 +184,10 @@ mm_risk_ghg_colors <- mm_risk_ghg %>%
 #                 aes(label=label), box.padding = unit(0.5, "lines"), size = 4) +
 
 # Version with simplified legend
+# NOTE: this conforms to Nature figure specs (89 mm for one-column width)
 png(file.path(outdir, "plot_Figure-3_bayes.png"), width = 89, height = 60, units = "mm", res = 300) # as per Nature formatting guidelines: 89 mm for single column; 183 mm for double column
 ggplot(mm_risk_ghg_colors) +
+  scale_x_continuous(labels = comma) +
   geom_interval(aes(x = grp_mu, y = risk.index, xmin = .lower, xmax = .upper, color = interval_color), show.legend = TRUE) +
   geom_point(aes(x = grp_mu, y = risk.index)) +
   #geom_text(aes(x = grp_mu, y = risk.index, label = mm_species), hjust = 0.3, vjust = -1, size = 2) +
@@ -199,53 +204,4 @@ dev.off()
 
 
 
-# BACK TO JG's code:
-# Plots with combined biodiversity risk index
-mm_riskindex_aveghg <- mm_risk_aveghg %>%
-  mutate(risk.index = ifelse(risk == "low", 1*n.species,
-                             ifelse(risk == "medium", 2*n.species,
-                                    ifelse(risk == "high", 3*n.species, NA)))) %>%
-  group_by(mm_species, gear, ghg.ave, ghg.se) %>%
-  summarise(risk.index = sum(risk.index))
-
-# ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index)) +
-#   geom_point() +
-#   geom_errorbar(aes(xmin=ghg.ave-(1.96*ghg.se), xmax=ghg.ave+(1.96*ghg.se)), width=.1) +
-#   labs(y = "Risk index", x = "kg CO2-eq per tonne", size = "N. Species", colour = "Risk") +
-#   theme_clean() +
-#   facet_wrap(~gear, nrow = length(unique(mm_riskindex_aveghg$gear)))
-
-base_size <- 6
-base_family <- "sans"
-
-cols <- c("#57D182", "#FFD947", "#FFA647", "#70468C")
-
-# NOTE: this conforms to Nature figure specs (89 mm for one-column width)
-#png("Fig3.png", width = 89, height = 89, units = "mm", res = 300)
-ggplot(mm_riskindex_aveghg, aes(x = ghg.ave, y = risk.index, colour = factor(gear))) +
-  geom_point() +
-  geom_errorbar(aes(xmin=ghg.ave-(1.96*ghg.se), xmax=ghg.ave+(1.96*ghg.se)), width=.1) +
-  scale_color_manual(values = cols, labels = function(x) str_wrap(x, width = 12)) +
-  geom_text(aes(x = ghg.ave, y = risk.index, label = mm_species), hjust = 0.2, vjust = -0.7, 
-            size = 2, colour = "black") +
-  labs(y = "Risk index", x = "kg CO2-eq per tonne", size = "N. Species", colour = "Risk") +
-  guides(colour=guide_legend(nrow=1, byrow=TRUE)) + 
-  theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-        axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
-        axis.text = element_text(size = ceiling(base_size), colour = "black"),
-        axis.title = element_text(size = ceiling(base_size)), 
-        panel.grid.minor = element_blank(), 
-        panel.grid.major.y = element_blank(), 
-        panel.grid.major.x = element_blank(), 
-        panel.background = element_blank(), panel.border = element_blank(), 
-        strip.background = element_rect(linetype = 0), strip.text = element_text(), 
-        strip.text.x = element_text(vjust = 0.5), strip.text.y = element_text(angle = -90), 
-        legend.text = element_text(size = ceiling(0.9*base_size), family = "sans"), 
-        legend.title = element_blank(), 
-        legend.key = element_rect(fill = "white", colour = NA), 
-        legend.position="bottom",
-        legend.margin=margin(c(1,1,1,1)),
-        plot.title = element_text(size = ceiling(base_size*1), face = "bold"), 
-        plot.subtitle = element_text(size = ceiling(base_size*1)))
-#dev.off()
 

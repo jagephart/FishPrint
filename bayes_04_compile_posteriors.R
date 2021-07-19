@@ -10,6 +10,7 @@ library(tidyverse)
 library(tidybayes)
 library(ggplot2)
 library(cowplot) ## for plot_grid
+library(scales) ## for scales_x_continuous(labels = comma) # add comma for thousands separator
 datadir <- "/Volumes/jgephart/BFA Environment 2/Data"
 outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
@@ -32,12 +33,12 @@ tx_plot_theme_final <- theme(axis.title = element_text(size = 9),
 # EDIBLE WEIGHT RESULTS
 
 # EDIBLE WEIGHT Mass allocation + FCR Priors
-c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Mass-allocation.RData"
-n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/2021-04-28_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/2021-04-28_full-model-posterior_Land Use_Mass-allocation.RData"
-water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Mass-allocation.RData"
-wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wild/2021-04-27_full-model-posterior_Wild-capture-ghg.RData"
+# c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Mass-allocation.RData"
+# n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+# p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/2021-04-28_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+# land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/2021-04-28_full-model-posterior_Land Use_Mass-allocation.RData"
+# water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Mass-allocation.RData"
+# wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wild/2021-04-27_full-model-posterior_Wild-capture-ghg.RData"
 
 # EDIBLE WEIGHT Economic allocation (no wild capture results) + FCR Priors
 # c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Economic-allocation.RData"
@@ -54,12 +55,12 @@ wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wi
 # water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Gross energy content-allocation.RData"
 
 # EDIBLE WEIGHT Mass allocation + NO Priors
-# c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Mass-allocation.RData"
-# n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-# p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Phosphorus/2021-04-28_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-# land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Land/2021-04-29_full-model-posterior_Land Use_Mass-allocation.RData"
-# water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Mass-allocation.RData"
-# wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Wild/2021-04-27_full-model-posterior_Wild-capture-ghg.RData"
+c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Mass-allocation.RData"
+n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Phosphorus/2021-04-28_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Land/2021-04-29_full-model-posterior_Land Use_Mass-allocation.RData"
+water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Mass-allocation.RData"
+wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Wild/2021-04-27_full-model-posterior_Wild-capture-ghg.RData"
 
 ########################
 # LIVE WEIGHT RESULTS
@@ -159,22 +160,30 @@ chx_water_xmax <- chx_water_xmax_live * (1/0.40)
 # weight_type <- 'live weight'
 
 # FOR EDIBLE WEIGHT
-ghg_xlimit <- 26000
-#ghg_xlimit <- 29000 # use this for GHG gross-energy-allocation - misc_diad, upper credible interval gets cutoff
+# ghg_xlimit <- 26000
+# weight_type <- 'edible weight'
+
+# SPECIAL CASES:
+# FOR EDIBLE WEIGHT - GHG gross-energy-allocation - misc_diad, upper credible interval gets cutoff
+# ghg_xlimit <- 29000 # use this for GHG gross-energy-allocation - misc_diad, upper credible interval gets cutoff
+# weight_type <- 'edible weight'
+
+# FOR EDIBLE WEIGHT - Mass-allocation NO PRIORS
+ghg_xlimit <- 32000 # otherwise wild lobster upper credible interval gets cutoff
 weight_type <- 'edible weight'
 
 ###########################################################################################
 # OPTIONS: Customize what is plotted
 
 # Plot only a subset of the data (e.g., for social media posts)
-filter_taxa <- TRUE
-taxa_list_farmed <- c("salmon", "bivalves", "tilapia", "misc carp", "catfish", "shrimp")
-taxa_list_wild <- c("flounder, etc", "shrimp", "bivalves", "salmon, etc", "cod, etc", "herring, etc")
-# MANUALLY reset ghg_xlimit based on what's being plotted
-ghg_xlimit <- 26000
+# filter_taxa <- TRUE
+# taxa_list_farmed <- c("salmon", "bivalves", "tilapia", "misc carp", "catfish", "shrimp")
+# taxa_list_wild <- c("flounder, etc", "shrimp", "bivalves", "salmon, etc", "cod, etc", "herring, etc")
+# # MANUALLY reset ghg_xlimit based on what's being plotted
+# ghg_xlimit <- 26000
 
 # Plot all the data (e.g., for publication)
-# filter_taxa <- FALSE
+filter_taxa <- FALSE
 
 ######################################################################################################
 # Carbon
@@ -182,7 +191,7 @@ ghg_xlimit <- 26000
 load(file.path(outdir, c_results))
 #units_for_plot = "kg CO2-eq per tonne"
 #units_for_plot = bquote('kg'~CO[2]*'-eq per tonne')
-units_for_plot = bquote('kg'~CO[2]*' t'^-1~.(weight_type))
+units_for_plot = bquote('kg'~CO[2]*'-eq t'^-1~.(weight_type))
 interval_palette <- c("#9EA8B7", "#6A7A90", "#364F6B") # Order: light to dark
 
 # Key for naming taxa levels
@@ -247,6 +256,7 @@ p_carbon <- fit_no_na %>%
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order_final)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_total_fp_w)) %>%
   ggplot(aes(y = full_taxa_name, x = tx_total_fp_w, xmin = .lower, xmax = .upper)) +
+  scale_x_continuous(labels = comma) +
   # ADD CHICKEN RESULTS:
   geom_rect(aes(ymin = -Inf, ymax = length(tx_index_key_final$full_taxa_name), xmin = chx_ghg_xmin, xmax = chx_ghg_xmax), fill = chx_fill) +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
@@ -274,7 +284,7 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key_final", "full_taxa_name_order
 # Load model outputs individually, save to plot_grid, and create multi-panel plot
 load(file.path(outdir, land_results))
 #units_for_plot = bquote('m'^2*'a per tonne')
-units_for_plot = bquote('m'^2*' t'^-1~.(weight_type))
+units_for_plot = bquote('m'^2*'a t'^-1~.(weight_type))
 
 # x <- seq(0, 1, length.out = 16)
 # base_color <- "#57D182"
@@ -303,6 +313,7 @@ p_land <- fit_no_na %>%
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order_final)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
   ggplot(., aes(y = full_taxa_name, x = tx_land_total_w, xmin = .lower, xmax = .upper)) +
+  scale_x_continuous(labels = comma) +
   # ADD CHICKEN RESULTS:
   geom_rect(aes(ymin = -Inf, ymax = length(tx_index_key_final$full_taxa_name), xmin = chx_land_xmin, xmax = chx_land_xmax), fill = chx_fill) +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 2.9) +
@@ -484,7 +495,7 @@ rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key_final", "full_taxa_name_order
 # Load model outputs individually, save to plot_grid, and create multi-panel plot
 load(file.path(outdir, wild_results))
 #units_for_plot = bquote('kg'~CO[2]*'-eq per tonne')
-units_for_plot = bquote('kg'~CO[2]*' t'^-1~.(weight_type))
+units_for_plot = bquote('kg'~CO[2]*'-eq t'^-1~.(weight_type))
 
 interval_palette <- c("#9EA8B7", "#6A7A90", "#364F6B") # Order: light to dark
 
@@ -535,6 +546,7 @@ p_wild <- fit_no_na %>%
   mutate(plot_taxa = as.factor(plot_taxa)) %>%
   mutate(plot_taxa = fct_reorder(plot_taxa, tx_ghg_w)) %>%
   ggplot(aes(y = plot_taxa, x = tx_ghg_w)) +
+  scale_x_continuous(labels = comma) +
   # ADD CHICKEN RESULTS:
   geom_rect(aes(ymin = -Inf, ymax = length(wild_index_key_final$plot_taxa), xmin = chx_ghg_xmin, xmax = chx_ghg_xmax), fill = chx_fill) +
   geom_interval(aes(xmin = .lower, xmax = .upper), interval_size = 3) +
@@ -548,7 +560,7 @@ p_wild <- fit_no_na %>%
 # p_wild
 # ggsave(filename = file.path(outdir, "plot_WILD-GHG-TAXA-LEVEL-WEIGHTED-formatted.png"), width = 11, height = 8.5)
 
-rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key_final", "full_taxa_name_order_final", "tx_plot_theme_final",
+rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key_final", "full_taxa_name_order_final", "tx_plot_theme_final", "wild_index_key_final",
                            "c_results", "p_results", "n_results", "land_results", "water_results", "wild_results",
                            chx_info, "chx_info", "ghg_xlimit", "weight_type",
                            "filter_taxa", "taxa_list_farmed", "taxa_list_wild",
@@ -575,7 +587,7 @@ p_right <- plot_grid(p_nitrogen + theme(axis.text.y=element_blank()),
 # NOTE: this conforms to Nature figure specs (equivalent to 183mm for two-column width)
 plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
 ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm") # manually change filename after save
-ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")  # manually change filename after save
+# ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")  # manually change filename after save
 
 # For PDF
 # pdf(file = file.path(outdir, "plot_Figure-X.pdf"), width = 7.2, height = 3.5) # equivalent to 183 x 90 mm (Nature figure specs)
@@ -585,10 +597,11 @@ ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", widt
 # Use NO FACET version below for 5-panel plot
 # 5 panel plot
 # p_left <- plot_grid(p_carbon, p_water, nrow = 2, ncol = 1, labels = c("a", "d"))
-# p_right <- plot_grid(p_nitrogen + theme(axis.text.y=element_blank()), 
-#                      p_phosphorus + theme(axis.text.y=element_blank()), 
+# p_right <- plot_grid(p_nitrogen + theme(axis.text.y=element_blank()),
+#                      p_phosphorus + theme(axis.text.y=element_blank()),
 #                      p_land + theme(axis.text.y=element_blank()), ncol = 2, nrow = 2, align = "h", labels = c("b", "c", "e"))
 # plot_grid(p_left, p_right, ncol = 2, nrow = 1, align = "v", rel_widths = c(0.6, 1))
+# NOTE: this conforms to Nature figure specs (equivalent to 183mm for two-column width)
 # ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm")
 # ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
 
