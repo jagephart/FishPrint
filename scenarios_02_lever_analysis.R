@@ -236,6 +236,9 @@ fig_4a <- ggplot(plot_perturbation, aes(x = Parameter, y = taxa, fill = value)) 
         plot.title = element_text(size = ceiling(base_size*1.1), face = "bold"), 
         plot.subtitle = element_text(size = ceiling(base_size*1.05)))
 
+# Output graphing data for SI: 
+write.csv(plot_perturbation, file.path(outdir, "data-to-plot-Fig-4a.csv"), row.names = FALSE)
+
 #_______________________________________________________________________________________________________________________#
 # Scenario analysis
 #_______________________________________________________________________________________________________________________#
@@ -486,6 +489,9 @@ lollipop_dat <- scenarios_diff %>%
 fig_4b_dat <- lollipop_dat %>%
   filter(scenario %in% c("FCR lower 20th", "Replace FMFO w/ byproducts",
                          "Yield upper 20th", "Deforestation-free soy & crops"))
+
+# Output graphing data for SI: 
+write.csv(fig_4b_dat %>% select(-plot_shape), file.path(outdir, "data-to-plot-Fig-4b.csv"), row.names = FALSE)
 
 fig_4b <- ggplot(fig_4b_dat, aes(x = value_percent_change, y = taxa, shape = plot_shape)) +
   geom_point(size = 2) +

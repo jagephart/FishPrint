@@ -202,6 +202,9 @@ ggplot(mm_risk_ghg_colors) +
 dev.off()
 
 
-
-
-
+# Output graphing data for SI: 
+# mm_risk_ghg_colors %>%
+#   rename(median = grp_mu) %>%
+#   select(mm_species, .width, median, .lower, .upper, gear, risk.index) %>%
+#   arrange(mm_species, .width) %>%
+#   write.csv(file.path(outdir, "data-to-plot-Fig-3.csv"), row.names=FALSE)
