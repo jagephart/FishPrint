@@ -105,16 +105,16 @@ clim_world_sf <- st_intersection(clim_mean_sf, world_sf)
 
 clim_world_sf <- set_units(clim_world_sf$mean, mm)
 
-# Calculate mean within each country
+# Calculate ANNUAL mean within each country (multiply by 12)
 clim_by_country <- clim_world_sf %>%
   group_by(admin) %>%
-  summarise(mean_evap_mm = mean(mean, na.rm = TRUE)) %>% # units are in "mm"/ month
+  summarise(mean_evap_mm = mean(mean, na.rm = TRUE) * 12) %>% # units are in "mm"/ year
   ungroup() 
 
 ggplot(clim_by_country) +
   geom_sf(mapping = aes(fill = mean_evap_mm)) +
-  labs(fill = "Country-level evaporation")
-ggsave(file.path(outdir_evap, "clim_summarise_by_country_mean_of_pixels.png"), width = 6, height = 4, unit = "in")
+  labs(fill = "Country-level evaporation (mm / month)")
+ggsave(file.path(outdir_evap, "clim_summarise_by_country.png"), width = 6, height = 4, unit = "in")
 
 write.csv(clim_by_country %>% st_set_geometry(NULL), file = file.path(outdir, "clim_summarise_by_country.csv"), quote = FALSE)
 
