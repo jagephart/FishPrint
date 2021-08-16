@@ -129,8 +129,7 @@ mm_plot_theme <- list(theme(title = element_text(size = 6),
                             legend.text = element_text(size = 6, color = "black"),
                             legend.position = "bottom",
                             legend.box.margin=margin(-10,-10,-10,-10)))
-# FIX IT - specify edible vs live weight?
-weight_type <- 'live weight'
+weight_type <- 'edible weight'
 units_for_plot = bquote('kg'~CO[2]*'-eq t'^-1~.(weight_type))
 
 
@@ -164,28 +163,10 @@ mm_risk_ghg_colors <- mm_risk_ghg %>%
   select(-c(n.species, fui, ghg, risk)) %>%
   unique()
 
-# Version with all color hues in legend
-# FIX IT - Format legend labels with new lines and capitalization
-# ggplot(mm_risk_ghg_colors) +
-#   geom_interval(aes(x = grp_mu, y = risk.index, xmin = .lower, xmax = .upper, color = interval_color), show.legend = TRUE) +
-#   geom_point(aes(x = grp_mu, y = risk.index)) +
-#   geom_text(aes(x = grp_mu, y = risk.index, label = mm_species), hjust = 0.3, vjust = -1) +
-#   theme_classic() +
-#   mm_plot_theme +
-#   labs(x = units_for_plot, y = "Risk index", title = "", color = "Gear") +
-#   scale_color_manual(values = levels(mm_risk_ghg_colors$interval_color),
-#                      labels = c("", "Midwater trawls", "",
-#                                 "", "Gillnets and entangling nets", "",
-#                                 "", "Bottom trawls", "",
-#                                 "", "Traps and lift nets", "")) +
-#   guides(color = guide_legend(keywidth = 0.1, keyheight = 0.1, default.unit = "inch"))
-
-# geom_text_repel(data = . %>% mutate(label = if_else(plot_name_2 %in% interesting_points, true = plot_name_2, false = "")), 
-#                 aes(label=label), box.padding = unit(0.5, "lines"), size = 4) +
-
 # Version with simplified legend
 # NOTE: this conforms to Nature figure specs (89 mm for one-column width)
-png(file.path(outdir, "plot_Figure-3_bayes.png"), width = 89, height = 60, units = "mm", res = 300) # as per Nature formatting guidelines: 89 mm for single column; 183 mm for double column
+pdf(file = file.path(outdir, "plot_Figure-3.pdf"), width = 3.5, height = 2.36) # equivalent to 89 mm for single column
+# png(file.path(outdir, "plot_Figure-3.png"), width = 89, height = 60, units = "mm", res = 300) # as per Nature formatting guidelines: 89 mm for single column; 183 mm for double column
 ggplot(mm_risk_ghg_colors) +
   scale_x_continuous(labels = comma) +
   geom_interval(aes(x = grp_mu, y = risk.index, xmin = .lower, xmax = .upper, color = interval_color), show.legend = TRUE) +
