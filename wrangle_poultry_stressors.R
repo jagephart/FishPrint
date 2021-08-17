@@ -3,6 +3,7 @@
 #_______________________________________________________________________________________________________________________#
 # Load packages and source functions
 #_______________________________________________________________________________________________________________________#
+rm(list=ls())
 library(tidyverse)
 library(countrycode)
 library(ggpubr)
@@ -421,7 +422,6 @@ png(file.path(outdir, "plot_poultry_stressor_by_source.png"), width = 8.5, heigh
 ggarrange(ghg_plot, N_plot, P_plot, water_plot, land_plot, nrow = 1,
           common.legend = TRUE, legend = "bottom", align = "h", widths = c(1.1, 0.7, 0.7, 0.7, 0.7))
 dev.off()
-
 
 # Stats for comparison
 stressor_summary_table <- stressor_summary %>%
