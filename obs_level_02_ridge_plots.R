@@ -251,16 +251,19 @@ water_ridge_intensity <- ggplot(total_stressor_species_summary_plot %>%
                               aes(x = total_value, y = full_intensity)) +
   #geom_density_ridges(alpha = 0.7, fill ="#3FC1C9") +
   geom_density_ridges(alpha = 0.7, fill ="#3FC1C9", scale = 0.9) +
+  scale_x_continuous(labels = c("0", "1e4", "2e4", "3e4"), breaks = c(0, 10000, 20000, 30000)) +
   labs(title = "Water", x = units_for_water, y = "") +
   theme_ridges() +
   ridge_plot_theme +
-  theme(axis.text.y=element_blank())
+  theme(axis.text.y=element_blank(),
+        axis.text.x=element_text(hjust = 0.7))
 
 water_ridge_system <- ggplot(total_stressor_species_summary_plot %>% 
                              filter(stressor == "water" & !is.na(system)),
                            aes(x = total_value, y = full_system)) +
   #geom_density_ridges(alpha = 0.7, fill ="#3FC1C9") +
   geom_density_ridges(alpha = 0.7, fill ="#3FC1C9", scale = 0.9) +
+  scale_x_continuous(labels = c("0", "1e4", "2e4"), breaks = c(0, 10000, 20000)) +
   labs(title = "Water", x = units_for_water, y = "") +
   theme_ridges() +
   ridge_plot_theme +
@@ -271,6 +274,7 @@ water_ridge_taxa <- ggplot(total_stressor_species_summary_plot %>%
                              aes(x = total_value, y = full_taxa)) +
   #geom_density_ridges(alpha = 0.7, fill ="#3FC1C9") +
   geom_density_ridges(alpha = 0.7, fill ="#3FC1C9", scale = 0.9) +
+  scale_x_continuous(labels = c("0", "1e4", "2e4"), breaks = c(0, 10000, 20000)) +
   labs(title = "Water", x = units_for_water, y = "") +
   theme_ridges() +
   ridge_plot_theme +
