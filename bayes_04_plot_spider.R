@@ -14,20 +14,12 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # Set filenames:
 # Mass allocation
-c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Mass-allocation.RData"
+c_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/2021-08-17_full-model-posterior_Global warming potential_Mass-allocation.RData"
 n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
 p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/2021-04-28_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-priors-only/2021-04-28_full-model-posterior_Land Use_Mass-allocation.RData"
-water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Mass-allocation.RData"
+land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/2021-04-28_full-model-posterior_Land Use_Mass-allocation.RData"
+water_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/2021-08-17_full-model-posterior_Water Consumption_Mass-allocation.RData"
 wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wild/2021-04-27_full-model-posterior_Wild-capture-ghg.RData"
-
-# Live weight version:
-# c_results <- "PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
-# n_results <- "PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-# p_results <- "PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-# land_results <- "PRIORS/Land/2021-01-20_full-model-posterior_Land Use_Mass-allocation.RData"
-# water_results <- "PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Mass-allocation.RData"
-# wild_results <- "PRIORS/Wild/2021-01-16_full-model-posterior_Wild-Capture-ghg.RData"
 
 ################################################################################################################
 # GHG

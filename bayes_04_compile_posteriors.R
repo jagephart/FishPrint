@@ -16,7 +16,7 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 # Theme
 # NEW tx_plot_theme_final for Nature submission - smaller x-axis font + hjust on x-axis
-tx_plot_theme_final <- theme(axis.title = element_text(size = 9),
+tx_plot_theme_final <- theme(axis.title = element_text(size = 8),
                        axis.text.x = element_text(hjust = 0.6, size = 7, color = "black"),
                        axis.text.y = element_text(size = 8, color = "black"),
                        legend.position = "none",
@@ -27,45 +27,45 @@ tx_plot_theme_final <- theme(axis.title = element_text(size = 9),
 # EDIBLE WEIGHT RESULTS
 
 # EDIBLE WEIGHT Mass allocation + FCR Priors
-c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Mass-allocation.RData"
-n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/2021-04-28_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/2021-04-28_full-model-posterior_Land Use_Mass-allocation.RData"
-water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Mass-allocation.RData"
-wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wild/2021-04-27_full-model-posterior_Wild-capture-ghg.RData"
+# c_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/2021-08-17_full-model-posterior_Global warming potential_Mass-allocation.RData"
+# n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+# p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/2021-04-28_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+# land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/2021-04-28_full-model-posterior_Land Use_Mass-allocation.RData"
+# water_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/2021-08-17_full-model-posterior_Water Consumption_Mass-allocation.RData"
+# wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wild/2021-04-27_full-model-posterior_Wild-capture-ghg.RData"
 
 # EDIBLE WEIGHT Economic allocation (no wild capture results) + FCR Priors
-# c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Economic-allocation.RData"
+# c_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/2021-08-18_full-model-posterior_Global warming potential_Economic-allocation.RData"
 # n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Economic-allocation.RData"
 # p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/2021-04-28_full-model-posterior_Freshwater eutrophication_Economic-allocation.RData"
 # land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/2021-04-30_full-model-posterior_Land Use_Economic-allocation.RData"
-# water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Economic-allocation.RData"
+# water_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/2021-08-17_full-model-posterior_Water Consumption_Economic-allocation.RData"
 
 # EDIBLE WEIGHT Gross energy allocation (no wild capture results) + FCR Priors
-# c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Gross energy content-allocation.RData"
+# c_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/2021-08-18_full-model-posterior_Global warming potential_Gross energy content-allocation.RData"
 # n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Gross energy content-allocation.RData"
 # p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/2021-04-28_full-model-posterior_Freshwater eutrophication_Gross energy content-allocation.RData"
 # land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only/2021-04-30_full-model-posterior_Land Use_Gross energy content-allocation.RData"
-# water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Gross energy content-allocation.RData"
+# water_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/2021-08-18_full-model-posterior_Water Consumption_Gross energy content-allocation.RData"
 
 # EDIBLE WEIGHT Mass allocation + NO Priors
-# c_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/GHG/2021-04-27_full-model-posterior_Global warming potential_Mass-allocation.RData"
+# c_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/NO PRIORS/2021-08-18_full-model-posterior_Global warming potential_Mass-allocation.RData"
 # n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
 # p_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Phosphorus/2021-04-28_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
 # land_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Land/2021-04-29_full-model-posterior_Land Use_Mass-allocation.RData"
-# water_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Water/2021-04-28_full-model-posterior_Water Consumption_Mass-allocation.RData"
+# water_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/NO PRIORS/2021-08-18_full-model-posterior_Water Consumption_Mass-allocation.RData"
 # wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/NO PRIORS/Wild/2021-04-27_full-model-posterior_Wild-capture-ghg.RData"
 
 ########################
 # LIVE WEIGHT RESULTS
 
 # LIVE WEIGHT Mass allocation + FCR Priors
-# c_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Mass-allocation.RData"
-# n_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
-# p_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
-# land_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Land-FCR-priors-only/2021-01-20_full-model-posterior_Land Use_Mass-allocation.RData"
-# water_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Water/2021-01-15_full-model-posterior_Water Consumption_Mass-allocation.RData"
-# wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Wild/2021-01-16_full-model-posterior_Wild-capture-ghg.RData"
+c_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Live-Weight/PRIORS/2021-08-18_full-model-posterior_Global warming potential_Mass-allocation.RData"
+n_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Nitrogen/2021-01-15_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
+p_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Phosphorus/2021-01-16_full-model-posterior_Freshwater eutrophication_Mass-allocation.RData"
+land_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Land-FCR-priors-only/2021-01-20_full-model-posterior_Land Use_Mass-allocation.RData"
+water_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Live-Weight/PRIORS/2021-08-18_full-model-posterior_Water Consumption_Mass-allocation.RData"
+wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/Wild/2021-01-16_full-model-posterior_Wild-capture-ghg.RData"
 
 # LIVE WEIGHT Economic allocation (no wild capture results) + FCR Priors
 # c_results <- "Nature-submitted-2021-05/Bayesian-Means-Live-Weight/PRIORS/GHG/2021-01-15_full-model-posterior_Global warming potential_Economic-allocation.RData"
@@ -91,10 +91,10 @@ wild_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wi
 
 ###########################################################################################
 # SET CHICKEN NUMBERS (need this to produce both live weight and edible weight options below):
-chx_ghg_xmin_live <- 3165
-chx_ghg_xmax_live <- 3627
+chx_ghg_xmin_live <- 3127
+chx_ghg_xmax_live <- 3589
 chx_land_xmin_live <- 5794
-chx_land_xmax_live <- 6047
+chx_land_xmax_live <- 6048
 chx_n_xmin_live <- 77
 chx_n_xmax_live <- 92
 chx_p_xmin_live <- 11
@@ -106,30 +106,30 @@ chx_water_xmax_live <- 202
 # CF for chicken = 40% i.e., For edible weight chicken numbers, multiply live weight by 1/0.40
 
 # FOR EDIBLE WEIGHT + MASS ALLOCATION
-chx_fill <- "#D6CCB7"
-chx_ghg_xmin <- chx_ghg_xmin_live * (1/0.40)
-chx_ghg_xmax <- chx_ghg_xmax_live * (1/0.40)
-chx_land_xmin <- chx_land_xmin_live * (1/0.40)
-chx_land_xmax <- chx_land_xmax_live * (1/0.40)
-chx_n_xmin <- chx_n_xmin_live * (1/0.40)
-chx_n_xmax <- chx_n_xmax_live * (1/0.40)
-chx_p_xmin <- chx_p_xmin_live * (1/0.40)
-chx_p_xmax <- chx_p_xmax_live * (1/0.40)
-chx_water_xmin <- chx_water_xmin_live * (1/0.40)
-chx_water_xmax <- chx_water_xmax_live * (1/0.40)
+# chx_fill <- "#D6CCB7"
+# chx_ghg_xmin <- chx_ghg_xmin_live * (1/0.40)
+# chx_ghg_xmax <- chx_ghg_xmax_live * (1/0.40)
+# chx_land_xmin <- chx_land_xmin_live * (1/0.40)
+# chx_land_xmax <- chx_land_xmax_live * (1/0.40)
+# chx_n_xmin <- chx_n_xmin_live * (1/0.40)
+# chx_n_xmax <- chx_n_xmax_live * (1/0.40)
+# chx_p_xmin <- chx_p_xmin_live * (1/0.40)
+# chx_p_xmax <- chx_p_xmax_live * (1/0.40)
+# chx_water_xmin <- chx_water_xmin_live * (1/0.40)
+# chx_water_xmax <- chx_water_xmax_live * (1/0.40)
 
 # FOR LIVE WEIGHT + MASS ALLOCATION
-# chx_fill <- "#D6CCB7"
-# chx_ghg_xmin <- chx_ghg_xmin_live
-# chx_ghg_xmax <- chx_ghg_xmax_live
-# chx_land_xmin <- chx_land_xmin_live
-# chx_land_xmax <- chx_land_xmax_live
-# chx_n_xmin <- chx_n_xmin_live
-# chx_n_xmax <- chx_n_xmax_live
-# chx_p_xmin <- chx_p_xmin_live
-# chx_p_xmax <- chx_p_xmax_live
-# chx_water_xmin <- chx_water_xmin_live
-# chx_water_xmax <- chx_water_xmax_live
+chx_fill <- "#D6CCB7"
+chx_ghg_xmin <- chx_ghg_xmin_live
+chx_ghg_xmax <- chx_ghg_xmax_live
+chx_land_xmin <- chx_land_xmin_live
+chx_land_xmax <- chx_land_xmax_live
+chx_n_xmin <- chx_n_xmin_live
+chx_n_xmax <- chx_n_xmax_live
+chx_p_xmin <- chx_p_xmin_live
+chx_p_xmax <- chx_p_xmax_live
+chx_water_xmin <- chx_water_xmin_live
+chx_water_xmax <- chx_water_xmax_live
 
 # FOR ALL ECONOMIC OR GROSS ENERGY CONTENT ALLOCATIONS (Live or Edible weight): I.E., FULLY TRANSPARENT WHITE
 # chx_fill <- "#00FFFFFF"
@@ -150,8 +150,8 @@ chx_water_xmax <- chx_water_xmax_live * (1/0.40)
 # (2) X-axis label: per tonne 'live weight' vs 'edible weight'
 
 # FOR LIVE WEIGHT
-# ghg_xlimit <- 12500
-# weight_type <- 'live weight'
+ghg_xlimit <- 12500
+weight_type <- 'live weight'
 
 # FOR EDIBLE WEIGHT
 # ghg_xlimit <- 26000
@@ -163,8 +163,8 @@ chx_water_xmax <- chx_water_xmax_live * (1/0.40)
 # weight_type <- 'edible weight'
 
 # FOR EDIBLE WEIGHT - Mass-allocation NO PRIORS
-ghg_xlimit <- 32000 # otherwise wild lobster upper credible interval gets cutoff
-weight_type <- 'edible weight'
+# ghg_xlimit <- 32000 # otherwise wild lobster upper credible interval gets cutoff
+# weight_type <- 'edible weight'
 
 ###########################################################################################
 # OPTIONS: Customize what is plotted
@@ -272,7 +272,7 @@ p_carbon <- ggplot(data = carbon_data, aes(y = full_taxa_name, x = tx_total_fp_w
 #   mutate(stressor = "ghg") %>%
 #   select(-c(tx, .point, .interval, taxa)) %>%
 #   arrange(full_taxa_name, .width) %>%
-#   bind_rows(carbon_chx_data) %>% 
+#   bind_rows(carbon_chx_data) %>%
 #   write.csv(file.path(outdir, "Fig-1-ghg-data.csv"), row.names=FALSE)
 
 chx_info <- ls()[grep("chx", ls())]
@@ -332,7 +332,7 @@ p_land <- ggplot(land_data, aes(y = full_taxa_name, x = tx_land_total_w, xmin = 
 #   mutate(stressor = "land") %>%
 #   select(-c(tx, .point, .interval, taxa)) %>%
 #   arrange(full_taxa_name, .width) %>%
-#   bind_rows(land_chx_data) %>% 
+#   bind_rows(land_chx_data) %>%
 #   write.csv(file.path(outdir, "Fig-1-land-data.csv"), row.names=FALSE)
 
 rm(list=ls()[!(ls() %in% c("outdir", "tx_index_key_final", "full_taxa_name_order_final", "tx_plot_theme_final",
@@ -444,15 +444,34 @@ load(file.path(outdir, water_results))
 units_for_plot <- bquote('m'^3*' t'^-1~.(weight_type))
 interval_palette <- c("#3FC1C9", "#348A8F", "#275659") # sample palette base to "black"
 
+# Get off-farm impact for all non-freshwater taxa
+# For non-freshwater taxa, on-farm impacts are ZERO, but because uncertainty around the zero is so large, the total impacts are negatie
+# Therefore, use off-farm impacts as a substitute for total impacts
+nonfresh_taxa <- c("misc_diad", "salmon", "milkfish", "misc_marine", "shrimp")
+nonfresh_data <- fit_no_na %>%
+  spread_draws(tx_feed_fp_w[tx]) %>%
+  median_qi(.width = c(0.95, 0.8, 0.5)) %>%
+  right_join(tx_index_key_final, by = "tx") %>% # Join with index key to get sci and taxa names
+  # Only keep non-freshwater taxa - i.e., misc diadromous fishes, salmon, milkfish, misc marine fishes, and shrimp
+  filter(taxa %in% nonfresh_taxa) %>%
+  # rename off-farm impacts as total impacts so it can merge with the rest of the dataset
+  rename(tx_total_fp_w = tx_feed_fp_w)
+
 # Mean total impact taxa-level
 water_data <- fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
   median_qi(.width = c(0.95, 0.8, 0.5)) %>%
   right_join(tx_index_key_final, by = "tx") %>% # Join with index key to get sci and taxa names
+  # Remove non-freshwater taxa from previous section for which we're using off-farm impacts only as the total impact
+  filter(taxa %in% nonfresh_taxa == FALSE) %>%
   # Set plant and bivalves distributions to 0 (both are 0 for on and off farm)
   mutate(tx_total_fp_w = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_total_fp_w),
          .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
          .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
+  # Rowbind with nonfresh_data
+  bind_rows(nonfresh_data) %>%
+  # WATER can't be less than zero: (lower bound for trout is negative)
+  mutate(.lower = if_else(.lower < 0, true = 0, false = .lower)) %>%
   # REORDER taxa axis
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order_final)) 
 
@@ -591,30 +610,28 @@ p_carbon_facet <- p_carbon + facet_grid(rows = "source", switch = "y") + theme(s
 p_wild_facet <- p_wild + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
 p_left <- plot_grid(p_carbon_facet, p_wild_facet, ncol = 1, nrow = 2, align = "hv", labels = c("a", "d"), axis = "l")
 p_water_facet <- p_water + facet_grid(rows = "source", switch = "y") + theme(strip.placement = "outside")
-p_right <- plot_grid(p_nitrogen + theme(axis.text.y=element_blank()), 
-                     p_phosphorus + theme(axis.text.y=element_blank()), 
-                     p_water_facet, 
+p_right <- plot_grid(p_nitrogen + theme(axis.text.y=element_blank()),
+                     p_phosphorus + theme(axis.text.y=element_blank()),
+                     p_water_facet,
                      p_land + theme(axis.text.y=element_blank()), ncol = 2, nrow = 2, align = "h", axis = "b", labels = c("b", "c", "e", "f"), rel_widths = c(1.3, 1))
+
 # NOTE: this conforms to Nature figure specs (equivalent to 183mm for two-column width)
 plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
 ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm") # manually change filename after save
-# ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")  # manually change filename after save
 
-# For PDF
-# pdf(file = file.path(outdir, "plot_Figure-X.pdf"), width = 7.2, height = 3.5) # equivalent to 183 x 90 mm (Nature figure specs)
-# plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
-# dev.off()
+pdf(file = file.path(outdir, "plot_Figure-X.pdf"), width = 7.2, height = 3.5) # equivalent to 183 x 90 mm (Nature figure specs)
+plot_grid(p_left, p_right, ncol = 2, nrow = 1, rel_widths = c(0.55, 1))
+dev.off()
 
 # Use NO FACET version below for 5-panel plot
 # 5 panel plot
+# NOTE: this conforms to Nature figure specs (equivalent to 183mm for two-column width)
 # p_left <- plot_grid(p_carbon, p_water, nrow = 2, ncol = 1, labels = c("a", "d"))
 # p_right <- plot_grid(p_nitrogen + theme(axis.text.y=element_blank()),
 #                      p_phosphorus + theme(axis.text.y=element_blank()),
 #                      p_land + theme(axis.text.y=element_blank()), ncol = 2, nrow = 2, align = "h", labels = c("b", "c", "e"))
 # plot_grid(p_left, p_right, ncol = 2, nrow = 1, align = "v", rel_widths = c(0.6, 1))
-# NOTE: this conforms to Nature figure specs (equivalent to 183mm for two-column width)
 # ggsave(filename = file.path(outdir, "plot_Figure-X.png"), width = 183, height = 90, units = "mm")
-# ggsave(filename = file.path(outdir, "plot_Figure-X.tiff"), device = "tiff", width = 183, height = 90, units = "mm")
 
 # Version for social media:
 # PDF
