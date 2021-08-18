@@ -19,18 +19,21 @@ library(ggpubr)
 # Load main results files and merge (Priors + Mass allocation + Edible Weight)
 #_______________________________________________________________________________________________________________________#
 
-df <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/summary_Global warming potential_Mass-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv"))
+# ON-FARM GHG
+df <- read.csv(file.path(outdir, "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/summary_Global warming potential_Mass-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 df <- df %>%
   mutate(source = "on-farm", stressor = "GHG", weight = "edible", allocation = "mass") %>%
   select(taxa, full_taxa_name, stressor, source, "median" = "on_farm", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
 
-tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/GHG/summary_Global warming potential_Mass-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv"))
+# OFF-FARM GHG
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/summary_Global warming potential_Mass-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>% 
   mutate(source = "off-farm", stressor = "GHG", weight = "edible", allocation = "mass") %>%
   select(taxa, full_taxa_name, stressor, source, "median" = "off_farm", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
 df <- df %>%
   bind_rows(tmp)
 
+# ON-FARM NITROGEN
 tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/summary_Marine eutrophication_Mass-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>%
   mutate(source = "on-farm", stressor = "N", weight = "edible", allocation = "mass") %>%
@@ -38,6 +41,7 @@ tmp <- tmp %>%
 df <- df %>%
   bind_rows(tmp) 
 
+# OFF-FARM NITROGEN
 tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/summary_Marine eutrophication_Mass-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>%
   mutate(source = "off-farm", stressor = "N", weight = "edible", allocation = "mass") %>%
@@ -45,6 +49,7 @@ tmp <- tmp %>%
 df <- df %>%
   bind_rows(tmp) 
 
+# ON-FARM PHOSPHORUS
 tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/summary_Freshwater eutrophication_Mass-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>%
   mutate(source = "on-farm", stressor = "P", weight = "edible", allocation = "mass") %>%
@@ -52,6 +57,7 @@ tmp <- tmp %>%
 df <- df %>%
   bind_rows(tmp) 
 
+# OFF-FARM PHOSPHORUS
 tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Phosphorus/summary_Freshwater eutrophication_Mass-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>%
   mutate(source = "off-farm", stressor = "P", weight = "edible", allocation = "mass") %>%
@@ -59,20 +65,23 @@ tmp <- tmp %>%
 df <- df %>%
   bind_rows(tmp) 
 
-tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/summary_Water consumption_Mass-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv"))
+# ON-FARM WATER
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/summary_Water Consumption_Mass-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>%
   mutate(source = "on-farm", stressor = "Water", weight = "edible", allocation = "mass") %>%
   select(taxa, full_taxa_name, stressor, source, "median" = "on_farm", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
 df <- df %>%
   bind_rows(tmp) 
 
-tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Water/summary_Water consumption_Mass-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv"))
+# OFF-FARM WATER
+tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/summary_Water Consumption_Mass-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>%
   mutate(source = "off-farm", stressor = "Water", weight = "edible", allocation = "mass") %>%
   select(taxa, full_taxa_name, stressor, source, "median" = "off_farm", "lower_95" = ".lower", "upper_95" = ".upper", weight, allocation)
 df <- df %>%
   bind_rows(tmp) 
 
+# ON-FARM LAND
 tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only-Rerun/summary_Land Use_Mass-allocation_ON-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>%
   mutate(source = "on-farm", stressor = "Land", weight = "edible", allocation = "mass") %>%
@@ -80,6 +89,7 @@ tmp <- tmp %>%
 df <- df %>%
   bind_rows(tmp) 
 
+# OFF-FARM LAND
 tmp <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Land-FCR-Priors-Only-Rerun/summary_Land Use_Mass-allocation_OFF-FARM-TAXA-LEVEL-WEIGHTED.csv"))
 tmp <- tmp %>%
   mutate(source = "off-farm", stressor = "Land", weight = "edible", allocation = "mass") %>%
@@ -87,6 +97,7 @@ tmp <- tmp %>%
 df <- df %>%
   bind_rows(tmp) 
 
+# CAPTURE
 # Capture fishery results (edible weight)
 df_capture_edible <- read.csv(file.path(outdir, "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Wild/summary_WILD-GHG-TAXA-LEVEL-WEIGHTED.csv"))
 
