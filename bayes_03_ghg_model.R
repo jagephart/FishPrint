@@ -40,12 +40,10 @@ electric_fp_dat <- read.csv(file.path(datadir, "electricity_GWP.csv")) %>%
   mutate(iso3c = countrycode(Country, origin = "country.name", destination = "iso3c"))
 other_energy_fp_dat <- read.csv(file.path(datadir, "energy_carriers_impact_factors.csv"))
 
-# units for diesel and petrol constants are in kg CO2-eq / L
+# units for diesel, petrol, and natural gas constants are in kg CO2-eq / L
 diesel_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Diesel") %>% pull(Value)
 petrol_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Petrol") %>% pull(Value)
-
-# NOTE: natural gas is in kg CO2-eq / m3, need to convert to kg CO2-eq / L - multiply by 0.001 m3 / L
-natgas_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Natural gas") %>% pull(Value) * 0.001
+natgas_fp <- other_energy_fp_dat %>% filter(Impact.category == "Global warming potential" & Input == "Natural gas") %>% pull(Value)
 
 # Format data for model:
 lca_model_dat <- lca_full_dat %>%
