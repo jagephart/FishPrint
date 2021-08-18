@@ -23,8 +23,8 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 
 ##########################################################################################################################
 # OPTION: Choose allocation method (used for all analyses and plotting below)
-allocation_method <- "Mass"
-#allocation_method <- "Economic"
+#allocation_method <- "Mass"
+allocation_method <- "Economic"
 ##########################################################################################################################
 
 #_______________________________________________________________________________________________________________________#
@@ -458,7 +458,7 @@ scenarios_diff <- scenarios %>%
   filter(scenario != "Baseline") %>%
   left_join(scenarios %>% filter(scenario == "Baseline") %>% select(taxa, Stressor, "baseline_value" = "value"), 
             by = c("taxa", "Stressor")) %>%
-  mutate(value_change = value - baseline_value, value_percent_change = 100*(value - baseline_value)/baseline_value)
+  mutate(value_change = value - baseline_value, value_percent_change = round(100*(value - baseline_value)/baseline_value, digits = 0))
 
 lollipop_theme <- theme(axis.line.x = element_line(colour = "black", size = 0.5, linetype = "solid"), 
                         axis.line.y = element_line(colour = "black", size = 0.5, linetype = "solid"), 
@@ -483,7 +483,7 @@ lollipop_theme <- theme(axis.line.x = element_line(colour = "black", size = 0.5,
 
 # Use a 50% cutoff for lollipop plot (use arrowheads if beyond cutoff point)
 lollipop_dat <- scenarios_diff %>%
-  mutate(plot_shape = ifelse(value_percent_change < -50, "over", "under")) %>%
+  mutate(plot_shape = ifelse(value_percent_change > -50, "under", "over")) %>%
   mutate(value_percent_change = ifelse(value_percent_change < -50, -50, value_percent_change))
 
 fig_4b_dat <- lollipop_dat %>%
@@ -511,8 +511,8 @@ margin_theme <- theme(plot.margin = unit(c(0, 0, 0, -3), "mm"),
 
 fig_4_file <- paste("plot_Figure-4_", str_to_lower(allocation_method), sep = "")
 # NOTE: this conforms to Nature figure specs (89 mm for one-column width)
-png(file = file.path(outdir, paste(fig_4_file, ".png", sep = "")), width = 89, height = 189, units = "mm", res = 300)
-#pdf(file = file.path(outdir, paste(fig_4_file, ".pdf", sep = "")), width = 3.5, height = 7.44) # convert 89 x 189 mm to inches
+#png(file = file.path(outdir, paste(fig_4_file, ".png", sep = "")), width = 89, height = 189, units = "mm", res = 300)
+pdf(file = file.path(outdir, paste(fig_4_file, ".pdf", sep = "")), width = 3.5, height = 7.44) # convert 89 x 189 mm to inches
 # Adjust spacing between and around plots
 plot_grid(fig_4a + margin_theme,
           fig_4b + margin_theme,
