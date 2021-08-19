@@ -113,7 +113,7 @@ clim_by_country <- clim_world_sf %>%
 
 ggplot(clim_by_country) +
   geom_sf(mapping = aes(fill = mean_evap_mm)) +
-  labs(fill = "Country-level evaporation (mm / month)")
+  labs(fill = "Country-level evaporation (mm / year)")
 ggsave(file.path(outdir_evap, "clim_summarise_by_country.png"), width = 6, height = 4, unit = "in")
 
 write.csv(clim_by_country %>% st_set_geometry(NULL), file = file.path(outdir, "clim_summarise_by_country.csv"), quote = FALSE)
