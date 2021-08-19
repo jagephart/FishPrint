@@ -610,8 +610,6 @@ fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
   median_qi(.width = c(0.95, 0.8, 0.5)) %>%
   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  # Set .lower limit of plants and bivalves to be 0
-  #mutate(.lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower)) %>% 
   # REORDER taxa axis
   mutate(full_taxa_name = fct_relevel(full_taxa_name, full_taxa_name_order)) %>%
   #mutate(full_taxa_name = fct_reorder(full_taxa_name, tx_feed_fp_w)) %>%
@@ -627,8 +625,6 @@ fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
   median_qi(.width = 0.95) %>%
   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
-  # Set .lower limit of plants and bivalves to be 0
-  mutate(.lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower)) %>% 
   rename(total_stressor = tx_total_fp_w) %>%
   write.csv(file = file.path(outdir, paste("summary_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv", sep = "")), row.names = FALSE)
 
