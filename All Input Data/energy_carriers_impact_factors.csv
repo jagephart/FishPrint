@@ -10,7 +10,7 @@ Energy carrier,Petrol,Land use,m2a / L,4.33E-03,ecoinvent 3.6,"petrol, unleaded,
 Energy carrier,Petrol,Marine eutrophication,kg N / L,4.67E-06,ecoinvent 3.6,"petrol, unleaded, burned in machinery"
 Energy carrier,Petrol,Water consumption,m3 / L,8.70E-04,ecoinvent 3.6,"petrol, unleaded, burned in machinery"
 Energy carrier,Natural gas,Freshwater eutrophication,kg P / m^3,2.13E-05,ecoinvent 3.6,"natural gas, burned in gas motor, for storage"
-Energy carrier,Natural gas,Global warming potential,kg CO2-eq / m^3,2.44E+00,ecoinvent 3.6,"natural gas, burned in gas motor, for storage"
+Energy carrier,Natural gas,Global warming potential,kg CO2-eq / L,1.28E+00,ecoinvent 3.6,"natural gas, burned in gas motor, for storage; Note: original ecovent value was 2.44 kg CO2-eq/m3. This estimate assumes that at 15 C and one athmosphere the density of natural gas is 0.715 kg/m3 and the weight per kg is 0.41 kg/L"""
 Energy carrier,Natural gas,Land use,m2a / m^3,1.15E-03,ecoinvent 3.6,"natural gas, burned in gas motor, for storage"
 Energy carrier,Natural gas,Marine eutrophication,kg N / m^3,5.48E-06,ecoinvent 3.6,"natural gas, burned in gas motor, for storage"
 Energy carrier,Natural gas,Water consumption,m3 / m^3,3.30E-04,ecoinvent 3.6,"natural gas, burned in gas motor, for storage"
