@@ -26,6 +26,8 @@ tx_plot_theme_final <- theme(axis.title = element_text(size = 8),
 # OPTIONS: Set filenames
 # EDIBLE WEIGHT RESULTS
 
+# NOTE: GHG and WATER results are in a different folder dated August 2021 because these models had to be re-run (last-minute change to natural gas constant and multiplying evaporation data by 12 to get annual value)
+# All other filepaths for N, P, Land, Wild still point to their original folder from May 2021
 # EDIBLE WEIGHT Mass allocation + FCR Priors
 # c_results <- "Nature-submitted-2021-08/RERUN-GHG-and-Water-Bayesian-Means-Edible-Weight/PRIORS/2021-08-17_full-model-posterior_Global warming potential_Mass-allocation.RData"
 # n_results <- "Nature-submitted-2021-05/Bayesian-Means-Edible-Weight/PRIORS/Nitrogen/2021-04-28_full-model-posterior_Marine eutrophication_Mass-allocation.RData"
