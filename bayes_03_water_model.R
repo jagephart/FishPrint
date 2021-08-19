@@ -34,8 +34,8 @@ outdir <- "/Volumes/jgephart/BFA Environment 2/Outputs"
 # STEP 1: LOAD AND FORMAT DATA
 
 # Load Data
-#lca_full_dat <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv"), fileEncoding="UTF-8-BOM")
-lca_full_dat <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"), fileEncoding="UTF-8-BOM")
+lca_full_dat <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-sqrt-n-farms_live-weight.csv"), fileEncoding="UTF-8-BOM")
+#lca_full_dat <- read.csv(file.path(outdir, "lca-dat-imputed-vars_rep-sqrt-n-farms_edible-weight.csv"), fileEncoding="UTF-8-BOM")
 
 # Format data for model:
 lca_model_dat <- lca_full_dat %>%
@@ -643,14 +643,31 @@ fit_no_na %>%
 ggsave(filename = file.path(outdir, paste("plot_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.png", sep = "")), width = 11, height = 8.5)
 
 # Same but as CSV output
+# NOTE: for Water models, substituting OFF-FARM impacts as the TOTAL impact for all non freshwater taxa
+nonfresh_taxa <- c("misc_diad", "salmon", "milkfish", "misc_marine", "shrimp")
+nonfresh_data <- fit_no_na %>%
+  spread_draws(tx_feed_fp_w[tx]) %>%
+  median_qi(.width = 0.95) %>%
+  right_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # Only keep non-freshwater taxa - i.e., misc diadromous fishes, salmon, milkfish, misc marine fishes, and shrimp
+  filter(taxa %in% nonfresh_taxa) %>%
+  # rename off-farm impacts as total impacts so it can merge with the rest of the dataset
+  rename(tx_total_fp_w = tx_feed_fp_w)
+
 fit_no_na %>%
   spread_draws(tx_total_fp_w[tx]) %>%
   median_qi(.width = 0.95) %>%
   left_join(tx_index_key, by = "tx") %>% # Join with index key to get sci and taxa names
+  # Remove non-freshwater taxa from previous section for which we're using off-farm impacts only as the total impact
+  filter(taxa %in% nonfresh_taxa == FALSE) %>%
   # Set plant and bivalves distributions to 0 (both are 0 for on and off farm)
   mutate(tx_total_fp_w = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = tx_total_fp_w),
          .lower = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .lower),
          .upper = if_else(taxa %in% c("bivalves", "plants"), true = 0, false = .upper)) %>%
+  # Rowbind with nonfresh_data
+  bind_rows(nonfresh_data) %>%
+  # WATER can't be less than zero: (lower bound for trout is negative)
+  mutate(.lower = if_else(.lower < 0, true = 0, false = .lower)) %>%
   rename(total_stressor = tx_total_fp_w) %>%
   write.csv(file = file.path(outdir, paste("summary_", impact, "_", set_allocation, "-allocation_TOTAL-IMPACT-TAXA-LEVEL-WEIGHTED.csv", sep = "")), row.names = FALSE)
 
