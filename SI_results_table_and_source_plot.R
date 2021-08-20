@@ -576,27 +576,33 @@ write.csv(df_total_all, file.path(outdir, "SI_stressor_results_total.csv"), row.
 # Summarize patterns for paper text
 #_______________________________________________________________________________________________________________________#
 
-# Instead of summarizing df to get TOTALS, use totals read directly from CSV files above
-# df_total <- df %>% 
-#   group_by(taxa, full_taxa_name, stressor) %>% 
-#   summarise(total = sum(median))
+# Load totals from above summary files
+df_total <- read.csv("Data/Table S11.csv")
+df_total_mass_lw <- df_total %>%
+  filter(weight == "edible", allocation == "mass")
+
+df_source <- read.csv("Data/SI_stressor_results_on_off_farm.csv")
+df_source_mass_lw <- df_source %>%
+  filter(weight == "edible", allocation == "mass")  
 
 # Lowest taxa across stressors
-df_total %>% 
+df_total_mass_lw %>% 
   group_by(stressor) %>%
-  slice_min(total, n = 4)
+  slice_min(median, n = 4)
 
-df_total %>% 
+df_total_mass_lw %>% 
   group_by(stressor) %>%
-  slice_max(total, n = 3)
+  slice_max(median, n = 3)
 
 # Stressor correlations 
-tmp <- df_total %>% 
-  pivot_wider(names_from = stressor, values_from = total)
-cor(tmp[,3:7])
+tmp <- df_total_mass_lw %>% 
+  filter(production == "aquaculture") %>%
+  select(taxa, stressor, median) %>%
+  pivot_wider(names_from = stressor, values_from = median)
+cor(tmp[,2:6])
 
 # Percent of on- versus off-farm 
-source_percent <- df %>%
+source_percent <- df_source_mass_lw %>%
   select(taxa, full_taxa_name, stressor, source, median) %>%
   pivot_wider(names_from = source, values_from = median) %>%
   mutate(total = `on-farm` + `off-farm`) %>%
@@ -615,6 +621,16 @@ source_percent %>%
 source_percent %>% 
   filter(stressor == "GHG") %>%
   arrange(total)
+
+df_total_mass_lw %>%
+  filter(taxa %in% c("bivalves", "Bivalves"), stressor == "GHG")
+
+df_total_mass_lw %>%
+  filter(taxa %in% c("shrimp", "Shrimps"), stressor == "GHG")
+
+df_total_mass_lw %>%
+  filter(taxa %in% c("salmon", "trout", "Salmonids"), stressor == "GHG")
+
 
 # Land results
 source_percent %>% 
